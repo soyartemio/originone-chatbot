@@ -4,6 +4,58 @@ const { sendWhatsAppNotification } = require('./whatsappService');
 
 const DB_PATH = path.join(__dirname, '../data/appointments.json');
 
+const DEFAULT_LEADS = [
+  {
+    "id": "CITA-MRVEDMBX",
+    "nombre_cliente": "Artemio Gonzalez",
+    "email": "artemio@originone.com.mx",
+    "telefono_whatsapp": "+52 81 1065 3947",
+    "empresa_o_proyecto": "Origin One — AI Enterprise OS",
+    "fecha_propuesta": "2026-07-28",
+    "hora_propuesta": "11:00 AM",
+    "resumen_necesidad": "Implementación de arquitectura Agentic AI para automatización omnicanal de diagnósticos y citas.",
+    "canal_origen": "Facebook Messenger",
+    "creado_el": "2026-07-22T01:22:14.733Z",
+    "estatus": "Confirmada (Notificada por WhatsApp)",
+    "etapa": "Diagnóstico Realizado",
+    "notas_internas": [
+      {
+        "id": "NOTA-MRWHNKXJ",
+        "texto": "Excelente reunión inicial de diagnóstico. Se revisó la integración omnicanal y el CRM transparente entre socios.",
+        "autor": "Artemio Gonzalez",
+        "fecha": "2026-07-22T19:41:44.503Z"
+      }
+    ],
+    "historial_mensajes": [
+      { "rol": "user", "texto": "Hola, me gustaría agendar una cita de diagnóstico para Origin One.", "fecha": "2026-07-22T01:21:00.000Z" },
+      { "rol": "assistant", "texto": "¡Hola, Artemio! Con gusto agendamos tu sesión de diagnóstico de 30 minutos sin costo. ¿Cuál es tu correo y fecha de preferencia?", "fecha": "2026-07-22T01:21:05.000Z" },
+      { "rol": "user", "texto": "Mi correo es artemio@originone.com.mx y prefiero el 28 de Julio a las 11:00 AM.", "fecha": "2026-07-22T01:21:40.000Z" },
+      { "rol": "assistant", "texto": "¡Excelente! He agendado tu cita para el 28 de Julio a las 11:00 AM. En breve te enviamos la confirmación por WhatsApp a tu celular. ¡Nos vemos pronto!", "fecha": "2026-07-22T01:22:14.000Z" }
+    ]
+  },
+  {
+    "id": "LEAD-27280354771665378",
+    "nombre_cliente": "Artemio (Facebook Messenger)",
+    "email": "artemio@originone.com.mx",
+    "telefono_whatsapp": "528110653947",
+    "empresa_o_proyecto": "Interacción Messenger Live",
+    "fecha_propuesta": "2026-07-25",
+    "hora_propuesta": "10:00 AM",
+    "resumen_necesidad": "Consulta de servicios de IA aplicada a procesos en Messenger",
+    "canal_origen": "Facebook Messenger",
+    "etapa": "Cita Agendada",
+    "creado_el": "2026-07-22T02:10:00.000Z",
+    "estatus": "En Conversación con IA",
+    "notas_internas": [],
+    "historial_mensajes": [
+      { "rol": "user", "texto": "Hola, probando conexión de Messenger con la IA de Origin One.", "fecha": "2026-07-22T02:10:01.000Z" },
+      { "rol": "assistant", "texto": "¡Hola! Bienvenido a Origin One. Soy el asistente de IA. ¿En qué proceso de tu empresa te gustaría implementar inteligencia artificial hoy?", "fecha": "2026-07-22T02:10:04.000Z" },
+      { "rol": "user", "texto": "Quiero automatizar el seguimiento de prospectos y agendamiento.", "fecha": "2026-07-22T02:11:15.000Z" },
+      { "rol": "assistant", "texto": "Perfecto. Diseñamos agentes e IA a la medida para conectar tus canales (WhatsApp, Messenger, Instagram y Web) con tu CRM. ¿Te gustaría agendar una llamada de 30 min?", "fecha": "2026-07-22T02:11:20.000Z" }
+    ]
+  }
+];
+
 // Asegurar que exista el directorio data/
 function ensureDbExists() {
   const dir = path.dirname(DB_PATH);
@@ -11,7 +63,16 @@ function ensureDbExists() {
     fs.mkdirSync(dir, { recursive: true });
   }
   if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify([], null, 2));
+    fs.writeFileSync(DB_PATH, JSON.stringify(DEFAULT_LEADS, null, 2));
+  } else {
+    try {
+      const content = fs.readFileSync(DB_PATH, 'utf8').trim();
+      if (!content || content === '[]') {
+        fs.writeFileSync(DB_PATH, JSON.stringify(DEFAULT_LEADS, null, 2));
+      }
+    } catch (e) {
+      fs.writeFileSync(DB_PATH, JSON.stringify(DEFAULT_LEADS, null, 2));
+    }
   }
 }
 
@@ -22,12 +83,14 @@ function getAppointments() {
   ensureDbExists();
   try {
     const data = fs.readFileSync(DB_PATH, 'utf8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    return (parsed && parsed.length > 0) ? parsed : DEFAULT_LEADS;
   } catch (error) {
     console.error('[AgendaService] Error al leer la base de datos:', error);
-    return [];
+    return DEFAULT_LEADS;
   }
 }
+
 
 /**
  * Guardar la lista de citas / leads en el archivo JSON
