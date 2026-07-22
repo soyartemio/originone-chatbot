@@ -3,35 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Origin One — Intelligence that transforms | OS ERP</title>
+  <title>Origin One — Intelligence that transforms | Platform OS</title>
   
-  <!-- Google Fonts de OriginOne.com.mx: Michroma, Space Grotesk, IBM Plex Mono -->
+  <!-- Tipografías Oficiales de OriginOne.com.mx: Space Grotesk & IBM Plex Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Michroma&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <!-- Background Cybernetic Grid & Glowing Blobs -->
-  <div class="cyber-grid"></div>
-  <div class="bg-blob blob-1"></div>
-  <div class="bg-blob blob-2"></div>
-  <div class="bg-blob blob-3"></div>
-
   <div class="layout-wrapper">
 
-    <!-- Collapsible Sidebar -->
-    <aside class="sidebar glass-card">
+    <!-- Sidebar Oficial de Origin One -->
+    <aside class="sidebar">
       <div class="sidebar-brand">
         <div class="logo-badge">
-          <i class="fa-solid fa-bolt"></i>
+          O1
         </div>
         <div class="brand-text">
-          <h2 class="font-michroma">ORIGIN ONE</h2>
-          <span class="font-mono">OPERATING SYSTEM</span>
+          <h2 class="font-grotesk">Origin One</h2>
+          <span class="font-mono">ENTERPRISE OS</span>
         </div>
       </div>
 
@@ -42,7 +36,7 @@
         </button>
 
         <button class="nav-item" id="navFacturacion" onclick="switchModule('facturacion', this)">
-          <i class="fa-solid fa-receipt"></i>
+          <i class="fa-solid fa-file-invoice-dollar"></i>
           <span>Facturación</span>
         </button>
 
@@ -64,7 +58,7 @@
 
       <div class="sidebar-footer">
         <div class="partner-badge">
-          <i class="fa-solid fa-user-astronaut"></i>
+          <i class="fa-solid fa-user-gear"></i>
           <div>
             <strong class="font-grotesk">Artemio Gonzalez</strong>
             <span class="font-mono">Founder & CEO</span>
@@ -79,8 +73,8 @@
       <!-- Top Header -->
       <header class="top-header glass-card">
         <div class="header-title-box">
-          <div class="slogan-badge font-mono"><i class="fa-solid fa-sparkles"></i> INTELLIGENCE THAT TRANSFORMS</div>
-          <h1 id="moduleTitle" class="font-michroma">CRM & Agenda de Prospectos</h1>
+          <div class="slogan-badge font-mono">INTELLIGENCE THAT TRANSFORMS</div>
+          <h1 id="moduleTitle" class="font-grotesk">CRM & Agenda de Prospectos</h1>
           <p id="moduleSubtitle" class="font-grotesk">Gestión omnicanal de leads e interacciones capturadas por S1GNAL Web, IG y Messenger</p>
         </div>
 
@@ -89,7 +83,7 @@
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
             <input type="text" id="searchInput" placeholder="Buscar cliente, empresa o mensaje..." oninput="handleSearch()">
           </div>
-          <button class="btn-refresh glass-btn" onclick="loadModuleData()">
+          <button class="btn-refresh glass-btn font-grotesk" onclick="loadModuleData()">
             <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Sincronizar
           </button>
         </div>
@@ -102,58 +96,58 @@
         <section class="kpi-grid">
           <div class="kpi-card glass-card">
             <div class="kpi-header">
-              <span class="kpi-title font-mono">Total Prospectos</span>
-              <div class="kpi-icon icon-purple"><i class="fa-solid fa-users"></i></div>
+              <span class="kpi-title font-mono">TOTAL PROSPECTOS</span>
+              <div class="kpi-icon"><i class="fa-solid fa-users"></i></div>
             </div>
-            <div class="kpi-value font-michroma" id="kpiTotalLeads">0</div>
-            <div class="kpi-footer font-mono"><i class="fa-solid fa-circle-nodes"></i> Capturados por IA</div>
+            <div class="kpi-value font-grotesk" id="kpiTotalLeads">0</div>
+            <div class="kpi-footer font-mono">Capturados por IA</div>
           </div>
 
           <div class="kpi-card glass-card">
             <div class="kpi-header">
-              <span class="kpi-title font-mono">Citas de Diagnóstico</span>
-              <div class="kpi-icon icon-cyan"><i class="fa-solid fa-calendar-check"></i></div>
+              <span class="kpi-title font-mono">CITAS DE DIAGNÓSTICO</span>
+              <div class="kpi-icon"><i class="fa-solid fa-calendar-check"></i></div>
             </div>
-            <div class="kpi-value font-michroma" id="kpiCitasAgendadas">0</div>
-            <div class="kpi-footer font-mono"><i class="fa-solid fa-clock"></i> Sesiones de 30 min</div>
+            <div class="kpi-value font-grotesk" id="kpiCitasAgendadas">0</div>
+            <div class="kpi-footer font-mono">Sesiones de 30 min</div>
           </div>
 
           <div class="kpi-card glass-card">
             <div class="kpi-header">
-              <span class="kpi-title font-mono">Clientes Ganados</span>
-              <div class="kpi-icon icon-green"><i class="fa-solid fa-handshake"></i></div>
+              <span class="kpi-title font-mono">CLIENTES GANADOS</span>
+              <div class="kpi-icon"><i class="fa-solid fa-handshake"></i></div>
             </div>
-            <div class="kpi-value font-michroma" id="kpiClientesGanados">0</div>
-            <div class="kpi-footer font-mono"><i class="fa-solid fa-chart-line"></i> Proyectos cerrados</div>
+            <div class="kpi-value font-grotesk col-gold" id="kpiClientesGanados">0</div>
+            <div class="kpi-footer font-mono">Proyectos cerrados</div>
           </div>
 
           <div class="kpi-card glass-card">
             <div class="kpi-header">
-              <span class="kpi-title font-mono">Tasa de Conversión</span>
-              <div class="kpi-icon icon-pink"><i class="fa-solid fa-bolt"></i></div>
+              <span class="kpi-title font-mono">TASA DE CONVERSIÓN</span>
+              <div class="kpi-icon"><i class="fa-solid fa-bolt"></i></div>
             </div>
-            <div class="kpi-value font-michroma" id="kpiTasaConversion">0.0%</div>
-            <div class="kpi-footer font-mono"><i class="fa-solid fa-bullseye"></i> Eficiencia del Embudo</div>
+            <div class="kpi-value font-grotesk col-gold" id="kpiTasaConversion">0.0%</div>
+            <div class="kpi-footer font-mono">Eficiencia del Embudo</div>
           </div>
         </section>
 
         <!-- View Switcher & Channel Filter -->
         <div class="toolbar-section">
           <div class="view-tabs">
-            <button class="tab-btn active" id="tabKanban" onclick="switchCrmSubView('kanban')">
-              <i class="fa-solid fa-table-columns"></i> Embudo Kanban
+            <button class="tab-btn active font-grotesk" id="tabKanban" onclick="switchCrmSubView('kanban')">
+              Embudo Kanban
             </button>
-            <button class="tab-btn" id="tabList" onclick="switchCrmSubView('list')">
-              <i class="fa-solid fa-list-check"></i> Lista de Citas
+            <button class="tab-btn font-grotesk" id="tabList" onclick="switchCrmSubView('list')">
+              Lista de Citas
             </button>
           </div>
 
           <div class="channel-filters">
             <span class="filter-label font-mono"><i class="fa-solid fa-filter"></i> Canal:</span>
-            <button class="chip-filter active" onclick="filterChannel('todos', this)">Todos</button>
-            <button class="chip-filter" onclick="filterChannel('signal', this)"><i class="fa-solid fa-microphone"></i> S1GNAL Web</button>
-            <button class="chip-filter" onclick="filterChannel('instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram</button>
-            <button class="chip-filter" onclick="filterChannel('facebook', this)"><i class="fa-brands fa-facebook"></i> Messenger</button>
+            <button class="chip-filter active font-grotesk" onclick="filterChannel('todos', this)">Todos</button>
+            <button class="chip-filter font-grotesk" onclick="filterChannel('signal', this)"><i class="fa-solid fa-microphone"></i> S1GNAL Web</button>
+            <button class="chip-filter font-grotesk" onclick="filterChannel('instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram</button>
+            <button class="chip-filter font-grotesk" onclick="filterChannel('facebook', this)"><i class="fa-brands fa-facebook"></i> Messenger</button>
           </div>
         </div>
 
@@ -161,32 +155,32 @@
         <div id="viewKanban" class="view-container">
           <div class="kanban-board">
             <div class="kanban-column glass-card">
-              <div class="column-header col-blue">
-                <div class="col-title-group"><i class="fa-solid fa-calendar-plus"></i><h3 class="font-grotesk">Cita Agendada</h3></div>
+              <div class="column-header">
+                <div class="col-title-group"><i class="fa-solid fa-calendar-plus col-gold"></i><h3 class="font-grotesk">Cita Agendada</h3></div>
                 <span class="badge-count font-mono" id="countCita">0</span>
               </div>
               <div class="column-cards" id="colCita"></div>
             </div>
 
             <div class="kanban-column glass-card">
-              <div class="column-header col-purple">
-                <div class="col-title-group"><i class="fa-solid fa-microscope"></i><h3 class="font-grotesk">Diagnóstico Realizado</h3></div>
+              <div class="column-header">
+                <div class="col-title-group"><i class="fa-solid fa-microscope col-gold"></i><h3 class="font-grotesk">Diagnóstico Realizado</h3></div>
                 <span class="badge-count font-mono" id="countDiagnostico">0</span>
               </div>
               <div class="column-cards" id="colDiagnostico"></div>
             </div>
 
             <div class="kanban-column glass-card">
-              <div class="column-header col-yellow">
-                <div class="col-title-group"><i class="fa-solid fa-file-invoice-dollar"></i><h3 class="font-grotesk">Propuesta Enviada</h3></div>
+              <div class="column-header">
+                <div class="col-title-group"><i class="fa-solid fa-file-invoice-dollar col-gold"></i><h3 class="font-grotesk">Propuesta Enviada</h3></div>
                 <span class="badge-count font-mono" id="countPropuesta">0</span>
               </div>
               <div class="column-cards" id="colPropuesta"></div>
             </div>
 
             <div class="kanban-column glass-card">
-              <div class="column-header col-green">
-                <div class="col-title-group"><i class="fa-solid fa-trophy"></i><h3 class="font-grotesk">Cliente / Ganado</h3></div>
+              <div class="column-header">
+                <div class="col-title-group"><i class="fa-solid fa-trophy col-gold"></i><h3 class="font-grotesk">Cliente / Ganado</h3></div>
                 <span class="badge-count font-mono" id="countGanado">0</span>
               </div>
               <div class="column-cards" id="colGanado"></div>
@@ -213,8 +207,8 @@
       <!-- ==================== MODULE 2: FACTURACIÓN & COTIZACIONES ==================== -->
       <div id="moduleFacturacionSection" class="module-section hidden">
         <div class="module-action-bar">
-          <h2 class="font-michroma"><i class="fa-solid fa-receipt"></i> Facturas y Cotizaciones</h2>
-          <button class="btn-primary-action" onclick="openNewInvoiceModal()"><i class="fa-solid fa-plus"></i> Nueva Factura / Cotización</button>
+          <h2 class="font-grotesk"><i class="fa-solid fa-receipt col-gold"></i> Facturas y Cotizaciones</h2>
+          <button class="btn-primary-action font-grotesk" onclick="openNewInvoiceModal()"><i class="fa-solid fa-plus"></i> Nueva Factura / Cotización</button>
         </div>
 
         <div class="table-card glass-card">
@@ -231,26 +225,26 @@
       <div id="moduleContabilidadSection" class="module-section hidden">
         <div class="pnl-summary-grid">
           <div class="kpi-card glass-card">
-            <span class="kpi-title font-mono">Ingresos Totales</span>
-            <div class="kpi-value col-green font-michroma" id="pnlIngresos">$0.00 MXN</div>
+            <span class="kpi-title font-mono">INGRESOS TOTALES</span>
+            <div class="kpi-value col-green font-grotesk" id="pnlIngresos">$0.00 MXN</div>
           </div>
           <div class="kpi-card glass-card">
-            <span class="kpi-title font-mono">Egresos / Gastos</span>
-            <div class="kpi-value col-pink font-michroma" id="pnlEgresos">$0.00 MXN</div>
+            <span class="kpi-title font-mono">EGRESOS / GASTOS</span>
+            <div class="kpi-value col-pink font-grotesk" id="pnlEgresos">$0.00 MXN</div>
           </div>
           <div class="kpi-card glass-card">
-            <span class="kpi-title font-mono">Utilidad Neta</span>
-            <div class="kpi-value col-purple font-michroma" id="pnlUtilidad">$0.00 MXN</div>
+            <span class="kpi-title font-mono">UTILIDAD NETA</span>
+            <div class="kpi-value col-gold font-grotesk" id="pnlUtilidad">$0.00 MXN</div>
           </div>
           <div class="kpi-card glass-card">
-            <span class="kpi-title font-mono">Margen Operativo</span>
-            <div class="kpi-value col-cyan font-michroma" id="pnlMargen">0.0%</div>
+            <span class="kpi-title font-mono">MARGEN OPERATIVO</span>
+            <div class="kpi-value col-gold font-grotesk" id="pnlMargen">0.0%</div>
           </div>
         </div>
 
         <div class="module-action-bar" style="margin-top: 24px;">
-          <h2 class="font-michroma"><i class="fa-solid fa-money-bill-transfer"></i> Movimientos Contables</h2>
-          <button class="btn-primary-action" onclick="openNewTrxModal()"><i class="fa-solid fa-plus"></i> Registrar Movimiento</button>
+          <h2 class="font-grotesk"><i class="fa-solid fa-money-bill-transfer col-gold"></i> Movimientos Contables</h2>
+          <button class="btn-primary-action font-grotesk" onclick="openNewTrxModal()"><i class="fa-solid fa-plus"></i> Registrar Movimiento</button>
         </div>
 
         <div class="table-card glass-card">
@@ -266,11 +260,11 @@
       <!-- ==================== MODULE 4: BANCOS & TESORERÍA ==================== -->
       <div id="moduleBancosSection" class="module-section hidden">
         <div class="kpi-card glass-card" style="margin-bottom: 24px;">
-          <span class="kpi-title font-mono">Saldo Total en Cuentas (Estimado MXN)</span>
-          <div class="kpi-value col-green font-michroma" id="bancosSaldoTotal">$0.00 MXN</div>
+          <span class="kpi-title font-mono">SALDO TOTAL EN CUENTAS (ESTIMADO MXN)</span>
+          <div class="kpi-value col-gold font-grotesk" id="bancosSaldoTotal">$0.00 MXN</div>
         </div>
 
-        <h2 style="margin-bottom: 16px;" class="font-michroma"><i class="fa-solid fa-vault"></i> Cuentas Bancarias Registradas</h2>
+        <h2 style="margin-bottom: 16px;" class="font-grotesk"><i class="fa-solid fa-vault col-gold"></i> Cuentas Bancarias Registradas</h2>
         <div class="bank-cards-grid" id="bankCardsGrid"></div>
       </div>
 
@@ -279,12 +273,12 @@
         <div class="transparency-banner glass-card">
           <i class="fa-solid fa-shield-halved banner-icon"></i>
           <div>
-            <h2 class="font-michroma">Panel Transparente de Socios & Distribución de Utilidades</h2>
+            <h2 class="font-grotesk">Panel Transparente de Socios & Distribución de Utilidades</h2>
             <p id="politicaReparto" class="font-grotesk">Política: 50% Reinversión en IA / 50% Reparto de Utilidades Directas</p>
           </div>
         </div>
 
-        <h2 style="margin-bottom: 16px;" class="font-michroma"><i class="fa-solid fa-users-rectangle"></i> Accionistas & Participación</h2>
+        <h2 style="margin-bottom: 16px;" class="font-grotesk"><i class="fa-solid fa-users-rectangle col-gold"></i> Accionistas & Participación</h2>
         <div class="partners-grid" id="partnersGrid"></div>
       </div>
 
@@ -298,7 +292,7 @@
       <div class="modal-header">
         <div>
           <span class="modal-badge font-mono" id="modalChannel">Canal</span>
-          <h2 class="modal-title font-michroma" id="modalName">Nombre Cliente</h2>
+          <h2 class="modal-title font-grotesk" id="modalName">Nombre Cliente</h2>
           <p class="modal-subtitle font-grotesk" id="modalCompany">Empresa / Proyecto</p>
         </div>
         <button class="btn-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
@@ -308,14 +302,14 @@
         
         <!-- Left Column: Client Data & Stage Update -->
         <div class="modal-left">
-          <div class="info-group"><label class="font-mono"><i class="fa-solid fa-envelope"></i> Correo Electrónico:</label><p id="modalEmail">correo@ejemplo.com</p></div>
-          <div class="info-group"><label class="font-mono"><i class="fa-solid fa-phone"></i> WhatsApp / Teléfono:</label><p id="modalPhone">+52 81 0000 0000</p></div>
-          <div class="info-group"><label class="font-mono"><i class="fa-solid fa-clock"></i> Fecha y Hora de Diagnóstico:</label><p id="modalDateTime" class="highlight-text font-mono">2026-07-25 a las 11:00 AM</p></div>
-          <div class="info-group"><label class="font-mono"><i class="fa-solid fa-lightbulb"></i> Resumen de Necesidad:</label><div class="need-box" id="modalNeed">Resumen del cliente...</div></div>
+          <div class="info-group"><label class="font-mono">CORREO ELECTRÓNICO:</label><p id="modalEmail">correo@ejemplo.com</p></div>
+          <div class="info-group"><label class="font-mono">WHATSAPP / TELÉFONO:</label><p id="modalPhone">+52 81 0000 0000</p></div>
+          <div class="info-group"><label class="font-mono">FECHA Y HORA DE DIAGNÓSTICO:</label><p id="modalDateTime" class="highlight-text font-mono">2026-07-25 a las 11:00 AM</p></div>
+          <div class="info-group"><label class="font-mono">RESUMEN DE NECESIDAD:</label><div class="need-box" id="modalNeed">Resumen del cliente...</div></div>
           
           <div class="info-group">
-            <label class="font-mono"><i class="fa-solid fa-diagram-project"></i> Cambiar Etapa del Embudo:</label>
-            <select id="stageSelect" class="custom-select" onchange="updateLeadStage()">
+            <label class="font-mono">CAMBIAR ETAPA DEL EMBUDO:</label>
+            <select id="stageSelect" class="custom-select font-grotesk" onchange="updateLeadStage()">
               <option value="Cita Agendada">🗓️ Cita Agendada</option>
               <option value="Diagnóstico Realizado">🔬 Diagnóstico Realizado</option>
               <option value="Propuesta Enviada">📄 Propuesta Enviada</option>
@@ -325,7 +319,7 @@
           </div>
 
           <div class="quick-action-box">
-            <a id="modalWaBtn" href="#" target="_blank" class="btn-whatsapp-action"><i class="fa-brands fa-whatsapp"></i> Contactar por WhatsApp</a>
+            <a id="modalWaBtn" href="#" target="_blank" class="btn-whatsapp-action font-grotesk"><i class="fa-brands fa-whatsapp"></i> Contactar por WhatsApp</a>
           </div>
         </div>
 
@@ -333,18 +327,18 @@
         <div class="modal-right">
           
           <!-- Section 1: Chat Transcript with AI -->
-          <h3 class="section-title font-michroma"><i class="fa-solid fa-comments"></i> Transcripción del Chat con IA</h3>
+          <h3 class="section-title font-grotesk" style="font-size:14px; margin-bottom:10px;"><i class="fa-solid fa-comments col-gold"></i> Transcripción del Chat con IA</h3>
           <div class="chat-transcript-box" id="chatTranscriptBox">
             <!-- Renderizado dinámico del historial de conversación -->
           </div>
 
           <!-- Section 2: Internal Follow-up Notes -->
-          <h3 class="section-title font-michroma" style="margin-top:20px;"><i class="fa-solid fa-pen-to-square"></i> Notas Internas de la Reunión</h3>
+          <h3 class="section-title font-grotesk" style="font-size:14px; margin-top:20px; margin-bottom:10px;"><i class="fa-solid fa-pen-to-square col-gold"></i> Notas Internas de la Reunión</h3>
           <div class="add-note-form">
-            <textarea id="noteInput" placeholder="Escribe un acuerdo o nota de seguimiento..." rows="2"></textarea>
+            <textarea id="noteInput" placeholder="Escribe un acuerdo o nota de seguimiento..." rows="2" class="font-grotesk"></textarea>
             <div class="note-form-footer">
               <input type="text" id="noteAuthor" placeholder="Tu Nombre" value="Artemio Gonzalez" class="font-mono">
-              <button class="btn-add-note" onclick="addNote()"><i class="fa-solid fa-paper-plane"></i> Guardar Nota</button>
+              <button class="btn-add-note font-grotesk" onclick="addNote()"><i class="fa-solid fa-paper-plane"></i> Guardar Nota</button>
             </div>
           </div>
           <div class="notes-timeline" id="notesTimeline"></div>
