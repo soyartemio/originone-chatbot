@@ -126,17 +126,15 @@ async function sendMetaMessage(recipientPsid, text, channelName = 'Facebook Mess
   const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN;
   const igAccessToken = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN || pageAccessToken;
 
-  const payload = {
-    recipient: { id: recipientPsid },
-    message: { text: text }
-  };
-
   try {
     if (channelName === 'Instagram Direct') {
       console.log(`[MetaWebhook] 📤 Enviando respuesta a Instagram Direct via graph.instagram.com a ID ${recipientPsid}...`);
       const response = await axios.post(
         'https://graph.instagram.com/v21.0/me/messages',
-        payload,
+        {
+          recipient: { id: recipientPsid },
+          message: { text: text }
+        },
         {
           headers: {
             'Authorization': `Bearer ${igAccessToken}`,
@@ -146,17 +144,33 @@ async function sendMetaMessage(recipientPsid, text, channelName = 'Facebook Mess
       );
       console.log(`[MetaWebhook] ✅ Respuesta entregada exitosamente en Instagram Direct:`, response.data);
     } else {
-      console.log(`[MetaWebhook] 📤 Enviando respuesta a Facebook Messenger via graph.facebook.com a ID ${recipientPsid}...`);
-      const response = await axios.post(
+      console.log(`[MetaWebhook] 📤 Enviando respuesta a Facebook Messenger a ID ${recipientPsid}...`);
+      const fbPayload = {
+        messaging_type: 'RESPONSE',
+        recipient: { id: recipientPsid },
+        message: { text: text }
+      };
+
+      const fbEndpoints = [
         `https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`,
-        payload
-      );
-      console.log(`[MetaWebhook] ✅ Respuesta entregada exitosamente en Facebook Messenger:`, response.data);
+        `https://graph.facebook.com/v21.0/1287784707740447/messages?access_token=${pageAccessToken}`
+      ];
+
+      for (const ep of fbEndpoints) {
+        try {
+          const response = await axios.post(ep, fbPayload);
+          console.log(`[MetaWebhook] ✅ Respuesta entregada exitosamente en Facebook Messenger:`, response.data);
+          return;
+        } catch (err) {
+          console.warn(`[MetaWebhook] ⚠️ Falló intento FB en ${ep}:`, err.response?.data?.error?.message || err.message);
+        }
+      }
     }
   } catch (error) {
     console.error(`[MetaWebhook] ❌ Error entregando respuesta en ${channelName}:`, error.response?.data || error.message);
   }
 }
+
 
 
 
