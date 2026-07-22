@@ -21,10 +21,10 @@ const ORIGIN_ONE_KNOWLEDGE_BASE = `
 - **¿Qué es S1GNAL?**: S1GNAL **NO es un producto independiente por separado**, es el **Motor de IA Conversacional, Agente y Suite Propietaria de Origin One** que le da vida a este mismo chatbot.
 - **Canales Omnicanal Integrados**:
   - 🌐 **Website Live Chat** (directo en originone.com.mx)
-  - 📸 **Instagram Direct** (`@origin1.ai`)
-  - 💬 **Facebook Messenger** (`Origin1.ai`)
+  - 📸 **Instagram Direct** (@origin1.ai)
+  - 💬 **Facebook Messenger** (Origin1.ai)
   - 📱 **WhatsApp Cloud API**
-  - 🚀 **LinkedIn** (*Próximamente*)
+  - 🚀 **LinkedIn** (Próximamente)
 - **Capacidad Clave**: Construimos e integramos **Chatbots Conversacionales y Agentes de IA a la medida (exactamente como este mismo)** para empresas que quieren automatizar su atención, ventas y operación interna.
 
 ---
