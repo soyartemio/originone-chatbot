@@ -97,6 +97,9 @@ router.post('/webhook', async (req, res) => {
             if (senderPsid && text) {
               console.log(`[MetaWebhook] 💬 DM de ${channelName} (ID ${senderPsid}): "${text}"`);
               
+              // Enviar indicador "Escribiendo..." a Meta Graph API
+              await sendMetaTypingIndicator(senderPsid, channelName);
+
               // Intentar obtener el nombre del usuario desde Meta Graph API
               const userName = await fetchMetaUserProfile(senderPsid, channelName);
 
@@ -123,6 +126,10 @@ router.post('/webhook', async (req, res) => {
 
             if (senderPsid && text && !val.message?.is_echo) {
               console.log(`[MetaWebhook] 💬 Direct Change Event de ${channelName} (ID ${senderPsid}): "${text}"`);
+              
+              // Enviar indicador "Escribiendo..." a Meta Graph API
+              await sendMetaTypingIndicator(senderPsid, channelName);
+
               appendChatMessage(senderPsid, 'user', text, channelName, userName);
 
               const botReply = await generateBotResponse(senderPsid, text, channelName);
@@ -132,6 +139,7 @@ router.post('/webhook', async (req, res) => {
             }
           }
         }
+
 
 
         // B) Comentarios en Publicaciones (Posts / Reels)
@@ -352,8 +360,46 @@ async function fetchMetaUserProfile(senderId, channelName) {
   return null;
 }
 
+/**
+ * Enviar el indicador visual "Escribiendo..." (typing_on) a la API de Meta Graph
+ */
+async function sendMetaTypingIndicator(recipientPsid, channelName) {
+  try {
+    const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN;
+    const igAccessToken = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN || pageAccessToken;
+
+    if (channelName === 'Instagram Direct' && igAccessToken) {
+      await axios.post(
+        `https://graph.facebook.com/v19.0/me/messages`,
+        {
+          recipient: { id: recipientPsid },
+          sender_action: 'typing_on'
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${igAccessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+    } else if (pageAccessToken) {
+      await axios.post(
+        `https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`,
+        {
+          messaging_type: 'RESPONSE',
+          recipient: { id: recipientPsid },
+          sender_action: 'typing_on'
+        }
+      );
+    }
+  } catch (e) {
+    // El indicador de escribiendo es opcional visualmente, silenciar en consola
+  }
+}
+
 router.generateBotResponse = generateBotResponse;
 module.exports = router;
+
 
 
 
