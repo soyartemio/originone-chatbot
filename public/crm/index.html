@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Origin One — CRM & Agenda de Prospectos Omnicanal</title>
+  <title>Origin One OS — Plataforma ERP Modular Empresarial</title>
   
   <!-- Google Fonts & FontAwesome Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,170 +20,277 @@
   <div class="bg-blob blob-2"></div>
   <div class="bg-blob blob-3"></div>
 
-  <div class="app-container">
+  <div class="layout-wrapper">
 
-    <!-- Top Navigation Header -->
-    <header class="top-header glass-card">
-      <div class="brand-section">
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar glass-card">
+      <div class="sidebar-brand">
         <div class="logo-badge">
           <i class="fa-solid fa-brain"></i>
         </div>
-        <div>
-          <h1 class="brand-title">ORIGIN ONE <span class="badge-tag">CRM LIVE</span></h1>
-          <p class="brand-subtitle">Intelligence that transforms — Gestión Omnicanal de Leads & Citas</p>
+        <div class="brand-text">
+          <h2>ORIGIN ONE</h2>
+          <span>ERP PLATFORM OS</span>
         </div>
       </div>
 
-      <div class="header-actions">
-        <div class="search-box">
-          <i class="fa-solid fa-magnifying-glass search-icon"></i>
-          <input type="text" id="searchInput" placeholder="Buscar por cliente, empresa, email o WhatsApp..." oninput="handleSearch()">
-        </div>
-        <button class="btn-refresh glass-btn" onclick="loadCrmData()">
-          <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Actualizar
+      <nav class="sidebar-nav">
+        <button class="nav-item active" id="navCrm" onclick="switchModule('crm', this)">
+          <i class="fa-solid fa-users-viewfinder"></i>
+          <span>CRM & Citas</span>
         </button>
-      </div>
-    </header>
 
-    <!-- KPI Metric Cards -->
-    <section class="kpi-grid">
-      <div class="kpi-card glass-card">
-        <div class="kpi-header">
-          <span class="kpi-title">Total Prospectos</span>
-          <div class="kpi-icon icon-purple"><i class="fa-solid fa-users"></i></div>
-        </div>
-        <div class="kpi-value" id="kpiTotalLeads">0</div>
-        <div class="kpi-footer"><i class="fa-solid fa-circle-nodes"></i> Capturados por IA</div>
-      </div>
-
-      <div class="kpi-card glass-card">
-        <div class="kpi-header">
-          <span class="kpi-title">Citas de Diagnóstico</span>
-          <div class="kpi-icon icon-cyan"><i class="fa-solid fa-calendar-check"></i></div>
-        </div>
-        <div class="kpi-value" id="kpiCitasAgendadas">0</div>
-        <div class="kpi-footer"><i class="fa-solid fa-clock"></i> Sesiones de 30 min</div>
-      </div>
-
-      <div class="kpi-card glass-card">
-        <div class="kpi-header">
-          <span class="kpi-title">Clientes Ganados</span>
-          <div class="kpi-icon icon-green"><i class="fa-solid fa-handshake"></i></div>
-        </div>
-        <div class="kpi-value" id="kpiClientesGanados">0</div>
-        <div class="kpi-footer"><i class="fa-solid fa-chart-line"></i> Proyectos cerrados</div>
-      </div>
-
-      <div class="kpi-card glass-card">
-        <div class="kpi-header">
-          <span class="kpi-title">Tasa de Conversión</span>
-          <div class="kpi-icon icon-pink"><i class="fa-solid fa-bolt"></i></div>
-        </div>
-        <div class="kpi-value" id="kpiTasaConversion">0.0%</div>
-        <div class="kpi-footer"><i class="fa-solid fa-bullseye"></i> Eficiencia del Embudo</div>
-      </div>
-    </section>
-
-    <!-- View Mode Switcher -->
-    <div class="toolbar-section">
-      <div class="view-tabs">
-        <button class="tab-btn active" id="tabKanban" onclick="switchView('kanban')">
-          <i class="fa-solid fa-table-columns"></i> Embudo Kanban
+        <button class="nav-item" id="navFacturacion" onclick="switchModule('facturacion', this)">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+          <span>Facturación</span>
         </button>
-        <button class="tab-btn" id="tabList" onclick="switchView('list')">
-          <i class="fa-solid fa-list-check"></i> Lista de Citas
+
+        <button class="nav-item" id="navContabilidad" onclick="switchModule('contabilidad', this)">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Contabilidad & P&L</span>
         </button>
-      </div>
 
-      <div class="channel-filters">
-        <span class="filter-label"><i class="fa-solid fa-filter"></i> Canal:</span>
-        <button class="chip-filter active" onclick="filterChannel('todos', this)">Todos</button>
-        <button class="chip-filter" onclick="filterChannel('signal', this)"><i class="fa-solid fa-microphone"></i> S1GNAL Web</button>
-        <button class="chip-filter" onclick="filterChannel('instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram</button>
-        <button class="chip-filter" onclick="filterChannel('facebook', this)"><i class="fa-brands fa-facebook"></i> Messenger</button>
-      </div>
-    </div>
+        <button class="nav-item" id="navBancos" onclick="switchModule('bancos', this)">
+          <i class="fa-solid fa-building-columns"></i>
+          <span>Bancos & Tesorería</span>
+        </button>
 
-    <!-- Kanban View -->
-    <div id="viewKanban" class="view-container">
-      <div class="kanban-board">
+        <button class="nav-item" id="navSocios" onclick="switchModule('socios', this)">
+          <i class="fa-solid fa-handshake-angle"></i>
+          <span>Socios & Transparencia</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="partner-badge">
+          <i class="fa-solid fa-user-shield"></i>
+          <div>
+            <strong>Artemio Gonzalez</strong>
+            <span>Socio Fundador / CEO</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- Top Header -->
+      <header class="top-header glass-card">
+        <div class="header-title-box">
+          <h1 id="moduleTitle">CRM & Agenda de Prospectos</h1>
+          <p id="moduleSubtitle">Gestión omnicanal de leads capturados por S1GNAL Web, IG y Messenger</p>
+        </div>
+
+        <div class="header-actions">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="searchInput" placeholder="Buscar en el sistema..." oninput="handleSearch()">
+          </div>
+          <button class="btn-refresh glass-btn" onclick="loadModuleData()">
+            <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Actualizar
+          </button>
+        </div>
+      </header>
+
+      <!-- ==================== MODULE 1: CRM & CITAS ==================== -->
+      <div id="moduleCrmSection" class="module-section">
         
-        <!-- Column 1: Cita Agendada -->
-        <div class="kanban-column glass-card">
-          <div class="column-header col-blue">
-            <div class="col-title-group">
-              <i class="fa-solid fa-calendar-plus"></i>
-              <h3>Cita Agendada</h3>
+        <!-- KPI Cards -->
+        <section class="kpi-grid">
+          <div class="kpi-card glass-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Total Prospectos</span>
+              <div class="kpi-icon icon-purple"><i class="fa-solid fa-users"></i></div>
             </div>
-            <span class="badge-count" id="countCita">0</span>
+            <div class="kpi-value" id="kpiTotalLeads">0</div>
+            <div class="kpi-footer"><i class="fa-solid fa-circle-nodes"></i> Capturados por IA</div>
           </div>
-          <div class="column-cards" id="colCita"></div>
+
+          <div class="kpi-card glass-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Citas de Diagnóstico</span>
+              <div class="kpi-icon icon-cyan"><i class="fa-solid fa-calendar-check"></i></div>
+            </div>
+            <div class="kpi-value" id="kpiCitasAgendadas">0</div>
+            <div class="kpi-footer"><i class="fa-solid fa-clock"></i> Sesiones de 30 min</div>
+          </div>
+
+          <div class="kpi-card glass-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Clientes Ganados</span>
+              <div class="kpi-icon icon-green"><i class="fa-solid fa-handshake"></i></div>
+            </div>
+            <div class="kpi-value" id="kpiClientesGanados">0</div>
+            <div class="kpi-footer"><i class="fa-solid fa-chart-line"></i> Proyectos cerrados</div>
+          </div>
+
+          <div class="kpi-card glass-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Tasa de Conversión</span>
+              <div class="kpi-icon icon-pink"><i class="fa-solid fa-bolt"></i></div>
+            </div>
+            <div class="kpi-value" id="kpiTasaConversion">0.0%</div>
+            <div class="kpi-footer"><i class="fa-solid fa-bullseye"></i> Eficiencia del Embudo</div>
+          </div>
+        </section>
+
+        <!-- View Switcher & Channel Filter -->
+        <div class="toolbar-section">
+          <div class="view-tabs">
+            <button class="tab-btn active" id="tabKanban" onclick="switchCrmSubView('kanban')">
+              <i class="fa-solid fa-table-columns"></i> Embudo Kanban
+            </button>
+            <button class="tab-btn" id="tabList" onclick="switchCrmSubView('list')">
+              <i class="fa-solid fa-list-check"></i> Lista de Citas
+            </button>
+          </div>
+
+          <div class="channel-filters">
+            <span class="filter-label"><i class="fa-solid fa-filter"></i> Canal:</span>
+            <button class="chip-filter active" onclick="filterChannel('todos', this)">Todos</button>
+            <button class="chip-filter" onclick="filterChannel('signal', this)"><i class="fa-solid fa-microphone"></i> S1GNAL Web</button>
+            <button class="chip-filter" onclick="filterChannel('instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram</button>
+            <button class="chip-filter" onclick="filterChannel('facebook', this)"><i class="fa-brands fa-facebook"></i> Messenger</button>
+          </div>
         </div>
 
-        <!-- Column 2: Diagnóstico Realizado -->
-        <div class="kanban-column glass-card">
-          <div class="column-header col-purple">
-            <div class="col-title-group">
-              <i class="fa-solid fa-microscope"></i>
-              <h3>Diagnóstico Realizado</h3>
+        <!-- Kanban Board View -->
+        <div id="viewKanban" class="view-container">
+          <div class="kanban-board">
+            <div class="kanban-column glass-card">
+              <div class="column-header col-blue">
+                <div class="col-title-group"><i class="fa-solid fa-calendar-plus"></i><h3>Cita Agendada</h3></div>
+                <span class="badge-count" id="countCita">0</span>
+              </div>
+              <div class="column-cards" id="colCita"></div>
             </div>
-            <span class="badge-count" id="countDiagnostico">0</span>
+
+            <div class="kanban-column glass-card">
+              <div class="column-header col-purple">
+                <div class="col-title-group"><i class="fa-solid fa-microscope"></i><h3>Diagnóstico Realizado</h3></div>
+                <span class="badge-count" id="countDiagnostico">0</span>
+              </div>
+              <div class="column-cards" id="colDiagnostico"></div>
+            </div>
+
+            <div class="kanban-column glass-card">
+              <div class="column-header col-yellow">
+                <div class="col-title-group"><i class="fa-solid fa-file-invoice-dollar"></i><h3>Propuesta Enviada</h3></div>
+                <span class="badge-count" id="countPropuesta">0</span>
+              </div>
+              <div class="column-cards" id="colPropuesta"></div>
+            </div>
+
+            <div class="kanban-column glass-card">
+              <div class="column-header col-green">
+                <div class="col-title-group"><i class="fa-solid fa-trophy"></i><h3>Cliente / Ganado</h3></div>
+                <span class="badge-count" id="countGanado">0</span>
+              </div>
+              <div class="column-cards" id="colGanado"></div>
+            </div>
           </div>
-          <div class="column-cards" id="colDiagnostico"></div>
         </div>
 
-        <!-- Column 3: Propuesta Enviada -->
-        <div class="kanban-column glass-card">
-          <div class="column-header col-yellow">
-            <div class="col-title-group">
-              <i class="fa-solid fa-file-invoice-dollar"></i>
-              <h3>Propuesta Enviada</h3>
-            </div>
-            <span class="badge-count" id="countPropuesta">0</span>
+        <!-- List View -->
+        <div id="viewList" class="view-container hidden">
+          <div class="table-card glass-card">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>ID Cita</th><th>Cliente / Empresa</th><th>Contacto</th><th>Fecha y Hora</th><th>Canal Origen</th><th>Etapa</th><th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
           </div>
-          <div class="column-cards" id="colPropuesta"></div>
-        </div>
-
-        <!-- Column 4: Cliente Ganado -->
-        <div class="kanban-column glass-card">
-          <div class="column-header col-green">
-            <div class="col-title-group">
-              <i class="fa-solid fa-trophy"></i>
-              <h3>Cliente / Ganado</h3>
-            </div>
-            <span class="badge-count" id="countGanado">0</span>
-          </div>
-          <div class="column-cards" id="colGanado"></div>
         </div>
 
       </div>
-    </div>
 
-    <!-- List View -->
-    <div id="viewList" class="view-container hidden">
-      <div class="table-card glass-card">
-        <table class="custom-table">
-          <thead>
-            <tr>
-              <th>ID Cita</th>
-              <th>Cliente / Empresa</th>
-              <th>Contacto</th>
-              <th>Fecha y Hora</th>
-              <th>Canal Origen</th>
-              <th>Etapa</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody">
-            <!-- Renderizado por JS -->
-          </tbody>
-        </table>
+      <!-- ==================== MODULE 2: FACTURACIÓN & COTIZACIONES ==================== -->
+      <div id="moduleFacturacionSection" class="module-section hidden">
+        <div class="module-action-bar">
+          <h2><i class="fa-solid fa-receipt"></i> Facturas y Cotizaciones</h2>
+          <button class="btn-primary-action" onclick="openNewInvoiceModal()"><i class="fa-solid fa-plus"></i> Nueva Factura / Cotización</button>
+        </div>
+
+        <div class="table-card glass-card">
+          <table class="custom-table">
+            <thead>
+              <tr><th>Folio</th><th>Cliente / Empresa</th><th>Concepto</th><th>Subtotal</th><th>IVA (16%)</th><th>Total</th><th>Estado</th><th>Emisión</th></tr>
+            </thead>
+            <tbody id="facturacionTableBody"></tbody>
+          </table>
+        </div>
       </div>
-    </div>
+
+      <!-- ==================== MODULE 3: CONTABILIDAD & P&L ==================== -->
+      <div id="moduleContabilidadSection" class="module-section hidden">
+        <div class="pnl-summary-grid">
+          <div class="kpi-card glass-card">
+            <span class="kpi-title">Ingresos Totales</span>
+            <div class="kpi-value col-green" id="pnlIngresos">$0.00 MXN</div>
+          </div>
+          <div class="kpi-card glass-card">
+            <span class="kpi-title">Egresos / Gastos</span>
+            <div class="kpi-value col-pink" id="pnlEgresos">$0.00 MXN</div>
+          </div>
+          <div class="kpi-card glass-card">
+            <span class="kpi-title">Utilidad Neta</span>
+            <div class="kpi-value col-purple" id="pnlUtilidad">$0.00 MXN</div>
+          </div>
+          <div class="kpi-card glass-card">
+            <span class="kpi-title">Margen Operativo</span>
+            <div class="kpi-value col-cyan" id="pnlMargen">0.0%</div>
+          </div>
+        </div>
+
+        <div class="module-action-bar" style="margin-top: 24px;">
+          <h2><i class="fa-solid fa-money-bill-transfer"></i> Movimientos Contables</h2>
+          <button class="btn-primary-action" onclick="openNewTrxModal()"><i class="fa-solid fa-plus"></i> Registrar Movimiento</button>
+        </div>
+
+        <div class="table-card glass-card">
+          <table class="custom-table">
+            <thead>
+              <tr><th>ID</th><th>Tipo</th><th>Categoría</th><th>Concepto</th><th>Monto</th><th>Fecha</th><th>Registrado Por</th></tr>
+            </thead>
+            <tbody id="contabilidadTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ==================== MODULE 4: BANCOS & TESORERÍA ==================== -->
+      <div id="moduleBancosSection" class="module-section hidden">
+        <div class="kpi-card glass-card" style="margin-bottom: 24px;">
+          <span class="kpi-title">Saldo Total en Cuentas (Estimado MXN)</span>
+          <div class="kpi-value col-green" id="bancosSaldoTotal">$0.00 MXN</div>
+        </div>
+
+        <h2 style="margin-bottom: 16px;"><i class="fa-solid fa-vault"></i> Cuentas Bancarias Registradas</h2>
+        <div class="bank-cards-grid" id="bankCardsGrid"></div>
+      </div>
+
+      <!-- ==================== MODULE 5: SOCIOS & TRANSPARENCIA ==================== -->
+      <div id="moduleSociosSection" class="module-section hidden">
+        <div class="transparency-banner glass-card">
+          <i class="fa-solid fa-shield-halved banner-icon"></i>
+          <div>
+            <h2>Panel Transparente de Socios & Distribución de Utilidades</h2>
+            <p id="politicaReparto">Política: 50% Reinversión en IA / 50% Reparto de Utilidades Directas</p>
+          </div>
+        </div>
+
+        <h2 style="margin-bottom: 16px;"><i class="fa-solid fa-users-rectangle"></i> Accionistas & Participación</h2>
+        <div class="partners-grid" id="partnersGrid"></div>
+      </div>
+
+    </main>
 
   </div>
 
-  <!-- Lead Details & Follow-up Modal -->
+  <!-- Modal Lead CRM -->
   <div class="modal-backdrop hidden" id="leadModal">
     <div class="modal-card glass-card">
       <div class="modal-header">
@@ -196,29 +303,11 @@
       </div>
 
       <div class="modal-body">
-        
-        <!-- Left Column: Info & Actions -->
         <div class="modal-left">
-          <div class="info-group">
-            <label><i class="fa-solid fa-envelope"></i> Correo Electrónico:</label>
-            <p id="modalEmail" class="selectable">correo@ejemplo.com</p>
-          </div>
-
-          <div class="info-group">
-            <label><i class="fa-solid fa-phone"></i> WhatsApp / Teléfono:</label>
-            <p id="modalPhone" class="selectable">+52 81 0000 0000</p>
-          </div>
-
-          <div class="info-group">
-            <label><i class="fa-solid fa-clock"></i> Fecha y Hora de Diagnóstico:</label>
-            <p id="modalDateTime" class="highlight-text">2026-07-25 a las 11:00 AM</p>
-          </div>
-
-          <div class="info-group">
-            <label><i class="fa-solid fa-lightbulb"></i> Resumen de Necesidad:</label>
-            <div class="need-box" id="modalNeed">Resumen del cliente...</div>
-          </div>
-
+          <div class="info-group"><label><i class="fa-solid fa-envelope"></i> Correo Electrónico:</label><p id="modalEmail">correo@ejemplo.com</p></div>
+          <div class="info-group"><label><i class="fa-solid fa-phone"></i> WhatsApp / Teléfono:</label><p id="modalPhone">+52 81 0000 0000</p></div>
+          <div class="info-group"><label><i class="fa-solid fa-clock"></i> Fecha y Hora de Diagnóstico:</label><p id="modalDateTime" class="highlight-text">2026-07-25 a las 11:00 AM</p></div>
+          <div class="info-group"><label><i class="fa-solid fa-lightbulb"></i> Resumen de Necesidad:</label><div class="need-box" id="modalNeed">Resumen del cliente...</div></div>
           <div class="info-group">
             <label><i class="fa-solid fa-diagram-project"></i> Cambiar Etapa del Embudo:</label>
             <select id="stageSelect" class="custom-select" onchange="updateLeadStage()">
@@ -229,19 +318,13 @@
               <option value="Perdido / Archivado">⛔ Archivado / Perdido</option>
             </select>
           </div>
-
-          <!-- Quick Action: WhatsApp Direct -->
           <div class="quick-action-box">
-            <a id="modalWaBtn" href="#" target="_blank" class="btn-whatsapp-action">
-              <i class="fa-brands fa-whatsapp"></i> Contactar por WhatsApp
-            </a>
+            <a id="modalWaBtn" href="#" target="_blank" class="btn-whatsapp-action"><i class="fa-brands fa-whatsapp"></i> Contactar por WhatsApp</a>
           </div>
         </div>
 
-        <!-- Right Column: Internal Notes & Follow-up Timeline -->
         <div class="modal-right">
           <h3 class="section-title"><i class="fa-solid fa-comments"></i> Notas de Seguimiento Interno</h3>
-
           <div class="add-note-form">
             <textarea id="noteInput" placeholder="Escribe una nota de seguimiento o acuerdo de la reunión..." rows="3"></textarea>
             <div class="note-form-footer">
@@ -249,12 +332,8 @@
               <button class="btn-add-note" onclick="addNote()"><i class="fa-solid fa-paper-plane"></i> Guardar Nota</button>
             </div>
           </div>
-
-          <div class="notes-timeline" id="notesTimeline">
-            <!-- Renderizado dinámico -->
-          </div>
+          <div class="notes-timeline" id="notesTimeline"></div>
         </div>
-
       </div>
     </div>
   </div>

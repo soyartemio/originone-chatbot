@@ -36,23 +36,33 @@ app.use((req, res, next) => {
 app.use('/admin', express.static(path.join(__dirname, '../public/crm')));
 app.use('/crm', express.static(path.join(__dirname, '../public/crm')));
 
+const facturacionModule = require('./modules/facturacion');
+const contabilidadModule = require('./modules/contabilidad');
+const bancosModule = require('./modules/bancos');
+const sociosModule = require('./modules/socios');
+
 // Ruta principal de salud
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
     empresa: 'Origin One — Intelligence that transforms',
-    servicio: 'Chatbot Conversacional & CRM Dashboard Omnicanal',
+    servicio: 'Origin One OS — Plataforma ERP Modular Empresarial',
+    modulos: ['CRM & Citas', 'Facturación & Cotizaciones', 'Contabilidad & P&L', 'Bancos & Tesorería', 'Transparencia de Socios'],
     canales: ['Facebook Messenger', 'Instagram Direct', 'WhatsApp Cloud API', 'S1GNAL Web Chat'],
     notificacion_whatsapp: process.env.ADMIN_WHATSAPP_NUMBERS || '528110653947, 528120989813',
     crm_url: `/admin`,
-    webhook_url: `/webhook`,
-    citas_url: `/api/citas`
+    webhook_url: `/webhook`
   });
 });
 
-// Montar endpoints de CRM API y Webhooks
+// Montar endpoints de Módulos ERP y Webhooks
 app.use('/', crmRoutes);
+app.use('/', facturacionModule);
+app.use('/', contabilidadModule);
+app.use('/', bancosModule);
+app.use('/', sociosModule);
 app.use('/', metaWebhookRouter);
+
 
 
 
