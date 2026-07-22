@@ -50,9 +50,10 @@ app.get('/', (req, res) => {
   });
 });
 
-// Montar endpoints de Webhook y CRM API
-app.use('/', metaWebhookRouter);
+// Montar endpoints de CRM API y Webhooks
 app.use('/', crmRoutes);
+app.use('/', metaWebhookRouter);
+
 
 
 app.listen(PORT, () => {
