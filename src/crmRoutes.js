@@ -144,21 +144,18 @@ router.post('/api/crm/leads/:id/notes', (req, res) => {
 });
 
 /**
-  * DELETE /api/crm/leads/:id
-  * Eliminar o archivar lead
+  * DELETE /api/crm/reset-all
+  * Limpiar por completo todos los leads de prueba en producción
   */
-router.delete('/api/crm/leads/:id', (req, res) => {
+router.delete('/api/crm/reset-all', (req, res) => {
   try {
-    const { id } = req.params;
-    const deleted = deleteLead(id);
-    if (!deleted) {
-      return res.status(404).json({ success: false, error: 'Lead no encontrado' });
-    }
-    res.json({ success: true, message: 'Lead eliminado exitosamente' });
+    const { saveAppointments } = require('./agendaService');
+    saveAppointments([]);
+    res.json({ success: true, message: 'Base de datos de leads limpiada completamente.' });
   } catch (error) {
-    console.error('[CRMRoutes] Error eliminando lead:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
 module.exports = router;
+
