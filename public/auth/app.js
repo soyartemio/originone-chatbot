@@ -7,6 +7,7 @@ const safeNext = requestedNext.startsWith('/') && !requestedNext.startsWith('//'
 const form = document.getElementById('passwordForm');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
+const passwordVisibleInput = document.getElementById('passwordVisible');
 const passwordLabel = document.getElementById('passwordLabel');
 const passwordHelp = document.getElementById('passwordHelp');
 const submitButton = document.getElementById('submitButton');
@@ -131,13 +132,20 @@ passkeyButton.addEventListener('click', async () => {
 });
 
 document.getElementById('backButton').addEventListener('click', () => window.location.reload());
+passwordVisibleInput.addEventListener('input', () => {
+  passwordInput.value = passwordVisibleInput.value;
+});
 document.getElementById('revealPassword').addEventListener('click', event => {
-  const reveal = passwordInput.type === 'password';
-  passwordInput.type = reveal ? 'text' : 'password';
-  passwordInput.classList.toggle('revealed', reveal);
+  const reveal = passwordVisibleInput.hidden;
+  const source = reveal ? passwordInput : passwordVisibleInput;
+  const target = reveal ? passwordVisibleInput : passwordInput;
+  target.value = source.value;
+  source.hidden = true;
+  target.hidden = false;
   event.currentTarget.textContent = reveal ? 'Ocultar' : 'Ver';
   event.currentTarget.setAttribute('aria-label', reveal ? 'Ocultar contraseña' : 'Mostrar contraseña');
-  passwordInput.focus({ preventScroll: true });
+  target.focus({ preventScroll: true });
+  target.setSelectionRange(target.value.length, target.value.length);
 });
 
 loadInitialState().catch(error => showAlert(error.message));
