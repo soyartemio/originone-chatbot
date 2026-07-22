@@ -83,28 +83,56 @@ router.post('/webhook', async (req, res) => {
 
     // 2. Mensajes de Facebook Messenger o Instagram Direct
     else if (body.object === 'page' || body.object === 'instagram') {
+      const channelName = body.object === 'instagram' ? 'Instagram Direct' : 'Facebook Messenger';
+      const { appendChatMessage } = require('./agendaService');
+
       for (const entry of body.entry || []) {
-        // A) Mensajes Directos (DMs)
-        const webhookEvent = entry.messaging?.[0];
-        if (webhookEvent && webhookEvent.message && webhookEvent.message.text && !webhookEvent.message.is_echo) {
-          const senderPsid = webhookEvent.sender.id;
-          const text = webhookEvent.message.text;
-          const channelName = body.object === 'instagram' ? 'Instagram Direct' : 'Facebook Messenger';
+        // A) Procesar mensajes en entry.messaging (Array)
+        const messagingList = entry.messaging || [];
+        for (const webhookEvent of messagingList) {
+          if (webhookEvent && webhookEvent.message && webhookEvent.message.text && !webhookEvent.message.is_echo) {
+            const senderPsid = webhookEvent.sender ? webhookEvent.sender.id : null;
+            const text = webhookEvent.message.text;
 
+            if (senderPsid && text) {
+              console.log(`[MetaWebhook] 💬 DM de ${channelName} (ID ${senderPsid}): "${text}"`);
+              
+              // Intentar obtener el nombre del usuario desde Meta Graph API
+              const userName = await fetchMetaUserProfile(senderPsid, channelName);
 
-          console.log(`[MetaWebhook] 💬 DM de ${channelName} (ID ${senderPsid}): "${text}"`);
-          
-          const { appendChatMessage } = require('./agendaService');
-          appendChatMessage(senderPsid, 'user', text, channelName);
+              // Registrar en el CRM
+              appendChatMessage(senderPsid, 'user', text, channelName, userName);
 
-          const botReply = await generateBotResponse(senderPsid, text, channelName);
-          appendChatMessage(senderPsid, 'assistant', botReply, channelName);
+              const botReply = await generateBotResponse(senderPsid, text, channelName);
+              appendChatMessage(senderPsid, 'assistant', botReply, channelName, userName);
 
-          // Enviar respuesta vía Meta Graph API
-          await sendMetaMessage(senderPsid, botReply, channelName);
-
-
+              // Enviar respuesta vía Meta Graph API
+              await sendMetaMessage(senderPsid, botReply, channelName);
+            }
+          }
         }
+
+        // B) Procesar mensajes en entry.changes (Instagram / Direct Messages)
+        const changesList = entry.changes || [];
+        for (const change of changesList) {
+          if (change.field === 'messages' && change.value) {
+            const val = change.value;
+            const text = val.message?.text || val.message;
+            const senderPsid = val.sender?.id || val.from?.id;
+            const userName = val.from?.name || val.sender?.name || null;
+
+            if (senderPsid && text && !val.message?.is_echo) {
+              console.log(`[MetaWebhook] 💬 Direct Change Event de ${channelName} (ID ${senderPsid}): "${text}"`);
+              appendChatMessage(senderPsid, 'user', text, channelName, userName);
+
+              const botReply = await generateBotResponse(senderPsid, text, channelName);
+              appendChatMessage(senderPsid, 'assistant', botReply, channelName, userName);
+
+              await sendMetaMessage(senderPsid, botReply, channelName);
+            }
+          }
+        }
+
 
         // B) Comentarios en Publicaciones (Posts / Reels)
         const changes = entry.changes?.[0];
@@ -306,8 +334,27 @@ router.post('/api/signal/agendar-cita', async (req, res) => {
   }
 });
 
+/**
+ * Obtener nombre real del usuario de Meta Graph API
+ */
+async function fetchMetaUserProfile(senderId, channelName) {
+  try {
+    const token = process.env.META_PAGE_ACCESS_TOKEN || process.env.INSTAGRAM_PAGE_ACCESS_TOKEN;
+    if (!token) return null;
+    const url = `https://graph.facebook.com/v19.0/${senderId}?fields=first_name,last_name,name&access_token=${token}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.name) return data.name;
+    if (data.first_name) return `${data.first_name} ${data.last_name || ''}`.trim();
+  } catch (e) {
+    console.error('[MetaUserProfile] Error obteniendo perfil:', e.message);
+  }
+  return null;
+}
+
 router.generateBotResponse = generateBotResponse;
 module.exports = router;
+
 
 
 
