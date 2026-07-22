@@ -2,4 +2,3 @@ node_modules
 .env
 CONFIGURACION_CLAVES.txt
 .DS_Store
-data/appointments.json
