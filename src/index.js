@@ -45,8 +45,10 @@ const sociosModule = require('./modules/socios');
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
-    empresa: 'Origin One — Intelligence that transforms',
+    empresa: 'Origin One — Sistemas e IA a la Medida',
+    statement: 'Deja de usar la IA como un juguete. Empieza a usarla estratégicamente.',
     servicio: 'Origin One OS — Plataforma ERP Modular Empresarial',
+
     modulos: ['CRM & Citas', 'Facturación & Cotizaciones', 'Contabilidad & P&L', 'Bancos & Tesorería', 'Transparencia de Socios'],
     canales: ['Facebook Messenger', 'Instagram Direct', 'WhatsApp Cloud API', 'S1GNAL Web Chat'],
     notificacion_whatsapp: process.env.ADMIN_WHATSAPP_NUMBERS || '528110653947, 528120989813',
