@@ -1,0 +1,32 @@
+{
+  "name": "originone-chatbot-agenda",
+  "version": "1.0.0",
+  "description": "Chatbot conversacional omnicanal impulsado por Gemini con agenda y notificaciones a WhatsApp para Origin One",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test:bot": "node test/testChatbot.js"
+  },
+  "keywords": [
+    "originone",
+    "gemini",
+    "whatsapp",
+    "facebook",
+    "instagram",
+    "chatbot",
+    "agenda"
+  ],
+  "author": "Origin One",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^2.13.0",
+    "@google/generative-ai": "^0.24.0",
+    "axios": "^1.8.2",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "groq-sdk": "^1.3.0"
+  }
+}
