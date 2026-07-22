@@ -11,18 +11,22 @@ if (fs.existsSync(configTxtPath)) {
 
 async function sendDirectTest() {
   const token = process.env.META_PAGE_ACCESS_TOKEN;
-  const psid = '1832770497687819'; // Real IGSID from live webhook
+  const psid = '27280354771665378'; // Artemio's real Facebook Messenger PSID
+
+
 
 
   console.log(`Enviando mensaje directo a PSID de conversación ${psid}...`);
   try {
     const res = await axios.post(
-      `https://graph.facebook.com/v21.0/1287784707740447/messages?access_token=${token}`,
+      `https://graph.facebook.com/v21.0/me/messages?access_token=${token}`,
       {
+        messaging_type: 'RESPONSE',
         recipient: { id: psid },
         message: { text: '¡Hola Artemio! Saludos desde Origin One Chatbot con Groq Llama 3.3 🚀' }
       }
     );
+
 
 
     console.log('🎉 ¡¡¡MENSAJE ENVIADO CON ÉXITO A MESSENGER!!! 🎉', res.data);

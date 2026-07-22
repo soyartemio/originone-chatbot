@@ -76,10 +76,11 @@ router.post('/webhook', async (req, res) => {
       for (const entry of body.entry || []) {
         // A) Mensajes Directos (DMs)
         const webhookEvent = entry.messaging?.[0];
-        if (webhookEvent && webhookEvent.message && webhookEvent.message.text) {
+        if (webhookEvent && webhookEvent.message && webhookEvent.message.text && !webhookEvent.message.is_echo) {
           const senderPsid = webhookEvent.sender.id;
           const text = webhookEvent.message.text;
           const channelName = body.object === 'instagram' ? 'Instagram Direct' : 'Facebook Messenger';
+
 
           console.log(`[MetaWebhook] 💬 DM de ${channelName} (ID ${senderPsid}): "${text}"`);
           const botReply = await generateBotResponse(senderPsid, text, channelName);
