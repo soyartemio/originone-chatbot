@@ -162,7 +162,13 @@ function deleteLead(id) {
  * Guardar un mensaje en el historial de conversaciones del Lead / Cita
  */
 function appendChatMessage(userId, role, messageText, channelName = 'Omnicanal', userName = null) {
+  // Ignorar pruebas sintéticas internas para mantener el CRM limpio para prospectos reales
+  if (!userId || userId.toLowerCase().includes('test') || userId.toLowerCase().includes('verify')) {
+    return null;
+  }
+
   const appointments = getAppointments();
+
   
   // Buscar lead por ID, teléfono o canal
   let lead = appointments.find(item => item.id === userId || item.telefono_whatsapp === userId || item.email === userId);
