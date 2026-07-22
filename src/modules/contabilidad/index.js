@@ -9,15 +9,10 @@ function ensureDbExists() {
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   if (!fs.existsSync(DB_PATH)) {
-    // Datos iniciales de demostración contable
-    const initialData = [
-      { id: 'TRX-101', tipo: 'ingreso', categoria: 'Venta Proyecto IA', monto: 120000, concepto: 'Implementación Agentic AI Client', fecha: '2026-07-10', socio: 'Artemio Gonzalez' },
-      { id: 'TRX-102', tipo: 'egreso', categoria: 'Infraestructura Cloud', monto: 8500, concepto: 'Servidores Render & API Groq/Gemini', fecha: '2026-07-15', socio: 'Artemio Gonzalez' },
-      { id: 'TRX-103', tipo: 'ingreso', categoria: 'Suscripción S1GNAL', monto: 45000, concepto: 'Licenciamiento Anual S1GNAL Suite', fecha: '2026-07-18', socio: 'Socio Operativo' }
-    ];
-    fs.writeFileSync(DB_PATH, JSON.stringify(initialData, null, 2));
+    fs.writeFileSync(DB_PATH, JSON.stringify([], null, 2));
   }
 }
+
 
 function getTransactions() {
   ensureDbExists();

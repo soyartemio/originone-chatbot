@@ -30,7 +30,7 @@ router.get('/api/socios/dashboard', (req, res) => {
   
   // Calcular distribución de utilidades basada en la contabilidad actual
   const trxDbPath = path.join(__dirname, '../../../data/transactions.json');
-  let utilidadNeta = 156500; // fallback demostrativo
+  let utilidadNeta = 0;
 
   if (fs.existsSync(trxDbPath)) {
     try {
@@ -40,6 +40,7 @@ router.get('/api/socios/dashboard', (req, res) => {
       utilidadNeta = ingresos - egresos;
     } catch (e) {}
   }
+
 
   const partnersCalculated = partners.map(p => {
     const utilidadCorrespondiente = (utilidadNeta * (p.porcentaje / 100)).toFixed(2);

@@ -9,13 +9,10 @@ function ensureDbExists() {
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   if (!fs.existsSync(DB_PATH)) {
-    const initialAccounts = [
-      { id: 'BANK-01', banco: 'BBVA Bancomer', clabe: '012180001234567890', moneda: 'MXN', saldo: 156500.00, titular: 'Origin One S.A.P.I. de C.V.' },
-      { id: 'BANK-02', banco: 'Stripe Corporate', clabe: 'STRIPE-ORIGIN1-USD', moneda: 'USD', saldo: 12400.00, titular: 'Origin One Global' }
-    ];
-    fs.writeFileSync(DB_PATH, JSON.stringify(initialAccounts, null, 2));
+    fs.writeFileSync(DB_PATH, JSON.stringify([], null, 2));
   }
 }
+
 
 function getAccounts() {
   ensureDbExists();
