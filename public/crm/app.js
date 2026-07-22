@@ -154,6 +154,10 @@ function createLeadCard(lead) {
   if (canalName.toLowerCase().includes('instagram')) { tagClass = 'tag-instagram'; iconClass = 'fa-brands fa-instagram'; }
   else if (canalName.toLowerCase().includes('facebook')) { tagClass = 'tag-facebook'; iconClass = 'fa-brands fa-facebook'; }
 
+  const isTestBadge = (lead.es_prueba || (lead.etapa && lead.etapa.includes('Prueba')) || (lead.nombre_cliente && lead.nombre_cliente.includes('🧪')))
+    ? `<span class="channel-tag" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4);"><i class="fa-solid fa-vial"></i> PRUEBA</span>`
+    : '';
+
   const cleanPhone = (lead.telefono_whatsapp || '').replace(/\D/g, '');
   const waMsg = encodeURIComponent(`Hola ${lead.nombre_cliente}, te escribo de Origin One sobre tu cita de diagnóstico.`);
   const waUrl = cleanPhone ? `https://wa.me/${cleanPhone.startsWith('52') ? cleanPhone : '52' + cleanPhone}?text=${waMsg}` : '#';
@@ -161,6 +165,7 @@ function createLeadCard(lead) {
   div.innerHTML = `
     <div class="card-top">
       <span class="channel-tag ${tagClass}"><i class="${iconClass}"></i> ${canalName}</span>
+      ${isTestBadge}
       <span class="date-badge">${lead.fecha_propuesta || 'Sin fecha'}</span>
     </div>
     <h4 class="lead-name">${lead.nombre_cliente || 'Prospecto sin nombre'}</h4>
@@ -174,6 +179,7 @@ function createLeadCard(lead) {
   `;
   return div;
 }
+
 
 function renderTable() {
   const tbody = document.getElementById('tableBody');
@@ -496,3 +502,25 @@ async function loadSociosModule() {
     });
   }
 }
+
+/**
+ * Eliminar el lead activo de forma manual
+ */
+async function deleteCurrentLead() {
+  if (!currentActiveLeadId) return;
+  if (confirm(`¿Estás seguro de eliminar permanentemente el registro (${currentActiveLeadId}) del CRM?`)) {
+    try {
+      const res = await fetch(`/api/crm/leads/${encodeURIComponent(currentActiveLeadId)}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        closeModal();
+        fetchLeadsAndRender();
+      } else {
+        alert('Error eliminando lead: ' + (data.error || 'Desconocido'));
+      }
+    } catch (e) {
+      alert('Error de conexión al eliminar: ' + e.message);
+    }
+  }
+}
+

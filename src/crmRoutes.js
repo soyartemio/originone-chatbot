@@ -144,6 +144,24 @@ router.post('/api/crm/leads/:id/notes', (req, res) => {
 });
 
 /**
+  * DELETE /api/crm/leads/:id
+  * Eliminar un lead individual manualmente desde el CRM
+  */
+router.delete('/api/crm/leads/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = deleteLead(id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: 'Lead no encontrado' });
+    }
+    res.json({ success: true, message: `Lead ${id} eliminado correctamente.` });
+  } catch (error) {
+    console.error('[CRMRoutes] Error eliminando lead:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
   * DELETE /api/crm/reset-all
   * Limpiar por completo todos los leads de prueba en producción
   */
@@ -158,4 +176,5 @@ router.delete('/api/crm/reset-all', (req, res) => {
 });
 
 module.exports = router;
+
 

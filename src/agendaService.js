@@ -162,39 +162,37 @@ function deleteLead(id) {
  * Guardar un mensaje en el historial de conversaciones del Lead / Cita
  */
 function appendChatMessage(userId, role, messageText, channelName = 'Omnicanal', userName = null) {
-  // Ignorar pruebas sintéticas internas para mantener el CRM limpio para prospectos reales
-  if (!userId || userId.toLowerCase().includes('test') || userId.toLowerCase().includes('verify')) {
-    return null;
-  }
-
+  const isTest = userId.toLowerCase().includes('test') || userId.toLowerCase().includes('verify');
   const appointments = getAppointments();
-
   
   // Buscar lead por ID, teléfono o canal
   let lead = appointments.find(item => item.id === userId || item.telefono_whatsapp === userId || item.email === userId);
 
   if (!lead) {
-    // Si aún no existe el lead en la agenda, creamos un registro preliminar con datos reales
+    // Si aún no existe el lead en la agenda, creamos un registro preliminar identificando si es prueba
+    const defaultName = userName || (isTest ? `🧪 Lead de Prueba (${channelName})` : `Usuario (${channelName})`);
     lead = {
       id: userId.startsWith('CITA-') ? userId : 'LEAD-' + userId,
-      nombre_cliente: userName || `Usuario (${channelName})`,
+      nombre_cliente: defaultName,
       email: 'Por consultar',
       telefono_whatsapp: userId.length > 8 && !userId.includes(' ') ? userId : 'Por consultar',
-      empresa_o_proyecto: 'Interacción en Vivo',
+      empresa_o_proyecto: isTest ? 'Entorno de Pruebas' : 'Interacción en Vivo',
       fecha_propuesta: new Date().toISOString().split('T')[0],
       hora_propuesta: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
-      resumen_necesidad: `Contacto en vivo vía ${channelName}`,
+      resumen_necesidad: isTest ? `Interacción de prueba vía ${channelName}` : `Contacto en vivo vía ${channelName}`,
       canal_origen: channelName,
-      etapa: 'Cita Agendada',
+      etapa: isTest ? 'Prueba / Test' : 'Cita Agendada',
+      es_prueba: isTest,
       notas_internas: [],
       historial_mensajes: [],
       creado_el: new Date().toISOString(),
       estatus: 'En Conversación con IA'
     };
     appointments.unshift(lead);
-  } else if (userName && (lead.nombre_cliente.startsWith('Usuario') || !lead.nombre_cliente)) {
+  } else if (userName && (lead.nombre_cliente.startsWith('Usuario') || lead.nombre_cliente.startsWith('🧪') || !lead.nombre_cliente)) {
     lead.nombre_cliente = userName;
   }
+
 
   if (!lead.historial_mensajes) {
     lead.historial_mensajes = [];
