@@ -10,10 +10,20 @@ const { scheduleAppointment, getAppointments } = require('./agendaService');
  */
 async function generateBotResponse(userId, text, channel) {
   if (process.env.GROQ_API_KEY) {
-    return await processUserMessageGroq(userId, text, channel);
+    try {
+      const groqReply = await processUserMessageGroq(userId, text, channel);
+      if (groqReply && !groqReply.startsWith("Disculpa, tuve un inconveniente")) {
+        return groqReply;
+      }
+    } catch (err) {
+      console.warn(`[MetaWebhook] ⚠️ Groq no disponible (${err.message}). Cambiando a Gemini 2.5 Flash...`);
+    }
   }
+
+  console.log(`[MetaWebhook] 🤖 Usando Gemini 2.5 Flash para responder a ${userId}...`);
   return await processUserMessage(userId, text, channel);
 }
+
 
 
 /**
@@ -284,5 +294,8 @@ router.post('/api/signal/agendar-cita', async (req, res) => {
   }
 });
 
+router.generateBotResponse = generateBotResponse;
 module.exports = router;
+
+
 

@@ -98,16 +98,33 @@ ${ORIGIN_ONE_KNOWLEDGE_BASE}`
   try {
     console.log(`[GroqEngine] ⚡ Procesando mensaje con Llama 3.3 70B (${userId} via ${channel}): "${messageText}"`);
 
-    let response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: history,
-      tools: groqTools,
-      tool_choice: 'auto',
-      temperature: 0.5,
-      max_completion_tokens: 1024
-    });
+  let response;
+  const candidateModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'];
 
-    let responseMessage = response.choices[0].message;
+  for (const modelName of candidateModels) {
+    try {
+      response = await groq.chat.completions.create({
+        model: modelName,
+        messages: history,
+        tools: groqTools,
+        tool_choice: 'auto',
+        temperature: 0.5,
+        max_completion_tokens: 1024
+      });
+      if (response && response.choices?.[0]?.message) {
+        break;
+      }
+    } catch (err) {
+      console.warn(`[GroqEngine] ⚠️ Modelo ${modelName} no disponible (${err.message}). Intentando siguiente candidato...`);
+    }
+  }
+
+  if (!response || !response.choices?.[0]?.message) {
+    throw new Error('Todos los modelos de Groq excedieron su límite diario temporal.');
+  }
+
+  let responseMessage = response.choices[0].message;
+
 
     // Verificar si Groq quiere invocar Tool Calling (agendarCitaDiagnostico)
     if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
