@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Origin One — CRM & Agenda de Prospectos Omnicanal</title>
+  
+  <!-- Google Fonts & FontAwesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Background Glowing Blobs -->
+  <div class="bg-blob blob-1"></div>
+  <div class="bg-blob blob-2"></div>
+  <div class="bg-blob blob-3"></div>
+
+  <div class="app-container">
+
+    <!-- Top Navigation Header -->
+    <header class="top-header glass-card">
+      <div class="brand-section">
+        <div class="logo-badge">
+          <i class="fa-solid fa-brain"></i>
+        </div>
+        <div>
+          <h1 class="brand-title">ORIGIN ONE <span class="badge-tag">CRM LIVE</span></h1>
+          <p class="brand-subtitle">Intelligence that transforms — Gestión Omnicanal de Leads & Citas</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="searchInput" placeholder="Buscar por cliente, empresa, email o WhatsApp..." oninput="handleSearch()">
+        </div>
+        <button class="btn-refresh glass-btn" onclick="loadCrmData()">
+          <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Actualizar
+        </button>
+      </div>
+    </header>
+
+    <!-- KPI Metric Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card glass-card">
+        <div class="kpi-header">
+          <span class="kpi-title">Total Prospectos</span>
+          <div class="kpi-icon icon-purple"><i class="fa-solid fa-users"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiTotalLeads">0</div>
+        <div class="kpi-footer"><i class="fa-solid fa-circle-nodes"></i> Capturados por IA</div>
+      </div>
+
+      <div class="kpi-card glass-card">
+        <div class="kpi-header">
+          <span class="kpi-title">Citas de Diagnóstico</span>
+          <div class="kpi-icon icon-cyan"><i class="fa-solid fa-calendar-check"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiCitasAgendadas">0</div>
+        <div class="kpi-footer"><i class="fa-solid fa-clock"></i> Sesiones de 30 min</div>
+      </div>
+
+      <div class="kpi-card glass-card">
+        <div class="kpi-header">
+          <span class="kpi-title">Clientes Ganados</span>
+          <div class="kpi-icon icon-green"><i class="fa-solid fa-handshake"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiClientesGanados">0</div>
+        <div class="kpi-footer"><i class="fa-solid fa-chart-line"></i> Proyectos cerrados</div>
+      </div>
+
+      <div class="kpi-card glass-card">
+        <div class="kpi-header">
+          <span class="kpi-title">Tasa de Conversión</span>
+          <div class="kpi-icon icon-pink"><i class="fa-solid fa-bolt"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiTasaConversion">0.0%</div>
+        <div class="kpi-footer"><i class="fa-solid fa-bullseye"></i> Eficiencia del Embudo</div>
+      </div>
+    </section>
+
+    <!-- View Mode Switcher -->
+    <div class="toolbar-section">
+      <div class="view-tabs">
+        <button class="tab-btn active" id="tabKanban" onclick="switchView('kanban')">
+          <i class="fa-solid fa-table-columns"></i> Embudo Kanban
+        </button>
+        <button class="tab-btn" id="tabList" onclick="switchView('list')">
+          <i class="fa-solid fa-list-check"></i> Lista de Citas
+        </button>
+      </div>
+
+      <div class="channel-filters">
+        <span class="filter-label"><i class="fa-solid fa-filter"></i> Canal:</span>
+        <button class="chip-filter active" onclick="filterChannel('todos', this)">Todos</button>
+        <button class="chip-filter" onclick="filterChannel('signal', this)"><i class="fa-solid fa-microphone"></i> S1GNAL Web</button>
+        <button class="chip-filter" onclick="filterChannel('instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram</button>
+        <button class="chip-filter" onclick="filterChannel('facebook', this)"><i class="fa-brands fa-facebook"></i> Messenger</button>
+      </div>
+    </div>
+
+    <!-- Kanban View -->
+    <div id="viewKanban" class="view-container">
+      <div class="kanban-board">
+        
+        <!-- Column 1: Cita Agendada -->
+        <div class="kanban-column glass-card">
+          <div class="column-header col-blue">
+            <div class="col-title-group">
+              <i class="fa-solid fa-calendar-plus"></i>
+              <h3>Cita Agendada</h3>
+            </div>
+            <span class="badge-count" id="countCita">0</span>
+          </div>
+          <div class="column-cards" id="colCita"></div>
+        </div>
+
+        <!-- Column 2: Diagnóstico Realizado -->
+        <div class="kanban-column glass-card">
+          <div class="column-header col-purple">
+            <div class="col-title-group">
+              <i class="fa-solid fa-microscope"></i>
+              <h3>Diagnóstico Realizado</h3>
+            </div>
+            <span class="badge-count" id="countDiagnostico">0</span>
+          </div>
+          <div class="column-cards" id="colDiagnostico"></div>
+        </div>
+
+        <!-- Column 3: Propuesta Enviada -->
+        <div class="kanban-column glass-card">
+          <div class="column-header col-yellow">
+            <div class="col-title-group">
+              <i class="fa-solid fa-file-invoice-dollar"></i>
+              <h3>Propuesta Enviada</h3>
+            </div>
+            <span class="badge-count" id="countPropuesta">0</span>
+          </div>
+          <div class="column-cards" id="colPropuesta"></div>
+        </div>
+
+        <!-- Column 4: Cliente Ganado -->
+        <div class="kanban-column glass-card">
+          <div class="column-header col-green">
+            <div class="col-title-group">
+              <i class="fa-solid fa-trophy"></i>
+              <h3>Cliente / Ganado</h3>
+            </div>
+            <span class="badge-count" id="countGanado">0</span>
+          </div>
+          <div class="column-cards" id="colGanado"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- List View -->
+    <div id="viewList" class="view-container hidden">
+      <div class="table-card glass-card">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>ID Cita</th>
+              <th>Cliente / Empresa</th>
+              <th>Contacto</th>
+              <th>Fecha y Hora</th>
+              <th>Canal Origen</th>
+              <th>Etapa</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Renderizado por JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Lead Details & Follow-up Modal -->
+  <div class="modal-backdrop hidden" id="leadModal">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <div>
+          <span class="modal-badge" id="modalChannel">Canal</span>
+          <h2 class="modal-title" id="modalName">Nombre Cliente</h2>
+          <p class="modal-subtitle" id="modalCompany">Empresa / Proyecto</p>
+        </div>
+        <button class="btn-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        
+        <!-- Left Column: Info & Actions -->
+        <div class="modal-left">
+          <div class="info-group">
+            <label><i class="fa-solid fa-envelope"></i> Correo Electrónico:</label>
+            <p id="modalEmail" class="selectable">correo@ejemplo.com</p>
+          </div>
+
+          <div class="info-group">
+            <label><i class="fa-solid fa-phone"></i> WhatsApp / Teléfono:</label>
+            <p id="modalPhone" class="selectable">+52 81 0000 0000</p>
+          </div>
+
+          <div class="info-group">
+            <label><i class="fa-solid fa-clock"></i> Fecha y Hora de Diagnóstico:</label>
+            <p id="modalDateTime" class="highlight-text">2026-07-25 a las 11:00 AM</p>
+          </div>
+
+          <div class="info-group">
+            <label><i class="fa-solid fa-lightbulb"></i> Resumen de Necesidad:</label>
+            <div class="need-box" id="modalNeed">Resumen del cliente...</div>
+          </div>
+
+          <div class="info-group">
+            <label><i class="fa-solid fa-diagram-project"></i> Cambiar Etapa del Embudo:</label>
+            <select id="stageSelect" class="custom-select" onchange="updateLeadStage()">
+              <option value="Cita Agendada">🗓️ Cita Agendada</option>
+              <option value="Diagnóstico Realizado">🔬 Diagnóstico Realizado</option>
+              <option value="Propuesta Enviada">📄 Propuesta Enviada</option>
+              <option value="Cliente Ganado">🤝 Cliente / Ganado</option>
+              <option value="Perdido / Archivado">⛔ Archivado / Perdido</option>
+            </select>
+          </div>
+
+          <!-- Quick Action: WhatsApp Direct -->
+          <div class="quick-action-box">
+            <a id="modalWaBtn" href="#" target="_blank" class="btn-whatsapp-action">
+              <i class="fa-brands fa-whatsapp"></i> Contactar por WhatsApp
+            </a>
+          </div>
+        </div>
+
+        <!-- Right Column: Internal Notes & Follow-up Timeline -->
+        <div class="modal-right">
+          <h3 class="section-title"><i class="fa-solid fa-comments"></i> Notas de Seguimiento Interno</h3>
+
+          <div class="add-note-form">
+            <textarea id="noteInput" placeholder="Escribe una nota de seguimiento o acuerdo de la reunión..." rows="3"></textarea>
+            <div class="note-form-footer">
+              <input type="text" id="noteAuthor" placeholder="Tu Nombre (Ej. Artemio)" value="Artemio Gonzalez">
+              <button class="btn-add-note" onclick="addNote()"><i class="fa-solid fa-paper-plane"></i> Guardar Nota</button>
+            </div>
+          </div>
+
+          <div class="notes-timeline" id="notesTimeline">
+            <!-- Renderizado dinámico -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

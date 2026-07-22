@@ -16,27 +16,44 @@ const app = express();
 app.use(cors()); // Habilitar CORS para S1GNAL en originone.com.mx
 
 
+const crmRoutes = require('./crmRoutes');
+
 const PORT = process.env.PORT || 3000;
 
 // Middleware para procesar JSON y URL encoded
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Subdominio crm.originone.com.mx y rutas de archivos estáticos
+app.use((req, res, next) => {
+  const host = req.headers.host || '';
+  if (host.startsWith('crm.') && (req.path === '/' || req.path === '/index.html')) {
+    return res.sendFile(path.join(__dirname, '../public/crm/index.html'));
+  }
+  next();
+});
+
+app.use('/admin', express.static(path.join(__dirname, '../public/crm')));
+app.use('/crm', express.static(path.join(__dirname, '../public/crm')));
+
 // Ruta principal de salud
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
     empresa: 'Origin One — Intelligence that transforms',
-    servicio: 'Chatbot Conversacional Gemini con Agenda Omnicanal',
-    canales: ['Facebook Messenger', 'Instagram Direct', 'WhatsApp Cloud API'],
+    servicio: 'Chatbot Conversacional & CRM Dashboard Omnicanal',
+    canales: ['Facebook Messenger', 'Instagram Direct', 'WhatsApp Cloud API', 'S1GNAL Web Chat'],
     notificacion_whatsapp: process.env.ADMIN_WHATSAPP_NUMBERS || '528110653947, 528120989813',
+    crm_url: `/admin`,
     webhook_url: `/webhook`,
     citas_url: `/api/citas`
   });
 });
 
-// Montar endpoints de Webhook y API
+// Montar endpoints de Webhook y CRM API
 app.use('/', metaWebhookRouter);
+app.use('/', crmRoutes);
+
 
 app.listen(PORT, () => {
   console.log(`\n===============================================================`);

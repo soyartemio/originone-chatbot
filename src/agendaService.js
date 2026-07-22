@@ -30,6 +30,14 @@ function getAppointments() {
 }
 
 /**
+ * Guardar la lista de citas / leads en el archivo JSON
+ */
+function saveAppointments(appointments) {
+  ensureDbExists();
+  fs.writeFileSync(DB_PATH, JSON.stringify(appointments, null, 2));
+}
+
+/**
  * Agendar una nueva cita de diagnóstico de 30 minutos y notificar por WhatsApp
  */
 async function scheduleAppointment(params) {
@@ -46,12 +54,14 @@ async function scheduleAppointment(params) {
     hora_propuesta: params.hora_propuesta || 'Por confirmar',
     resumen_necesidad: params.resumen_necesidad || 'Consulta sobre soluciones de IA / automatización',
     canal_origen: params.canal_origen || 'Chatbot Conversacional',
+    etapa: params.etapa || 'Cita Agendada',
+    notas_internas: [],
     creado_el: new Date().toISOString(),
     estatus: 'Confirmada (Notificada por WhatsApp)'
   };
 
-  appointments.push(newAppointment);
-  fs.writeFileSync(DB_PATH, JSON.stringify(appointments, null, 2));
+  appointments.unshift(newAppointment);
+  saveAppointments(appointments);
 
   console.log(`[AgendaService] ✅ Cita registrada exitosamente (${newAppointment.id}):`, newAppointment);
 
@@ -70,7 +80,6 @@ async function scheduleAppointment(params) {
 
 🆔 *ID Cita:* ${newAppointment.id}`;
 
-  // Obtener números administradores de las variables de entorno
   const adminNumbers = (process.env.ADMIN_WHATSAPP_NUMBERS || '528110653947,528120989813')
     .split(',')
     .map(n => n.trim())
@@ -90,7 +99,69 @@ async function scheduleAppointment(params) {
   };
 }
 
+/**
+ * Actualizar datos de un Lead / Cita por ID
+ */
+function updateLead(id, updateData) {
+  const appointments = getAppointments();
+  const index = appointments.findIndex(item => item.id === id);
+  if (index === -1) return null;
+
+  appointments[index] = {
+    ...appointments[index],
+    ...updateData,
+    actualizado_el: new Date().toISOString()
+  };
+
+  saveAppointments(appointments);
+  return appointments[index];
+}
+
+/**
+ * Agregar nota interna a un Lead
+ */
+function addLeadNote(id, noteText, author = 'Ejecutivo Origin One') {
+  const appointments = getAppointments();
+  const index = appointments.findIndex(item => item.id === id);
+  if (index === -1) return null;
+
+  if (!appointments[index].notas_internas) {
+    appointments[index].notas_internas = [];
+  }
+
+  const newNote = {
+    id: 'NOTA-' + Date.now().toString(36).toUpperCase(),
+    texto: noteText,
+    autor: author,
+    fecha: new Date().toISOString()
+  };
+
+  appointments[index].notas_internas.unshift(newNote);
+  appointments[index].actualizado_el = new Date().toISOString();
+
+  saveAppointments(appointments);
+  return appointments[index];
+}
+
+/**
+ * Eliminar un Lead / Cita
+ */
+function deleteLead(id) {
+  let appointments = getAppointments();
+  const initialLength = appointments.length;
+  appointments = appointments.filter(item => item.id !== id);
+  if (appointments.length === initialLength) return false;
+
+  saveAppointments(appointments);
+  return true;
+}
+
 module.exports = {
   getAppointments,
-  scheduleAppointment
+  scheduleAppointment,
+  saveAppointments,
+  updateLead,
+  addLeadNote,
+  deleteLead
 };
+
