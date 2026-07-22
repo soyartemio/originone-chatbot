@@ -93,10 +93,16 @@ router.post('/webhook', async (req, res) => {
 
 
           console.log(`[MetaWebhook] 💬 DM de ${channelName} (ID ${senderPsid}): "${text}"`);
+          
+          const { appendChatMessage } = require('./agendaService');
+          appendChatMessage(senderPsid, 'user', text, channelName);
+
           const botReply = await generateBotResponse(senderPsid, text, channelName);
+          appendChatMessage(senderPsid, 'assistant', botReply, channelName);
 
           // Enviar respuesta vía Meta Graph API
           await sendMetaMessage(senderPsid, botReply, channelName);
+
 
         }
 
@@ -264,13 +270,19 @@ router.post('/api/signal/chat', async (req, res) => {
     const sid = userId || `signal_web_${Date.now()}`;
     console.log(`[S1GNAL Web] 💬 Mensaje recibido de ${sid}: "${message}"`);
 
+    const { appendChatMessage } = require('./agendaService');
+    appendChatMessage(sid, 'user', message, 'S1GNAL Web Chat (originone.com.mx)');
+
     const reply = await generateBotResponse(sid, message, 'S1GNAL Web Chat (originone.com.mx)');
+    appendChatMessage(sid, 'assistant', reply, 'S1GNAL Web Chat (originone.com.mx)');
+
     res.json({
       success: true,
       canal: 'S1GNAL Web Chat',
       userId: sid,
       reply: reply
     });
+
   } catch (error) {
     console.error('[S1GNAL Web] ❌ Error en /api/signal/chat:', error);
     res.status(500).json({ success: false, error: error.message });

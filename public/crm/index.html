@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Origin One OS — Plataforma ERP Modular Empresarial</title>
+  <title>Origin One — Intelligence that transforms | OS ERP</title>
   
-  <!-- Google Fonts & FontAwesome Icons -->
+  <!-- Google Fonts de OriginOne.com.mx: Michroma, Space Grotesk, IBM Plex Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Michroma&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <!-- Background Glowing Blobs -->
+  <!-- Background Cybernetic Grid & Glowing Blobs -->
+  <div class="cyber-grid"></div>
   <div class="bg-blob blob-1"></div>
   <div class="bg-blob blob-2"></div>
   <div class="bg-blob blob-3"></div>
@@ -26,11 +27,11 @@
     <aside class="sidebar glass-card">
       <div class="sidebar-brand">
         <div class="logo-badge">
-          <i class="fa-solid fa-brain"></i>
+          <i class="fa-solid fa-bolt"></i>
         </div>
         <div class="brand-text">
-          <h2>ORIGIN ONE</h2>
-          <span>ERP PLATFORM OS</span>
+          <h2 class="font-michroma">ORIGIN ONE</h2>
+          <span class="font-mono">OPERATING SYSTEM</span>
         </div>
       </div>
 
@@ -41,7 +42,7 @@
         </button>
 
         <button class="nav-item" id="navFacturacion" onclick="switchModule('facturacion', this)">
-          <i class="fa-solid fa-file-invoice-dollar"></i>
+          <i class="fa-solid fa-receipt"></i>
           <span>Facturación</span>
         </button>
 
@@ -56,17 +57,17 @@
         </button>
 
         <button class="nav-item" id="navSocios" onclick="switchModule('socios', this)">
-          <i class="fa-solid fa-handshake-angle"></i>
+          <i class="fa-solid fa-shield-halved"></i>
           <span>Socios & Transparencia</span>
         </button>
       </nav>
 
       <div class="sidebar-footer">
         <div class="partner-badge">
-          <i class="fa-solid fa-user-shield"></i>
+          <i class="fa-solid fa-user-astronaut"></i>
           <div>
-            <strong>Artemio Gonzalez</strong>
-            <span>Socio Fundador / CEO</span>
+            <strong class="font-grotesk">Artemio Gonzalez</strong>
+            <span class="font-mono">Founder & CEO</span>
           </div>
         </div>
       </div>
@@ -78,17 +79,18 @@
       <!-- Top Header -->
       <header class="top-header glass-card">
         <div class="header-title-box">
-          <h1 id="moduleTitle">CRM & Agenda de Prospectos</h1>
-          <p id="moduleSubtitle">Gestión omnicanal de leads capturados por S1GNAL Web, IG y Messenger</p>
+          <div class="slogan-badge font-mono"><i class="fa-solid fa-sparkles"></i> INTELLIGENCE THAT TRANSFORMS</div>
+          <h1 id="moduleTitle" class="font-michroma">CRM & Agenda de Prospectos</h1>
+          <p id="moduleSubtitle" class="font-grotesk">Gestión omnicanal de leads e interacciones capturadas por S1GNAL Web, IG y Messenger</p>
         </div>
 
         <div class="header-actions">
           <div class="search-box">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="searchInput" placeholder="Buscar en el sistema..." oninput="handleSearch()">
+            <input type="text" id="searchInput" placeholder="Buscar cliente, empresa o mensaje..." oninput="handleSearch()">
           </div>
           <button class="btn-refresh glass-btn" onclick="loadModuleData()">
-            <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Actualizar
+            <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Sincronizar
           </button>
         </div>
       </header>
@@ -100,38 +102,38 @@
         <section class="kpi-grid">
           <div class="kpi-card glass-card">
             <div class="kpi-header">
-              <span class="kpi-title">Total Prospectos</span>
+              <span class="kpi-title font-mono">Total Prospectos</span>
               <div class="kpi-icon icon-purple"><i class="fa-solid fa-users"></i></div>
             </div>
-            <div class="kpi-value" id="kpiTotalLeads">0</div>
-            <div class="kpi-footer"><i class="fa-solid fa-circle-nodes"></i> Capturados por IA</div>
+            <div class="kpi-value font-michroma" id="kpiTotalLeads">0</div>
+            <div class="kpi-footer font-mono"><i class="fa-solid fa-circle-nodes"></i> Capturados por IA</div>
           </div>
 
           <div class="kpi-card glass-card">
             <div class="kpi-header">
-              <span class="kpi-title">Citas de Diagnóstico</span>
+              <span class="kpi-title font-mono">Citas de Diagnóstico</span>
               <div class="kpi-icon icon-cyan"><i class="fa-solid fa-calendar-check"></i></div>
             </div>
-            <div class="kpi-value" id="kpiCitasAgendadas">0</div>
-            <div class="kpi-footer"><i class="fa-solid fa-clock"></i> Sesiones de 30 min</div>
+            <div class="kpi-value font-michroma" id="kpiCitasAgendadas">0</div>
+            <div class="kpi-footer font-mono"><i class="fa-solid fa-clock"></i> Sesiones de 30 min</div>
           </div>
 
           <div class="kpi-card glass-card">
             <div class="kpi-header">
-              <span class="kpi-title">Clientes Ganados</span>
+              <span class="kpi-title font-mono">Clientes Ganados</span>
               <div class="kpi-icon icon-green"><i class="fa-solid fa-handshake"></i></div>
             </div>
-            <div class="kpi-value" id="kpiClientesGanados">0</div>
-            <div class="kpi-footer"><i class="fa-solid fa-chart-line"></i> Proyectos cerrados</div>
+            <div class="kpi-value font-michroma" id="kpiClientesGanados">0</div>
+            <div class="kpi-footer font-mono"><i class="fa-solid fa-chart-line"></i> Proyectos cerrados</div>
           </div>
 
           <div class="kpi-card glass-card">
             <div class="kpi-header">
-              <span class="kpi-title">Tasa de Conversión</span>
+              <span class="kpi-title font-mono">Tasa de Conversión</span>
               <div class="kpi-icon icon-pink"><i class="fa-solid fa-bolt"></i></div>
             </div>
-            <div class="kpi-value" id="kpiTasaConversion">0.0%</div>
-            <div class="kpi-footer"><i class="fa-solid fa-bullseye"></i> Eficiencia del Embudo</div>
+            <div class="kpi-value font-michroma" id="kpiTasaConversion">0.0%</div>
+            <div class="kpi-footer font-mono"><i class="fa-solid fa-bullseye"></i> Eficiencia del Embudo</div>
           </div>
         </section>
 
@@ -147,7 +149,7 @@
           </div>
 
           <div class="channel-filters">
-            <span class="filter-label"><i class="fa-solid fa-filter"></i> Canal:</span>
+            <span class="filter-label font-mono"><i class="fa-solid fa-filter"></i> Canal:</span>
             <button class="chip-filter active" onclick="filterChannel('todos', this)">Todos</button>
             <button class="chip-filter" onclick="filterChannel('signal', this)"><i class="fa-solid fa-microphone"></i> S1GNAL Web</button>
             <button class="chip-filter" onclick="filterChannel('instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram</button>
@@ -160,32 +162,32 @@
           <div class="kanban-board">
             <div class="kanban-column glass-card">
               <div class="column-header col-blue">
-                <div class="col-title-group"><i class="fa-solid fa-calendar-plus"></i><h3>Cita Agendada</h3></div>
-                <span class="badge-count" id="countCita">0</span>
+                <div class="col-title-group"><i class="fa-solid fa-calendar-plus"></i><h3 class="font-grotesk">Cita Agendada</h3></div>
+                <span class="badge-count font-mono" id="countCita">0</span>
               </div>
               <div class="column-cards" id="colCita"></div>
             </div>
 
             <div class="kanban-column glass-card">
               <div class="column-header col-purple">
-                <div class="col-title-group"><i class="fa-solid fa-microscope"></i><h3>Diagnóstico Realizado</h3></div>
-                <span class="badge-count" id="countDiagnostico">0</span>
+                <div class="col-title-group"><i class="fa-solid fa-microscope"></i><h3 class="font-grotesk">Diagnóstico Realizado</h3></div>
+                <span class="badge-count font-mono" id="countDiagnostico">0</span>
               </div>
               <div class="column-cards" id="colDiagnostico"></div>
             </div>
 
             <div class="kanban-column glass-card">
               <div class="column-header col-yellow">
-                <div class="col-title-group"><i class="fa-solid fa-file-invoice-dollar"></i><h3>Propuesta Enviada</h3></div>
-                <span class="badge-count" id="countPropuesta">0</span>
+                <div class="col-title-group"><i class="fa-solid fa-file-invoice-dollar"></i><h3 class="font-grotesk">Propuesta Enviada</h3></div>
+                <span class="badge-count font-mono" id="countPropuesta">0</span>
               </div>
               <div class="column-cards" id="colPropuesta"></div>
             </div>
 
             <div class="kanban-column glass-card">
               <div class="column-header col-green">
-                <div class="col-title-group"><i class="fa-solid fa-trophy"></i><h3>Cliente / Ganado</h3></div>
-                <span class="badge-count" id="countGanado">0</span>
+                <div class="col-title-group"><i class="fa-solid fa-trophy"></i><h3 class="font-grotesk">Cliente / Ganado</h3></div>
+                <span class="badge-count font-mono" id="countGanado">0</span>
               </div>
               <div class="column-cards" id="colGanado"></div>
             </div>
@@ -197,7 +199,7 @@
           <div class="table-card glass-card">
             <table class="custom-table">
               <thead>
-                <tr>
+                <tr class="font-mono">
                   <th>ID Cita</th><th>Cliente / Empresa</th><th>Contacto</th><th>Fecha y Hora</th><th>Canal Origen</th><th>Etapa</th><th>Acciones</th>
                 </tr>
               </thead>
@@ -211,14 +213,14 @@
       <!-- ==================== MODULE 2: FACTURACIÓN & COTIZACIONES ==================== -->
       <div id="moduleFacturacionSection" class="module-section hidden">
         <div class="module-action-bar">
-          <h2><i class="fa-solid fa-receipt"></i> Facturas y Cotizaciones</h2>
+          <h2 class="font-michroma"><i class="fa-solid fa-receipt"></i> Facturas y Cotizaciones</h2>
           <button class="btn-primary-action" onclick="openNewInvoiceModal()"><i class="fa-solid fa-plus"></i> Nueva Factura / Cotización</button>
         </div>
 
         <div class="table-card glass-card">
           <table class="custom-table">
             <thead>
-              <tr><th>Folio</th><th>Cliente / Empresa</th><th>Concepto</th><th>Subtotal</th><th>IVA (16%)</th><th>Total</th><th>Estado</th><th>Emisión</th></tr>
+              <tr class="font-mono"><th>Folio</th><th>Cliente / Empresa</th><th>Concepto</th><th>Subtotal</th><th>IVA (16%)</th><th>Total</th><th>Estado</th><th>Emisión</th></tr>
             </thead>
             <tbody id="facturacionTableBody"></tbody>
           </table>
@@ -229,32 +231,32 @@
       <div id="moduleContabilidadSection" class="module-section hidden">
         <div class="pnl-summary-grid">
           <div class="kpi-card glass-card">
-            <span class="kpi-title">Ingresos Totales</span>
-            <div class="kpi-value col-green" id="pnlIngresos">$0.00 MXN</div>
+            <span class="kpi-title font-mono">Ingresos Totales</span>
+            <div class="kpi-value col-green font-michroma" id="pnlIngresos">$0.00 MXN</div>
           </div>
           <div class="kpi-card glass-card">
-            <span class="kpi-title">Egresos / Gastos</span>
-            <div class="kpi-value col-pink" id="pnlEgresos">$0.00 MXN</div>
+            <span class="kpi-title font-mono">Egresos / Gastos</span>
+            <div class="kpi-value col-pink font-michroma" id="pnlEgresos">$0.00 MXN</div>
           </div>
           <div class="kpi-card glass-card">
-            <span class="kpi-title">Utilidad Neta</span>
-            <div class="kpi-value col-purple" id="pnlUtilidad">$0.00 MXN</div>
+            <span class="kpi-title font-mono">Utilidad Neta</span>
+            <div class="kpi-value col-purple font-michroma" id="pnlUtilidad">$0.00 MXN</div>
           </div>
           <div class="kpi-card glass-card">
-            <span class="kpi-title">Margen Operativo</span>
-            <div class="kpi-value col-cyan" id="pnlMargen">0.0%</div>
+            <span class="kpi-title font-mono">Margen Operativo</span>
+            <div class="kpi-value col-cyan font-michroma" id="pnlMargen">0.0%</div>
           </div>
         </div>
 
         <div class="module-action-bar" style="margin-top: 24px;">
-          <h2><i class="fa-solid fa-money-bill-transfer"></i> Movimientos Contables</h2>
+          <h2 class="font-michroma"><i class="fa-solid fa-money-bill-transfer"></i> Movimientos Contables</h2>
           <button class="btn-primary-action" onclick="openNewTrxModal()"><i class="fa-solid fa-plus"></i> Registrar Movimiento</button>
         </div>
 
         <div class="table-card glass-card">
           <table class="custom-table">
             <thead>
-              <tr><th>ID</th><th>Tipo</th><th>Categoría</th><th>Concepto</th><th>Monto</th><th>Fecha</th><th>Registrado Por</th></tr>
+              <tr class="font-mono"><th>ID</th><th>Tipo</th><th>Categoría</th><th>Concepto</th><th>Monto</th><th>Fecha</th><th>Registrado Por</th></tr>
             </thead>
             <tbody id="contabilidadTableBody"></tbody>
           </table>
@@ -264,11 +266,11 @@
       <!-- ==================== MODULE 4: BANCOS & TESORERÍA ==================== -->
       <div id="moduleBancosSection" class="module-section hidden">
         <div class="kpi-card glass-card" style="margin-bottom: 24px;">
-          <span class="kpi-title">Saldo Total en Cuentas (Estimado MXN)</span>
-          <div class="kpi-value col-green" id="bancosSaldoTotal">$0.00 MXN</div>
+          <span class="kpi-title font-mono">Saldo Total en Cuentas (Estimado MXN)</span>
+          <div class="kpi-value col-green font-michroma" id="bancosSaldoTotal">$0.00 MXN</div>
         </div>
 
-        <h2 style="margin-bottom: 16px;"><i class="fa-solid fa-vault"></i> Cuentas Bancarias Registradas</h2>
+        <h2 style="margin-bottom: 16px;" class="font-michroma"><i class="fa-solid fa-vault"></i> Cuentas Bancarias Registradas</h2>
         <div class="bank-cards-grid" id="bankCardsGrid"></div>
       </div>
 
@@ -277,12 +279,12 @@
         <div class="transparency-banner glass-card">
           <i class="fa-solid fa-shield-halved banner-icon"></i>
           <div>
-            <h2>Panel Transparente de Socios & Distribución de Utilidades</h2>
-            <p id="politicaReparto">Política: 50% Reinversión en IA / 50% Reparto de Utilidades Directas</p>
+            <h2 class="font-michroma">Panel Transparente de Socios & Distribución de Utilidades</h2>
+            <p id="politicaReparto" class="font-grotesk">Política: 50% Reinversión en IA / 50% Reparto de Utilidades Directas</p>
           </div>
         </div>
 
-        <h2 style="margin-bottom: 16px;"><i class="fa-solid fa-users-rectangle"></i> Accionistas & Participación</h2>
+        <h2 style="margin-bottom: 16px;" class="font-michroma"><i class="fa-solid fa-users-rectangle"></i> Accionistas & Participación</h2>
         <div class="partners-grid" id="partnersGrid"></div>
       </div>
 
@@ -290,26 +292,29 @@
 
   </div>
 
-  <!-- Modal Lead CRM -->
+  <!-- Lead Details, Chat History & Follow-up Modal -->
   <div class="modal-backdrop hidden" id="leadModal">
     <div class="modal-card glass-card">
       <div class="modal-header">
         <div>
-          <span class="modal-badge" id="modalChannel">Canal</span>
-          <h2 class="modal-title" id="modalName">Nombre Cliente</h2>
-          <p class="modal-subtitle" id="modalCompany">Empresa / Proyecto</p>
+          <span class="modal-badge font-mono" id="modalChannel">Canal</span>
+          <h2 class="modal-title font-michroma" id="modalName">Nombre Cliente</h2>
+          <p class="modal-subtitle font-grotesk" id="modalCompany">Empresa / Proyecto</p>
         </div>
         <button class="btn-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="modal-body">
+        
+        <!-- Left Column: Client Data & Stage Update -->
         <div class="modal-left">
-          <div class="info-group"><label><i class="fa-solid fa-envelope"></i> Correo Electrónico:</label><p id="modalEmail">correo@ejemplo.com</p></div>
-          <div class="info-group"><label><i class="fa-solid fa-phone"></i> WhatsApp / Teléfono:</label><p id="modalPhone">+52 81 0000 0000</p></div>
-          <div class="info-group"><label><i class="fa-solid fa-clock"></i> Fecha y Hora de Diagnóstico:</label><p id="modalDateTime" class="highlight-text">2026-07-25 a las 11:00 AM</p></div>
-          <div class="info-group"><label><i class="fa-solid fa-lightbulb"></i> Resumen de Necesidad:</label><div class="need-box" id="modalNeed">Resumen del cliente...</div></div>
+          <div class="info-group"><label class="font-mono"><i class="fa-solid fa-envelope"></i> Correo Electrónico:</label><p id="modalEmail">correo@ejemplo.com</p></div>
+          <div class="info-group"><label class="font-mono"><i class="fa-solid fa-phone"></i> WhatsApp / Teléfono:</label><p id="modalPhone">+52 81 0000 0000</p></div>
+          <div class="info-group"><label class="font-mono"><i class="fa-solid fa-clock"></i> Fecha y Hora de Diagnóstico:</label><p id="modalDateTime" class="highlight-text font-mono">2026-07-25 a las 11:00 AM</p></div>
+          <div class="info-group"><label class="font-mono"><i class="fa-solid fa-lightbulb"></i> Resumen de Necesidad:</label><div class="need-box" id="modalNeed">Resumen del cliente...</div></div>
+          
           <div class="info-group">
-            <label><i class="fa-solid fa-diagram-project"></i> Cambiar Etapa del Embudo:</label>
+            <label class="font-mono"><i class="fa-solid fa-diagram-project"></i> Cambiar Etapa del Embudo:</label>
             <select id="stageSelect" class="custom-select" onchange="updateLeadStage()">
               <option value="Cita Agendada">🗓️ Cita Agendada</option>
               <option value="Diagnóstico Realizado">🔬 Diagnóstico Realizado</option>
@@ -318,22 +323,34 @@
               <option value="Perdido / Archivado">⛔ Archivado / Perdido</option>
             </select>
           </div>
+
           <div class="quick-action-box">
             <a id="modalWaBtn" href="#" target="_blank" class="btn-whatsapp-action"><i class="fa-brands fa-whatsapp"></i> Contactar por WhatsApp</a>
           </div>
         </div>
 
+        <!-- Right Column: Interactive Chat Transcript & Follow-up Notes -->
         <div class="modal-right">
-          <h3 class="section-title"><i class="fa-solid fa-comments"></i> Notas de Seguimiento Interno</h3>
+          
+          <!-- Section 1: Chat Transcript with AI -->
+          <h3 class="section-title font-michroma"><i class="fa-solid fa-comments"></i> Transcripción del Chat con IA</h3>
+          <div class="chat-transcript-box" id="chatTranscriptBox">
+            <!-- Renderizado dinámico del historial de conversación -->
+          </div>
+
+          <!-- Section 2: Internal Follow-up Notes -->
+          <h3 class="section-title font-michroma" style="margin-top:20px;"><i class="fa-solid fa-pen-to-square"></i> Notas Internas de la Reunión</h3>
           <div class="add-note-form">
-            <textarea id="noteInput" placeholder="Escribe una nota de seguimiento o acuerdo de la reunión..." rows="3"></textarea>
+            <textarea id="noteInput" placeholder="Escribe un acuerdo o nota de seguimiento..." rows="2"></textarea>
             <div class="note-form-footer">
-              <input type="text" id="noteAuthor" placeholder="Tu Nombre (Ej. Artemio)" value="Artemio Gonzalez">
+              <input type="text" id="noteAuthor" placeholder="Tu Nombre" value="Artemio Gonzalez" class="font-mono">
               <button class="btn-add-note" onclick="addNote()"><i class="fa-solid fa-paper-plane"></i> Guardar Nota</button>
             </div>
           </div>
           <div class="notes-timeline" id="notesTimeline"></div>
+
         </div>
+
       </div>
     </div>
   </div>

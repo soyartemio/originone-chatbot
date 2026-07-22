@@ -156,12 +156,59 @@ function deleteLead(id) {
   return true;
 }
 
+/**
+ * Guardar un mensaje en el historial de conversaciones del Lead / Cita
+ */
+function appendChatMessage(userId, role, messageText, channelName = 'Omnicanal') {
+  const appointments = getAppointments();
+  
+  // Buscar lead por ID, teléfono o canal
+  let lead = appointments.find(item => item.id === userId || item.telefono_whatsapp === userId || item.email === userId);
+
+  if (!lead) {
+    // Si aún no existe el lead en la agenda, creamos un registro preliminar de interacción
+    lead = {
+      id: userId.startsWith('CITA-') ? userId : 'LEAD-' + userId,
+      nombre_cliente: `Usuario (${channelName})`,
+      email: 'No especificado',
+      telefono_whatsapp: userId.length > 8 && !userId.includes(' ') ? userId : 'Por consultar',
+      empresa_o_proyecto: 'Interacción en Vivo',
+      fecha_propuesta: 'En conversación',
+      hora_propuesta: 'En conversación',
+      resumen_necesidad: `Contacto en vivo vía ${channelName}`,
+      canal_origen: channelName,
+      etapa: 'Nuevo Prospecto',
+      notas_internas: [],
+      historial_mensajes: [],
+      creado_el: new Date().toISOString(),
+      estatus: 'En Conversación con IA'
+    };
+    appointments.unshift(lead);
+  }
+
+  if (!lead.historial_mensajes) {
+    lead.historial_mensajes = [];
+  }
+
+  lead.historial_mensajes.push({
+    rol: role, // 'user' o 'assistant'
+    texto: messageText,
+    fecha: new Date().toISOString()
+  });
+
+  lead.actualizado_el = new Date().toISOString();
+  saveAppointments(appointments);
+  return lead;
+}
+
 module.exports = {
   getAppointments,
   scheduleAppointment,
   saveAppointments,
   updateLead,
   addLeadNote,
-  deleteLead
+  deleteLead,
+  appendChatMessage
 };
+
 

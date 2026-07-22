@@ -225,8 +225,41 @@ function openModal(id) {
   }
 
   renderNotesTimeline(lead.notas_internas || []);
+  renderChatTranscript(lead.historial_mensajes || []);
   document.getElementById('leadModal').classList.remove('hidden');
 }
+
+/**
+ * Renderizar la transcripción completa del chat entre el usuario y la IA
+ */
+function renderChatTranscript(messages) {
+  const container = document.getElementById('chatTranscriptBox');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!messages || messages.length === 0) {
+    container.innerHTML = `<p style="font-size:11px; color:#8F909A; text-align:center; padding:12px;">No hay mensajes registrados aún en la conversación.</p>`;
+    return;
+  }
+
+  messages.forEach(msg => {
+    const isUser = msg.rol === 'user';
+    const div = document.createElement('div');
+    div.className = `chat-bubble ${isUser ? 'chat-bubble-user' : 'chat-bubble-ai'}`;
+
+    const dateFormatted = msg.fecha ? new Date(msg.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '';
+
+    div.innerHTML = `
+      <span class="bubble-role font-mono">${isUser ? '👤 Cliente' : '⚡ Origin One AI'} <span style="float:right; opacity:0.6;">${dateFormatted}</span></span>
+      <div class="bubble-text">${msg.texto}</div>
+    `;
+    container.appendChild(div);
+  });
+
+  // Auto-scroll al final del chat
+  container.scrollTop = container.scrollHeight;
+}
+
 
 function closeModal() {
   document.getElementById('leadModal').classList.add('hidden');
