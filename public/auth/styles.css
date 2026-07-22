@@ -89,6 +89,7 @@ input:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgb
 select:disabled { opacity: 0.75; }
 .password-row { position: relative; }
 .password-row input { padding-right: 66px; }
+.password-row input.revealed { -webkit-text-security: none !important; }
 .reveal { position: absolute; right: 7px; top: 7px; height: 40px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--gold); cursor: pointer; font-weight: 750; }
 .password-help { margin: 9px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
 

@@ -134,7 +134,10 @@ document.getElementById('backButton').addEventListener('click', () => window.loc
 document.getElementById('revealPassword').addEventListener('click', event => {
   const reveal = passwordInput.type === 'password';
   passwordInput.type = reveal ? 'text' : 'password';
+  passwordInput.classList.toggle('revealed', reveal);
   event.currentTarget.textContent = reveal ? 'Ocultar' : 'Ver';
+  event.currentTarget.setAttribute('aria-label', reveal ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  passwordInput.focus({ preventScroll: true });
 });
 
 loadInitialState().catch(error => showAlert(error.message));

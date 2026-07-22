@@ -99,14 +99,20 @@ async function handlePut(request, env, definition) {
   }
   if (!validatePayload(payload, definition.shape)) return json({ error: 'Invalid payload shape' }, 400);
 
-  const conditional = new Headers();
   const ifMatch = request.headers.get('if-match');
   const ifNoneMatch = request.headers.get('if-none-match');
-  if (ifMatch) conditional.set('If-Match', ifMatch);
-  if (ifNoneMatch) conditional.set('If-None-Match', ifNoneMatch);
+  let onlyIf;
+  if (ifMatch) {
+    // R2Conditional expects the raw ETag, while the HTTP header includes quotes.
+    onlyIf = { etagMatches: ifMatch.replace(/^W\//, '').replace(/^"|"$/g, '') };
+  } else if (ifNoneMatch) {
+    const conditionalHeaders = new Headers();
+    conditionalHeaders.set('If-None-Match', ifNoneMatch);
+    onlyIf = conditionalHeaders;
+  }
 
   const stored = await env.CRM_BUCKET.put(definition.key, body, {
-    onlyIf: conditional,
+    ...(onlyIf ? { onlyIf } : {}),
     httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
     sha256: contentHash
   });
