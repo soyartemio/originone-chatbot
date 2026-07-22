@@ -29,7 +29,7 @@ function askQuestion() {
     const trimmed = input.trim();
     if (trimmed.toLowerCase() === 'exit' || trimmed.toLowerCase() === 'salir') {
       console.log('\n📌 Citas registradas hasta el momento en la base de datos:');
-      console.log(JSON.stringify(getAppointments(), null, 2));
+      console.log(JSON.stringify(await getAppointments(), null, 2));
       console.log('\n👋 ¡Hasta luego!');
       rl.close();
       return;

@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "test:bot": "node test/testChatbot.js"
+    "test:bot": "node test/testChatbot.js",
+    "test:crm": "node --test test/testCrmInteractionStorage.js test/testMetaCrmCapture.js test/testR2Storage.js test/testAuth.js test/testStorageGateway.js",
+    "auth:setup-links": "node scripts/generateAuthSetupLinks.js"
   },
   "keywords": [
     "originone",
@@ -21,8 +23,11 @@
   "author": "Origin One",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1093.0",
     "@google/genai": "^2.13.0",
     "@google/generative-ai": "^0.24.0",
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.2",
     "axios": "^1.8.2",
     "cors": "^2.8.6",
     "dotenv": "^16.4.7",

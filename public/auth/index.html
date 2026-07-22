@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Acceso seguro — Origin One CRM</title>
+  <link rel="stylesheet" href="/auth/styles.css">
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="brand-panel" aria-label="Origin One CRM">
+      <div class="brand-mark">O1</div>
+      <div>
+        <p class="eyebrow">ORIGIN ONE · ENTERPRISE OS</p>
+        <h1>CRM seguro,<br>sin complicaciones.</h1>
+        <p class="brand-copy">Tu contraseña confirma lo que sabes. Tu passkey confirma que eres tú desde un dispositivo confiable.</p>
+      </div>
+      <div class="security-note">
+        <span aria-hidden="true">◆</span>
+        <p><strong>Acceso en dos pasos</strong><br>Contraseña + huella, rostro o PIN del dispositivo.</p>
+      </div>
+    </section>
+
+    <section class="form-panel">
+      <div class="form-wrap">
+        <p class="step" id="stepLabel">ACCESO PRIVADO</p>
+        <h2 id="formTitle">Entrar al CRM</h2>
+        <p class="subtitle" id="formSubtitle">Selecciona tu usuario y escribe tu contraseña.</p>
+
+        <div id="alert" class="alert" role="alert" aria-live="polite" hidden></div>
+
+        <form id="passwordForm">
+          <label for="username">Usuario</label>
+          <select id="username" name="username" autocomplete="username" required>
+            <option value="artemio">Artemio</option>
+            <option value="edgar">Edgar</option>
+          </select>
+
+          <label for="password" id="passwordLabel">Contraseña</label>
+          <div class="password-row">
+            <input id="password" name="password" type="password" autocomplete="current-password" minlength="12" maxlength="128" required>
+            <button type="button" class="reveal" id="revealPassword" aria-label="Mostrar contraseña">Ver</button>
+          </div>
+          <p class="password-help" id="passwordHelp" hidden>Usa 12 o más caracteres. Una frase larga y fácil de recordar funciona mejor.</p>
+
+          <button type="submit" class="primary" id="submitButton">Continuar con passkey</button>
+        </form>
+
+        <div id="passkeyStep" class="passkey-step" hidden>
+          <div class="passkey-icon" aria-hidden="true">⌁</div>
+          <h3 id="passkeyTitle">Confirma tu passkey</h3>
+          <p id="passkeyCopy">Tu dispositivo abrirá una ventana segura para usar tu huella, rostro o PIN.</p>
+          <button type="button" class="primary" id="passkeyButton">Continuar</button>
+          <button type="button" class="secondary" id="backButton">Volver</button>
+        </div>
+
+        <p class="privacy">Las contraseñas no se guardan de forma legible. Origin One conserva únicamente su verificador seguro y la llave pública de la passkey.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/auth/webauthn.js"></script>
+  <script src="/auth/app.js"></script>
+</body>
+</html>

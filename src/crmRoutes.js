@@ -6,9 +6,9 @@ const { getAppointments, updateLead, addLeadNote, deleteLead } = require('./agen
   * GET /api/crm/leads
   * Obtener todos los leads/citas con filtros y búsqueda
   */
-router.get('/api/crm/leads', (req, res) => {
+router.get('/api/crm/leads', async (req, res) => {
   try {
-    let leads = getAppointments();
+    let leads = await getAppointments();
     const { etapa, canal, q } = req.query;
 
     if (etapa) {
@@ -44,9 +44,9 @@ router.get('/api/crm/leads', (req, res) => {
   * GET /api/crm/kpis
   * Obtener métricas y KPIs ejecutivos en tiempo real
   */
-router.get('/api/crm/kpis', (req, res) => {
+router.get('/api/crm/kpis', async (req, res) => {
   try {
-    const leads = getAppointments();
+    const leads = await getAppointments();
     const totalLeads = leads.length;
 
     const etapasCount = {
@@ -106,10 +106,10 @@ router.get('/api/crm/kpis', (req, res) => {
   * PATCH /api/crm/leads/:id
   * Actualizar datos de un lead (etapa, fecha, empresa, etc.)
   */
-router.patch('/api/crm/leads/:id', (req, res) => {
+router.patch('/api/crm/leads/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const updated = updateLead(id, req.body);
+    const updated = await updateLead(id, req.body);
     if (!updated) {
       return res.status(404).json({ success: false, error: 'Lead no encontrado' });
     }
@@ -124,15 +124,15 @@ router.patch('/api/crm/leads/:id', (req, res) => {
   * POST /api/crm/leads/:id/notes
   * Agregar nota interna de seguimiento
   */
-router.post('/api/crm/leads/:id/notes', (req, res) => {
+router.post('/api/crm/leads/:id/notes', async (req, res) => {
   try {
     const { id } = req.params;
-    const { texto, autor } = req.body;
+    const { texto } = req.body;
     if (!texto) {
       return res.status(400).json({ success: false, error: 'El texto de la nota es requerido' });
     }
 
-    const updated = addLeadNote(id, texto, autor || 'Ejecutivo Origin One');
+    const updated = await addLeadNote(id, texto, req.auth?.displayName || 'Ejecutivo Origin One');
     if (!updated) {
       return res.status(404).json({ success: false, error: 'Lead no encontrado' });
     }
@@ -147,10 +147,10 @@ router.post('/api/crm/leads/:id/notes', (req, res) => {
   * DELETE /api/crm/leads/:id
   * Eliminar un lead individual manualmente desde el CRM
   */
-router.delete('/api/crm/leads/:id', (req, res) => {
+router.delete('/api/crm/leads/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = deleteLead(id);
+    const deleted = await deleteLead(id);
     if (!deleted) {
       return res.status(404).json({ success: false, error: 'Lead no encontrado' });
     }
@@ -165,10 +165,10 @@ router.delete('/api/crm/leads/:id', (req, res) => {
   * DELETE /api/crm/reset-all
   * Limpiar por completo todos los leads de prueba en producción
   */
-router.delete('/api/crm/reset-all', (req, res) => {
+router.delete('/api/crm/reset-all', async (req, res) => {
   try {
     const { saveAppointments } = require('./agendaService');
-    saveAppointments([]);
+    await saveAppointments([]);
     res.json({ success: true, message: 'Base de datos de leads limpiada completamente.' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -176,5 +176,3 @@ router.delete('/api/crm/reset-all', (req, res) => {
 });
 
 module.exports = router;
-
-

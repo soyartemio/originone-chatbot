@@ -24,6 +24,78 @@ async function generateBotResponse(userId, text, channel) {
   return await processUserMessage(userId, text, channel);
 }
 
+function getMetaChannel(body, entry) {
+  const instagramAccountId = process.env.INSTAGRAM_ACCOUNT_ID;
+  if (body.object === 'instagram' || (instagramAccountId && String(entry?.id) === instagramAccountId)) {
+    return 'Instagram Direct';
+  }
+  return 'Facebook Messenger';
+}
+
+function getMessageText(message) {
+  if (typeof message?.text === 'string' && message.text.trim()) return message.text.trim();
+  const attachments = Array.isArray(message?.attachments) ? message.attachments : [];
+  if (attachments.length > 0) {
+    const types = [...new Set(attachments.map(item => item?.type).filter(Boolean))];
+    return types.length > 0
+      ? `[Contenido recibido: ${types.join(', ')}]`
+      : '[Contenido multimedia recibido]';
+  }
+  return null;
+}
+
+async function registerDirectMessage({ senderId, message, channelName, userName = null, eventId = null }) {
+  const text = getMessageText(message);
+  if (!senderId || !text || message?.is_echo) return null;
+
+  const { appendChatMessage } = require('./agendaService');
+
+  // Guardar primero. Ninguna consulta externa ni fallo de IA debe impedir el registro en CRM.
+  await appendChatMessage(senderId, 'user', text, channelName, userName, eventId);
+  console.log(`[MetaWebhook] 💾 Interacción registrada de ${channelName} (ID ${senderId}): "${text}"`);
+
+  return { senderId, message, channelName, userName, eventId, text };
+}
+
+async function respondToDirectMessage(registeredMessage) {
+  if (!registeredMessage?.message?.text) return;
+
+  const { senderId, message, channelName, userName, eventId, text } = registeredMessage;
+  const { appendChatMessage } = require('./agendaService');
+
+  // El contenido sin texto se registra, pero no se inventa una respuesta sobre un archivo no analizado.
+  await sendMetaTypingIndicator(senderId, channelName);
+  const resolvedName = userName || await fetchMetaUserProfile(senderId, channelName);
+  const botReply = await generateBotResponse(senderId, text, channelName);
+  await appendChatMessage(senderId, 'assistant', botReply, channelName, resolvedName, eventId ? `reply:${eventId}` : null);
+  await sendMetaMessage(senderId, botReply, channelName);
+}
+
+async function processDirectMessage(messageData) {
+  return respondToDirectMessage(await registerDirectMessage(messageData));
+}
+
+async function registerCommentInteraction(value, channelName) {
+  const commentText = value?.text || value?.message;
+  const commentId = value?.id || value?.comment_id;
+  const senderId = value?.from?.id || value?.from?.username || commentId;
+  const senderName = value?.from?.username || value?.from?.name || 'Usuario de Instagram';
+
+  if (!commentText || !senderId) return null;
+
+  const { appendChatMessage } = require('./agendaService');
+  await appendChatMessage(
+    senderId,
+    'user',
+    commentText,
+    channelName,
+    senderName,
+    commentId ? `comment:${commentId}` : null
+  );
+  console.log(`[MetaWebhook] 💾 Comentario registrado en CRM (${channelName}) por ${senderName}: "${commentText}"`);
+  return { commentId, commentText, senderName };
+}
+
 
 
 /**
@@ -56,9 +128,7 @@ router.get('/webhook', (req, res) => {
  */
 router.post('/webhook', async (req, res) => {
   const body = req.body;
-
-  // Responder inmediatamente con 200 OK a Meta para evitar retintentos
-  res.status(200).send('EVENT_RECEIVED');
+  const pendingResponses = [];
 
   try {
     // 1. Mensajes de WhatsApp Cloud API
@@ -73,44 +143,39 @@ router.post('/webhook', async (req, res) => {
         const text = message.text.body;
 
         console.log(`[MetaWebhook] 💬 Mensaje de WhatsApp de +${from}: "${text}"`);
-        const botReply = await generateBotResponse(from, text, 'WhatsApp Direct');
+        const { appendChatMessage } = require('./agendaService');
+        await appendChatMessage(from, 'user', text, 'WhatsApp Direct', value?.contacts?.[0]?.profile?.name || null, message.id);
 
-        // Enviar respuesta por WhatsApp
-        const { sendWhatsAppNotification } = require('./whatsappService');
-        await sendWhatsAppNotification(from, botReply);
+        pendingResponses.push(async () => {
+          const botReply = await generateBotResponse(from, text, 'WhatsApp Direct');
+          await appendChatMessage(from, 'assistant', botReply, 'WhatsApp Direct', value?.contacts?.[0]?.profile?.name || null, `reply:${message.id}`);
+
+          const { sendWhatsAppNotification } = require('./whatsappService');
+          await sendWhatsAppNotification(from, botReply);
+        });
       }
     }
 
     // 2. Mensajes de Facebook Messenger o Instagram Direct
     else if (body.object === 'page' || body.object === 'instagram') {
-      const channelName = body.object === 'instagram' ? 'Instagram Direct' : 'Facebook Messenger';
-      const { appendChatMessage } = require('./agendaService');
-
       for (const entry of body.entry || []) {
+        const channelName = getMetaChannel(body, entry);
+
         // A) Procesar mensajes en entry.messaging (Array)
         const messagingList = entry.messaging || [];
         for (const webhookEvent of messagingList) {
-          if (webhookEvent && webhookEvent.message && webhookEvent.message.text && !webhookEvent.message.is_echo) {
-            const senderPsid = webhookEvent.sender ? webhookEvent.sender.id : null;
-            const text = webhookEvent.message.text;
-
-            if (senderPsid && text) {
-              console.log(`[MetaWebhook] 💬 DM de ${channelName} (ID ${senderPsid}): "${text}"`);
-              
-              // Enviar indicador "Escribiendo..." a Meta Graph API
-              await sendMetaTypingIndicator(senderPsid, channelName);
-
-              // Intentar obtener el nombre del usuario desde Meta Graph API
-              const userName = await fetchMetaUserProfile(senderPsid, channelName);
-
-              // Registrar en el CRM
-              appendChatMessage(senderPsid, 'user', text, channelName, userName);
-
-              const botReply = await generateBotResponse(senderPsid, text, channelName);
-              appendChatMessage(senderPsid, 'assistant', botReply, channelName, userName);
-
-              // Enviar respuesta vía Meta Graph API
-              await sendMetaMessage(senderPsid, botReply, channelName);
+          if (webhookEvent?.message) {
+            try {
+              const registered = await registerDirectMessage({
+                senderId: webhookEvent.sender?.id,
+                message: webhookEvent.message,
+                channelName,
+                eventId: webhookEvent.message.mid || null
+              });
+              if (registered) pendingResponses.push(() => respondToDirectMessage(registered));
+            } catch (error) {
+              console.error(`[MetaWebhook] ❌ Falló el procesamiento de un DM de ${channelName}:`, error.message);
+              throw error;
             }
           }
         }
@@ -120,55 +185,67 @@ router.post('/webhook', async (req, res) => {
         for (const change of changesList) {
           if (change.field === 'messages' && change.value) {
             const val = change.value;
-            const text = val.message?.text || val.message;
             const senderPsid = val.sender?.id || val.from?.id;
             const userName = val.from?.name || val.sender?.name || null;
+            const normalizedMessage = typeof val.message === 'string' ? { text: val.message } : val.message;
 
-            if (senderPsid && text && !val.message?.is_echo) {
-              console.log(`[MetaWebhook] 💬 Direct Change Event de ${channelName} (ID ${senderPsid}): "${text}"`);
-              
-              // Enviar indicador "Escribiendo..." a Meta Graph API
-              await sendMetaTypingIndicator(senderPsid, channelName);
-
-              appendChatMessage(senderPsid, 'user', text, channelName, userName);
-
-              const botReply = await generateBotResponse(senderPsid, text, channelName);
-              appendChatMessage(senderPsid, 'assistant', botReply, channelName, userName);
-
-              await sendMetaMessage(senderPsid, botReply, channelName);
+            if (senderPsid && normalizedMessage) {
+              try {
+                const registered = await registerDirectMessage({
+                  senderId: senderPsid,
+                  message: normalizedMessage,
+                  channelName,
+                  userName,
+                  eventId: normalizedMessage.mid || val.id || null
+                });
+                if (registered) pendingResponses.push(() => respondToDirectMessage(registered));
+              } catch (error) {
+                console.error(`[MetaWebhook] ❌ Falló un evento alterno de ${channelName}:`, error.message);
+                throw error;
+              }
             }
           }
         }
 
+        // C) Comentarios de Instagram y comentarios heredados del feed de Facebook.
+        for (const change of changesList) {
+          const isInstagramComment = change.field === 'comments' || change.field === 'live_comments';
+          const isLegacyFeedComment = change.field === 'feed' && change.value?.item === 'comment' && change.value?.verb === 'add';
+          if (!isInstagramComment && !isLegacyFeedComment) continue;
 
+          try {
+            const commentChannel = isInstagramComment ? 'Instagram Comentarios' : 'Facebook Comentarios';
+            const registered = await registerCommentInteraction(change.value, commentChannel);
 
-        // B) Comentarios en Publicaciones (Posts / Reels)
-        const changes = entry.changes?.[0];
-        if (changes && changes.field === 'feed') {
-          const val = changes.value;
-          if (val && val.item === 'comment' && val.verb === 'add' && val.message) {
-            const commentId = val.comment_id;
-            const userComment = val.message;
-            const senderName = val.from?.name || 'Usuario';
+            // Se conserva la respuesta pública automática que ya existía para Facebook.
+            if (isLegacyFeedComment && registered?.commentId) {
+              const { commentId, commentText: userComment, senderName } = registered;
 
-            console.log(`[MetaWebhook] 💬 Nuevo comentario en Post de Origin One por ${senderName}: "${userComment}"`);
-
-            // Solicitar una respuesta pública senior y concisa para el comentario
-            const promptComentario = `Un usuario llamado ${senderName} comentó en una publicación de Origin One: "${userComment}". 
+              const promptComentario = `Un usuario llamado ${senderName} comentó en una publicación de Origin One: "${userComment}".
 Genera una respuesta pública profesional, senior y cordial (máximo 2 o 3 frases). Ofrécele resolver sus dudas o invítalo a enviarnos un mensaje privado para agendar un Diagnóstico de 30 minutos sin costo.`;
 
-            const publicReply = await generateBotResponse(`comment_${commentId}`, promptComentario, 'Comentario en Publicación');
-
-            // Publicar la respuesta al comentario en la API de Meta
-            await sendMetaCommentReply(commentId, publicReply);
+              pendingResponses.push(async () => {
+                const publicReply = await generateBotResponse(`comment_${commentId}`, promptComentario, commentChannel);
+                await sendMetaCommentReply(commentId, publicReply);
+              });
+            }
+          } catch (error) {
+            console.error('[MetaWebhook] ❌ Falló el registro de un comentario:', error.message);
+            throw error;
           }
         }
       }
     }
 
-
+    // Confirmar a Meta sólo después de que todas las entradas fueron persistidas en el CRM.
+    res.status(200).send('EVENT_RECEIVED');
+    const results = await Promise.allSettled(pendingResponses.map(run => run()));
+    results
+      .filter(result => result.status === 'rejected')
+      .forEach(result => console.error('[MetaWebhook] ❌ Falló una respuesta posterior al registro:', result.reason));
   } catch (error) {
     console.error('[MetaWebhook] ❌ Error procesando evento de Webhook:', error);
+    if (!res.headersSent) res.status(500).send('CRM_STORAGE_FAILED');
   }
 });
 
@@ -276,12 +353,13 @@ router.post('/webhook/linkedin', async (req, res) => {
  * API REST Endpoints para gestión de citas y consulta local
  */
 
-router.get('/api/citas', (req, res) => {
-  const citas = getAppointments();
-  res.json({
-    total: citas.length,
-    citas: citas
-  });
+router.get('/api/citas', async (req, res) => {
+  try {
+    const citas = await getAppointments();
+    res.json({ total: citas.length, citas });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 router.post('/api/citas', async (req, res) => {
@@ -307,10 +385,10 @@ router.post('/api/signal/chat', async (req, res) => {
     console.log(`[S1GNAL Web] 💬 Mensaje recibido de ${sid}: "${message}"`);
 
     const { appendChatMessage } = require('./agendaService');
-    appendChatMessage(sid, 'user', message, 'S1GNAL Web Chat (originone.com.mx)');
+    await appendChatMessage(sid, 'user', message, 'S1GNAL Web Chat (originone.com.mx)');
 
     const reply = await generateBotResponse(sid, message, 'S1GNAL Web Chat (originone.com.mx)');
-    appendChatMessage(sid, 'assistant', reply, 'S1GNAL Web Chat (originone.com.mx)');
+    await appendChatMessage(sid, 'assistant', reply, 'S1GNAL Web Chat (originone.com.mx)');
 
     res.json({
       success: true,
@@ -398,9 +476,7 @@ async function sendMetaTypingIndicator(recipientPsid, channelName) {
 }
 
 router.generateBotResponse = generateBotResponse;
+router.registerDirectMessage = registerDirectMessage;
+router.processDirectMessage = processDirectMessage;
+router.registerCommentInteraction = registerCommentInteraction;
 module.exports = router;
-
-
-
-
-

@@ -14,27 +14,59 @@ if (fs.existsSync(configTxtPath)) {
 
 const app = express();
 app.use(cors()); // Habilitar CORS para S1GNAL en originone.com.mx
-
-
 const crmRoutes = require('./crmRoutes');
+const { isR2Configured } = require('./crmStorage');
+const {
+  createAuthRouter,
+  requireApiAuth,
+  requirePageAuth
+} = require('./authService');
 
 const PORT = process.env.PORT || 3000;
 
 // Middleware para procesar JSON y URL encoded
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('Referrer-Policy', 'no-referrer');
+  res.set('X-Frame-Options', 'DENY');
+  next();
+});
+
+const authAssetsPath = path.join(__dirname, '../public/auth');
+const authPageHeaders = (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  res.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
+  next();
+};
+
+app.get('/auth/webauthn.js', authPageHeaders, (req, res) => {
+  res.sendFile(path.join(__dirname, '../node_modules/@simplewebauthn/browser/dist/bundle/index.umd.min.js'));
+});
+app.use('/auth', authPageHeaders, express.static(authAssetsPath, { index: 'index.html' }));
+app.use('/api/auth', createAuthRouter());
 
 // Subdominio crm.originone.com.mx y rutas de archivos estáticos
 app.use((req, res, next) => {
   const host = req.headers.host || '';
   if (host.startsWith('crm.') && (req.path === '/' || req.path === '/index.html')) {
-    return res.sendFile(path.join(__dirname, '../public/crm/index.html'));
+    return requirePageAuth(req, res, () => res.sendFile(path.join(__dirname, '../public/crm/index.html')));
   }
   next();
 });
 
-app.use('/admin', express.static(path.join(__dirname, '../public/crm')));
-app.use('/crm', express.static(path.join(__dirname, '../public/crm')));
+app.use('/admin', requirePageAuth, express.static(path.join(__dirname, '../public/crm')));
+app.use('/crm', requirePageAuth, express.static(path.join(__dirname, '../public/crm')));
+
+app.use([
+  '/api/crm',
+  '/api/facturacion',
+  '/api/contabilidad',
+  '/api/bancos',
+  '/api/socios'
+], requireApiAuth);
 
 const facturacionModule = require('./modules/facturacion');
 const contabilidadModule = require('./modules/contabilidad');
@@ -51,6 +83,7 @@ app.get('/', (req, res) => {
 
     modulos: ['CRM & Citas', 'Facturación & Cotizaciones', 'Contabilidad & P&L', 'Bancos & Tesorería', 'Transparencia de Socios'],
     canales: ['Facebook Messenger', 'Instagram Direct', 'WhatsApp Cloud API', 'S1GNAL Web Chat'],
+    almacenamiento_crm: isR2Configured() ? 'cloudflare_r2_privado' : 'archivo_local_no_persistente',
     notificacion_whatsapp: process.env.ADMIN_WHATSAPP_NUMBERS || '528110653947, 528120989813',
     crm_url: `/admin`,
     webhook_url: `/webhook`
@@ -69,6 +102,11 @@ app.use('/', metaWebhookRouter);
 
 
 app.listen(PORT, () => {
+  if (process.env.NODE_ENV === 'production' && !isR2Configured()) {
+    console.warn('⚠️  Cloudflare R2 no está configurado: las interacciones pueden perderse al reiniciar o desplegar el servicio.');
+  } else if (isR2Configured()) {
+    console.log('☁️  CRM conectado a Cloudflare R2 (bucket privado).');
+  }
   console.log(`\n===============================================================`);
   console.log(`🚀 ORIGIN ONE CHATBOT ENGINE — SERVIDOR ACTIVO EN PUERTO ${PORT}`);
   console.log(`===============================================================`);

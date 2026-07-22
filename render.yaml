@@ -6,9 +6,35 @@ services:
     buildCommand: npm install
     startCommand: node src/index.js
     envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
       - key: NODE_ENV
         value: production
       - key: META_VERIFY_TOKEN
         value: originone_secure_token_2026
       - key: ADMIN_WHATSAPP_NUMBERS
         value: 528110653947,528120989813
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_CRM_OBJECT_KEY
+        value: crm/appointments.json
+      - key: R2_AUTH_OBJECT_KEY
+        value: crm/auth.json
+      - key: AUTH_SESSION_SECRET
+        generateValue: true
+      - key: AUTH_SETUP_SECRET
+        generateValue: true
+      - key: AUTH_ORIGIN
+        value: https://originone-chatbot.onrender.com
+      - key: AUTH_RP_ID
+        value: originone-chatbot.onrender.com
+      - key: AUTH_RP_NAME
+        value: Origin One CRM
+      - key: AUTH_SESSION_TTL_SECONDS
+        value: 28800

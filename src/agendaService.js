@@ -1,32 +1,43 @@
-const fs = require('fs');
-const path = require('path');
 const { sendWhatsAppNotification } = require('./whatsappService');
+const {
+  isPreconditionFailure,
+  isTransientStorageError,
+  readAppointmentsSnapshot,
+  writeAppointmentsSnapshot
+} = require('./crmStorage');
 
-const DB_PATH = path.join(__dirname, '../data/appointments.json');
+let mutationQueue = Promise.resolve();
 
-// Asegurar que exista el directorio data/
-function ensureDbExists() {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify([], null, 2));
-  }
+async function mutateAppointments(mutator) {
+  const execute = async () => {
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      try {
+        const snapshot = await readAppointmentsSnapshot();
+        const appointments = structuredClone(snapshot.appointments);
+        const result = mutator(appointments);
+        await writeAppointmentsSnapshot(appointments, snapshot.etag);
+        return result;
+      } catch (error) {
+        const rootError = error.cause || error;
+        const retryable = isPreconditionFailure(rootError) || isTransientStorageError(rootError);
+        if (!retryable || attempt === 4) throw error;
+        await new Promise(resolve => setTimeout(resolve, attempt * 300));
+      }
+    }
+  };
+
+  const operation = mutationQueue.then(execute, execute);
+  mutationQueue = operation.then(() => undefined, () => undefined);
+  return operation;
 }
 
 /**
  * Obtener todas las citas guardadas
  */
-function getAppointments() {
-  ensureDbExists();
-  try {
-    const data = fs.readFileSync(DB_PATH, 'utf8');
-    return JSON.parse(data) || [];
-  } catch (error) {
-    console.error('[AgendaService] Error al leer la base de datos:', error);
-    return [];
-  }
+async function getAppointments() {
+  await mutationQueue;
+  const snapshot = await readAppointmentsSnapshot();
+  return snapshot.appointments;
 }
 
 
@@ -34,18 +45,17 @@ function getAppointments() {
 /**
  * Guardar la lista de citas / leads en el archivo JSON
  */
-function saveAppointments(appointments) {
-  ensureDbExists();
-  fs.writeFileSync(DB_PATH, JSON.stringify(appointments, null, 2));
+async function saveAppointments(appointments) {
+  return mutateAppointments(current => {
+    current.splice(0, current.length, ...structuredClone(appointments));
+    return current;
+  });
 }
 
 /**
  * Agendar una nueva cita de diagnóstico de 30 minutos y notificar por WhatsApp
  */
 async function scheduleAppointment(params) {
-  ensureDbExists();
-  const appointments = getAppointments();
-
   const newAppointment = {
     id: 'CITA-' + Date.now().toString(36).toUpperCase(),
     nombre_cliente: params.nombre_cliente || 'No especificado',
@@ -62,8 +72,10 @@ async function scheduleAppointment(params) {
     estatus: 'Confirmada (Notificada por WhatsApp)'
   };
 
-  appointments.unshift(newAppointment);
-  saveAppointments(appointments);
+  await mutateAppointments(appointments => {
+    appointments.unshift(newAppointment);
+    return newAppointment;
+  });
 
   console.log(`[AgendaService] ✅ Cita registrada exitosamente (${newAppointment.id}):`, newAppointment);
 
@@ -104,33 +116,24 @@ async function scheduleAppointment(params) {
 /**
  * Actualizar datos de un Lead / Cita por ID
  */
-function updateLead(id, updateData) {
-  const appointments = getAppointments();
-  const index = appointments.findIndex(item => item.id === id);
-  if (index === -1) return null;
+async function updateLead(id, updateData) {
+  return mutateAppointments(appointments => {
+    const index = appointments.findIndex(item => item.id === id);
+    if (index === -1) return null;
 
-  appointments[index] = {
-    ...appointments[index],
-    ...updateData,
-    actualizado_el: new Date().toISOString()
-  };
-
-  saveAppointments(appointments);
-  return appointments[index];
+    appointments[index] = {
+      ...appointments[index],
+      ...updateData,
+      actualizado_el: new Date().toISOString()
+    };
+    return appointments[index];
+  });
 }
 
 /**
  * Agregar nota interna a un Lead
  */
-function addLeadNote(id, noteText, author = 'Ejecutivo Origin One') {
-  const appointments = getAppointments();
-  const index = appointments.findIndex(item => item.id === id);
-  if (index === -1) return null;
-
-  if (!appointments[index].notas_internas) {
-    appointments[index].notas_internas = [];
-  }
-
+async function addLeadNote(id, noteText, author = 'Ejecutivo Origin One') {
   const newNote = {
     id: 'NOTA-' + Date.now().toString(36).toUpperCase(),
     texto: noteText,
@@ -138,75 +141,89 @@ function addLeadNote(id, noteText, author = 'Ejecutivo Origin One') {
     fecha: new Date().toISOString()
   };
 
-  appointments[index].notas_internas.unshift(newNote);
-  appointments[index].actualizado_el = new Date().toISOString();
+  return mutateAppointments(appointments => {
+    const index = appointments.findIndex(item => item.id === id);
+    if (index === -1) return null;
+    if (!appointments[index].notas_internas) appointments[index].notas_internas = [];
 
-  saveAppointments(appointments);
-  return appointments[index];
+    appointments[index].notas_internas.unshift(newNote);
+    appointments[index].actualizado_el = new Date().toISOString();
+    return appointments[index];
+  });
 }
 
 /**
  * Eliminar un Lead / Cita
  */
-function deleteLead(id) {
-  let appointments = getAppointments();
-  const initialLength = appointments.length;
-  appointments = appointments.filter(item => item.id !== id);
-  if (appointments.length === initialLength) return false;
-
-  saveAppointments(appointments);
-  return true;
+async function deleteLead(id) {
+  return mutateAppointments(appointments => {
+    const index = appointments.findIndex(item => item.id === id);
+    if (index === -1) return false;
+    appointments.splice(index, 1);
+    return true;
+  });
 }
 
 /**
  * Guardar un mensaje en el historial de conversaciones del Lead / Cita
  */
-function appendChatMessage(userId, role, messageText, channelName = 'Omnicanal', userName = null) {
-  const isTest = userId.toLowerCase().includes('test') || userId.toLowerCase().includes('verify');
-  const appointments = getAppointments();
-  
-  // Buscar lead por ID, teléfono o canal
-  let lead = appointments.find(item => item.id === userId || item.telefono_whatsapp === userId || item.email === userId);
-
-  if (!lead) {
-    // Si aún no existe el lead en la agenda, creamos un registro preliminar identificando si es prueba
-    const defaultName = userName || (isTest ? `🧪 Lead de Prueba (${channelName})` : `Usuario (${channelName})`);
-    lead = {
-      id: userId.startsWith('CITA-') ? userId : 'LEAD-' + userId,
-      nombre_cliente: defaultName,
-      email: 'Por consultar',
-      telefono_whatsapp: userId.length > 8 && !userId.includes(' ') ? userId : 'Por consultar',
-      empresa_o_proyecto: isTest ? 'Entorno de Pruebas' : 'Interacción en Vivo',
-      fecha_propuesta: new Date().toISOString().split('T')[0],
-      hora_propuesta: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
-      resumen_necesidad: isTest ? `Interacción de prueba vía ${channelName}` : `Contacto en vivo vía ${channelName}`,
-      canal_origen: channelName,
-      etapa: isTest ? 'Prueba / Test' : 'Cita Agendada',
-      es_prueba: isTest,
-      notas_internas: [],
-      historial_mensajes: [],
-      creado_el: new Date().toISOString(),
-      estatus: 'En Conversación con IA'
-    };
-    appointments.unshift(lead);
-  } else if (userName && (lead.nombre_cliente.startsWith('Usuario') || lead.nombre_cliente.startsWith('🧪') || !lead.nombre_cliente)) {
-    lead.nombre_cliente = userName;
+async function appendChatMessage(userId, role, messageText, channelName = 'Omnicanal', userName = null, eventId = null) {
+  const normalizedUserId = String(userId || '').trim();
+  const normalizedText = String(messageText || '').trim();
+  if (!normalizedUserId || !normalizedText) {
+    throw new Error('userId y messageText son requeridos para registrar una interacción');
   }
 
+  const isTest = normalizedUserId.toLowerCase().includes('test') || normalizedUserId.toLowerCase().includes('verify');
+  const isWhatsApp = channelName.toLowerCase().includes('whatsapp');
+  const now = new Date().toISOString();
 
-  if (!lead.historial_mensajes) {
-    lead.historial_mensajes = [];
-  }
+  return mutateAppointments(appointments => {
+    let lead = appointments.find(item =>
+      item.external_id === normalizedUserId ||
+      item.id === normalizedUserId ||
+      item.id === `LEAD-${normalizedUserId}` ||
+      item.telefono_whatsapp === normalizedUserId ||
+      item.email === normalizedUserId
+    );
 
-  lead.historial_mensajes.push({
-    rol: role, // 'user' o 'assistant'
-    texto: messageText,
-    fecha: new Date().toISOString()
+    if (!lead) {
+      const defaultName = userName || (isTest ? `🧪 Lead de Prueba (${channelName})` : `Usuario (${channelName})`);
+      lead = {
+        id: normalizedUserId.startsWith('CITA-') ? normalizedUserId : 'LEAD-' + normalizedUserId,
+        external_id: normalizedUserId,
+        nombre_cliente: defaultName,
+        email: 'Por consultar',
+        telefono_whatsapp: isWhatsApp ? normalizedUserId : 'Por consultar',
+        empresa_o_proyecto: isTest ? 'Entorno de Pruebas' : 'Interacción en Vivo',
+        fecha_propuesta: now.split('T')[0],
+        hora_propuesta: new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+        resumen_necesidad: isTest ? `Interacción de prueba vía ${channelName}` : `Contacto en vivo vía ${channelName}`,
+        canal_origen: channelName,
+        etapa: isTest ? 'Prueba / Test' : 'Cita Agendada',
+        es_prueba: isTest,
+        notas_internas: [],
+        historial_mensajes: [],
+        creado_el: now,
+        estatus: 'En Conversación con IA'
+      };
+      appointments.unshift(lead);
+    } else if (userName && (lead.nombre_cliente?.startsWith('Usuario') || lead.nombre_cliente?.startsWith('🧪') || !lead.nombre_cliente)) {
+      lead.nombre_cliente = userName;
+    }
+
+    if (!lead.historial_mensajes) lead.historial_mensajes = [];
+    if (eventId && lead.historial_mensajes.some(message => message.evento_id === eventId)) return lead;
+
+    lead.historial_mensajes.push({
+      rol: role,
+      texto: normalizedText,
+      ...(eventId ? { evento_id: eventId } : {}),
+      fecha: now
+    });
+    lead.actualizado_el = now;
+    return lead;
   });
-
-  lead.actualizado_el = new Date().toISOString();
-  saveAppointments(appointments);
-  return lead;
 }
 
 
@@ -219,5 +236,3 @@ module.exports = {
   deleteLead,
   appendChatMessage
 };
-
-

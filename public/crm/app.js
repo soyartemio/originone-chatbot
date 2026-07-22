@@ -4,8 +4,35 @@ let currentFilterChannel = 'todos';
 let currentActiveLeadId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  loadCurrentUser();
   loadModuleData();
 });
+
+async function loadCurrentUser() {
+  const response = await fetch('/api/auth/session', { credentials: 'same-origin' });
+  const data = await response.json();
+  if (!data.authenticated) {
+    window.location.replace(`/auth?next=${encodeURIComponent(window.location.pathname)}`);
+    return;
+  }
+  const nameElement = document.getElementById('currentUserName');
+  if (nameElement) nameElement.innerText = data.user.displayName;
+  const noteAuthor = document.getElementById('noteAuthor');
+  if (noteAuthor) {
+    noteAuthor.value = data.user.displayName;
+    noteAuthor.readOnly = true;
+  }
+}
+
+async function logout() {
+  await fetch('/api/auth/logout', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}'
+  });
+  window.location.replace('/auth');
+}
 
 /**
  * Conmutar entre módulos del ERP
@@ -523,4 +550,3 @@ async function deleteCurrentLead() {
     }
   }
 }
-

@@ -31,7 +31,7 @@ async function runAutoTest() {
   console.log('Resultado del agendamiento:', JSON.stringify(appointmentResult, null, 2));
 
   console.log('\n2. Verificando lecturas de base de datos local...');
-  const citas = getAppointments();
+  const citas = await getAppointments();
   console.log(`Total de citas guardadas en data/appointments.json: ${citas.length}`);
 
   console.log('\n✅ Prueba terminada con éxito.');
