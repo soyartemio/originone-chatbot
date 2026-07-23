@@ -1,6 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const { getAppointments, updateLead, addLeadNote, deleteLead } = require('./agendaService');
+const { syncInstagramInteractions } = require('./instagramSyncService');
+
+router.post('/api/crm/sync/instagram', async (req, res) => {
+  try {
+    const result = await syncInstagramInteractions();
+    res.json({ success: true, ...result });
+  } catch (error) {
+    const metaError = error.response?.data?.error;
+    console.error('[CRMRoutes] Error sincronizando Instagram:', metaError?.message || error.message);
+    res.status(502).json({
+      success: false,
+      error: metaError?.message || error.message
+    });
+  }
+});
 
 /**
   * GET /api/crm/leads

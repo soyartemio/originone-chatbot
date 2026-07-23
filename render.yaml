@@ -12,6 +12,10 @@ services:
         value: production
       - key: META_VERIFY_TOKEN
         value: originone_secure_token_2026
+      - key: META_PAGE_ACCESS_TOKEN
+        sync: false
+      - key: INSTAGRAM_PAGE_ACCESS_TOKEN
+        sync: false
       - key: ADMIN_WHATSAPP_NUMBERS
         value: 528110653947,528120989813
       - key: R2_ACCOUNT_ID

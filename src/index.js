@@ -24,6 +24,25 @@ const {
 
 const PORT = process.env.PORT || 3000;
 
+async function syncInstagramOnStartup() {
+  if (!process.env.INSTAGRAM_PAGE_ACCESS_TOKEN) {
+    console.warn('⚠️  Instagram no está configurado: se omite la recuperación inicial de conversaciones.');
+    return;
+  }
+
+  try {
+    const { syncInstagramInteractions } = require('./instagramSyncService');
+    const result = await syncInstagramInteractions();
+    console.log(
+      `📥 Instagram sincronizado: ${result.conversationsFound} conversaciones, ` +
+      `${result.importedMessages} mensajes nuevos, ${result.skippedMessages} ya registrados.`
+    );
+  } catch (error) {
+    const metaError = error.response?.data?.error;
+    console.error('[InstagramSync] No fue posible recuperar las conversaciones al iniciar:', metaError?.message || error.message);
+  }
+}
+
 // Middleware para procesar JSON y URL encoded
 app.set('trust proxy', 1);
 app.use(express.json());
@@ -115,4 +134,8 @@ app.listen(PORT, () => {
   console.log(`📱 Notificaciones de citas dirigidas a WhatsApp: ${process.env.ADMIN_WHATSAPP_NUMBERS || '528110653947, 528120989813'}`);
   console.log(`💡 Para simular el chatbot localmente ejecuta: npm run test:bot`);
   console.log(`===============================================================\n`);
+
+  if (process.env.NODE_ENV === 'production') {
+    setImmediate(syncInstagramOnStartup);
+  }
 });

@@ -83,6 +83,16 @@ async function loadModuleData() {
 
   try {
     if (currentModule === 'crm') {
+      const syncResponse = await fetch('/api/crm/sync/instagram', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+      const syncResult = await syncResponse.json();
+      if (!syncResponse.ok || !syncResult.success) {
+        throw new Error(syncResult.error || 'No fue posible sincronizar Instagram');
+      }
       await loadCrmModule();
     } else if (currentModule === 'facturacion') {
       await loadFacturacionModule();
@@ -95,6 +105,10 @@ async function loadModuleData() {
     }
   } catch (error) {
     console.error('Error cargando módulo:', error);
+    if (currentModule === 'crm') {
+      alert(`No fue posible sincronizar Instagram: ${error.message}`);
+      await loadCrmModule();
+    }
   } finally {
     if (refreshIcon) refreshIcon.classList.remove('fa-spin');
   }

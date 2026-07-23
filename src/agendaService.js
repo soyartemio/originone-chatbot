@@ -167,7 +167,15 @@ async function deleteLead(id) {
 /**
  * Guardar un mensaje en el historial de conversaciones del Lead / Cita
  */
-async function appendChatMessage(userId, role, messageText, channelName = 'Omnicanal', userName = null, eventId = null) {
+function appendChatMessageToAppointments(appointments, {
+  userId,
+  role,
+  messageText,
+  channelName = 'Omnicanal',
+  userName = null,
+  eventId = null,
+  createdAt = null
+}) {
   const normalizedUserId = String(userId || '').trim();
   const normalizedText = String(messageText || '').trim();
   if (!normalizedUserId || !normalizedText) {
@@ -176,53 +184,89 @@ async function appendChatMessage(userId, role, messageText, channelName = 'Omnic
 
   const isTest = normalizedUserId.toLowerCase().includes('test') || normalizedUserId.toLowerCase().includes('verify');
   const isWhatsApp = channelName.toLowerCase().includes('whatsapp');
-  const now = new Date().toISOString();
+  const parsedDate = createdAt ? new Date(createdAt) : new Date();
+  const now = Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+
+  let lead = appointments.find(item =>
+    item.external_id === normalizedUserId ||
+    item.id === normalizedUserId ||
+    item.id === `LEAD-${normalizedUserId}` ||
+    item.telefono_whatsapp === normalizedUserId ||
+    item.email === normalizedUserId
+  );
+
+  if (!lead) {
+    const defaultName = userName || (isTest ? `🧪 Lead de Prueba (${channelName})` : `Usuario (${channelName})`);
+    lead = {
+      id: normalizedUserId.startsWith('CITA-') ? normalizedUserId : 'LEAD-' + normalizedUserId,
+      external_id: normalizedUserId,
+      nombre_cliente: defaultName,
+      email: 'Por consultar',
+      telefono_whatsapp: isWhatsApp ? normalizedUserId : 'Por consultar',
+      empresa_o_proyecto: isTest ? 'Entorno de Pruebas' : 'Interacción en Vivo',
+      fecha_propuesta: now.split('T')[0],
+      hora_propuesta: new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+      resumen_necesidad: isTest ? `Interacción de prueba vía ${channelName}` : `Contacto en vivo vía ${channelName}`,
+      canal_origen: channelName,
+      etapa: isTest ? 'Prueba / Test' : 'Cita Agendada',
+      es_prueba: isTest,
+      notas_internas: [],
+      historial_mensajes: [],
+      creado_el: now,
+      estatus: 'En Conversación con IA'
+    };
+    appointments.unshift(lead);
+  } else if (userName && (lead.nombre_cliente?.startsWith('Usuario') || lead.nombre_cliente?.startsWith('🧪') || !lead.nombre_cliente)) {
+    lead.nombre_cliente = userName;
+  }
+
+  if (!lead.historial_mensajes) lead.historial_mensajes = [];
+  if (eventId && lead.historial_mensajes.some(message => message.evento_id === eventId)) {
+    return { lead, added: false };
+  }
+
+  lead.historial_mensajes.push({
+    rol: role,
+    texto: normalizedText,
+    ...(eventId ? { evento_id: eventId } : {}),
+    fecha: now
+  });
+  lead.historial_mensajes.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+  lead.actualizado_el = lead.historial_mensajes.at(-1)?.fecha || now;
+  return { lead, added: true };
+}
+
+async function appendChatMessage(userId, role, messageText, channelName = 'Omnicanal', userName = null, eventId = null, createdAt = null) {
+  return mutateAppointments(appointments => appendChatMessageToAppointments(appointments, {
+    userId,
+    role,
+    messageText,
+    channelName,
+    userName,
+    eventId,
+    createdAt
+  }).lead);
+}
+
+async function importChatMessages(interactions) {
+  if (!Array.isArray(interactions)) throw new Error('interactions debe ser una lista');
 
   return mutateAppointments(appointments => {
-    let lead = appointments.find(item =>
-      item.external_id === normalizedUserId ||
-      item.id === normalizedUserId ||
-      item.id === `LEAD-${normalizedUserId}` ||
-      item.telefono_whatsapp === normalizedUserId ||
-      item.email === normalizedUserId
-    );
+    let importedMessages = 0;
+    const leadIds = new Set();
 
-    if (!lead) {
-      const defaultName = userName || (isTest ? `🧪 Lead de Prueba (${channelName})` : `Usuario (${channelName})`);
-      lead = {
-        id: normalizedUserId.startsWith('CITA-') ? normalizedUserId : 'LEAD-' + normalizedUserId,
-        external_id: normalizedUserId,
-        nombre_cliente: defaultName,
-        email: 'Por consultar',
-        telefono_whatsapp: isWhatsApp ? normalizedUserId : 'Por consultar',
-        empresa_o_proyecto: isTest ? 'Entorno de Pruebas' : 'Interacción en Vivo',
-        fecha_propuesta: now.split('T')[0],
-        hora_propuesta: new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
-        resumen_necesidad: isTest ? `Interacción de prueba vía ${channelName}` : `Contacto en vivo vía ${channelName}`,
-        canal_origen: channelName,
-        etapa: isTest ? 'Prueba / Test' : 'Cita Agendada',
-        es_prueba: isTest,
-        notas_internas: [],
-        historial_mensajes: [],
-        creado_el: now,
-        estatus: 'En Conversación con IA'
-      };
-      appointments.unshift(lead);
-    } else if (userName && (lead.nombre_cliente?.startsWith('Usuario') || lead.nombre_cliente?.startsWith('🧪') || !lead.nombre_cliente)) {
-      lead.nombre_cliente = userName;
+    const ordered = [...interactions].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+    for (const interaction of ordered) {
+      const result = appendChatMessageToAppointments(appointments, interaction);
+      leadIds.add(result.lead.id);
+      if (result.added) importedMessages++;
     }
 
-    if (!lead.historial_mensajes) lead.historial_mensajes = [];
-    if (eventId && lead.historial_mensajes.some(message => message.evento_id === eventId)) return lead;
-
-    lead.historial_mensajes.push({
-      rol: role,
-      texto: normalizedText,
-      ...(eventId ? { evento_id: eventId } : {}),
-      fecha: now
-    });
-    lead.actualizado_el = now;
-    return lead;
+    return {
+      importedMessages,
+      skippedMessages: interactions.length - importedMessages,
+      affectedLeads: leadIds.size
+    };
   });
 }
 
@@ -234,5 +278,6 @@ module.exports = {
   updateLead,
   addLeadNote,
   deleteLead,
-  appendChatMessage
+  appendChatMessage,
+  importChatMessages
 };
