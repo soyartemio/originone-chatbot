@@ -59,7 +59,7 @@ function switchModule(moduleName, btnEl) {
   });
 
   const titles = {
-    crm: { title: 'CRM & Agenda de Prospectos', sub: 'Gestión omnicanal de leads capturados por S1GNAL Web, IG y Messenger' },
+    crm: { title: 'CRM & Seguimiento de Prospectos', sub: 'Gestión omnicanal de contactos, citas confirmadas y oportunidades' },
     facturacion: { title: 'Facturación & Cotizaciones', sub: 'Control de cotizaciones emitidas, cobranza y comprobantes fiscales' },
     contabilidad: { title: 'Contabilidad & Estado de Resultados (P&L)', sub: 'Visibilidad transparente de ingresos, egresos y utilidad neta' },
     bancos: { title: 'Bancos & Tesorería', sub: 'Control de saldos en cuentas corporativas y flujo de efectivo' },
@@ -155,9 +155,56 @@ function getFilteredLeads() {
   });
 }
 
+function getStageKey(lead) {
+  const etapa = (lead.etapa || 'Nuevo contacto').toLowerCase();
+  if (etapa.includes('perdido') || etapa.includes('archivado')) return 'archivado';
+  if (etapa.includes('ganado') || etapa.includes('cliente')) return 'ganado';
+  if (etapa.includes('propuesta')) return 'propuesta';
+  if (etapa.includes('diag')) return 'diagnostico';
+  if (etapa.includes('cita') || etapa.includes('confirmada') || etapa.includes('agendada')) return 'cita';
+  return 'nuevo';
+}
+
+function getStageLabel(lead) {
+  const key = getStageKey(lead);
+  if (key === 'cita') return 'Cita Confirmada';
+  if (key === 'nuevo' && !(lead.etapa || '').toLowerCase().includes('prueba')) return 'Nuevo contacto';
+  return lead.etapa || 'Nuevo contacto';
+}
+
+function getLeadActivity(lead) {
+  const isNewContact = getStageKey(lead) === 'nuevo';
+  if (isNewContact) {
+    const createdAt = lead.creado_el ? new Date(lead.creado_el) : null;
+    const fallbackDate = createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toISOString().split('T')[0] : 'Sin fecha';
+    const fallbackTime = createdAt && !Number.isNaN(createdAt.getTime())
+      ? createdAt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+      : 'Sin hora';
+    return {
+      label: 'Primer contacto',
+      date: lead.fecha_primer_contacto || fallbackDate,
+      time: lead.hora_primer_contacto || fallbackTime
+    };
+  }
+
+  return {
+    label: 'Cita de diagnóstico',
+    date: lead.fecha_propuesta || 'Por confirmar',
+    time: lead.hora_propuesta || 'Por confirmar'
+  };
+}
+
+function getWhatsAppMessage(lead) {
+  if (getStageKey(lead) === 'cita') {
+    return `Hola ${lead.nombre_cliente}, te escribo de Origin One sobre tu cita de diagnóstico confirmada.`;
+  }
+  return `Hola ${lead.nombre_cliente}, te escribo de Origin One para dar seguimiento a nuestra conversación.`;
+}
+
 function renderBoard() {
   const filtered = getFilteredLeads();
   const cols = {
+    nuevo: document.getElementById('colNuevo'),
     cita: document.getElementById('colCita'),
     diagnostico: document.getElementById('colDiagnostico'),
     propuesta: document.getElementById('colPropuesta'),
@@ -165,19 +212,17 @@ function renderBoard() {
   };
 
   Object.values(cols).forEach(col => col.innerHTML = '');
-  const counts = { cita: 0, diagnostico: 0, propuesta: 0, ganado: 0 };
+  const counts = { nuevo: 0, cita: 0, diagnostico: 0, propuesta: 0, ganado: 0 };
 
   filtered.forEach(lead => {
-    const etapa = (lead.etapa || 'Cita Agendada').toLowerCase();
-    let key = 'cita';
-    if (etapa.includes('diag')) key = 'diagnostico';
-    else if (etapa.includes('propuesta')) key = 'propuesta';
-    else if (etapa.includes('ganado') || etapa.includes('cliente')) key = 'ganado';
+    const key = getStageKey(lead);
+    if (!cols[key]) return;
 
     counts[key]++;
     cols[key].appendChild(createLeadCard(lead));
   });
 
+  document.getElementById('countNuevo').innerText = counts.nuevo;
   document.getElementById('countCita').innerText = counts.cita;
   document.getElementById('countDiagnostico').innerText = counts.diagnostico;
   document.getElementById('countPropuesta').innerText = counts.propuesta;
@@ -200,18 +245,19 @@ function createLeadCard(lead) {
     : '';
 
   const cleanPhone = (lead.telefono_whatsapp || '').replace(/\D/g, '');
-  const waMsg = encodeURIComponent(`Hola ${lead.nombre_cliente}, te escribo de Origin One sobre tu cita de diagnóstico.`);
+  const waMsg = encodeURIComponent(getWhatsAppMessage(lead));
   const waUrl = cleanPhone ? `https://wa.me/${cleanPhone.startsWith('52') ? cleanPhone : '52' + cleanPhone}?text=${waMsg}` : '#';
+  const activity = getLeadActivity(lead);
 
   div.innerHTML = `
     <div class="card-top">
       <span class="channel-tag ${tagClass}"><i class="${iconClass}"></i> ${canalName}</span>
       ${isTestBadge}
-      <span class="date-badge">${lead.fecha_propuesta || 'Sin fecha'}</span>
+      <span class="date-badge">${activity.label}: ${activity.date}</span>
     </div>
     <h4 class="lead-name">${lead.nombre_cliente || 'Prospecto sin nombre'}</h4>
     <p class="lead-company"><i class="fa-solid fa-building"></i> ${lead.empresa_o_proyecto || 'Origin One Prospect'}</p>
-    <div class="card-info-row"><i class="fa-solid fa-clock"></i> <span>${lead.hora_propuesta || 'Por confirmar'}</span></div>
+    <div class="card-info-row"><i class="fa-solid fa-clock"></i> <span>${activity.time}</span></div>
     <div class="card-info-row"><i class="fa-solid fa-phone"></i> <span>${lead.telefono_whatsapp || 'No especificado'}</span></div>
     <div class="card-footer">
       <span style="font-size:11px; color:#9ca3af;">ID: ${lead.id}</span>
@@ -233,14 +279,15 @@ function renderTable() {
   }
 
   filtered.forEach(lead => {
+    const activity = getLeadActivity(lead);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${lead.id}</strong></td>
       <td><div style="font-weight:700;">${lead.nombre_cliente}</div><div style="font-size:12px; color:#9ca3af;">${lead.empresa_o_proyecto}</div></td>
       <td><div>${lead.telefono_whatsapp}</div><div style="font-size:11px; color:#9ca3af;">${lead.email}</div></td>
-      <td>${lead.fecha_propuesta} - ${lead.hora_propuesta}</td>
+      <td><strong>${activity.label}</strong><div style="font-size:11px; color:#9ca3af;">${activity.date} - ${activity.time}</div></td>
       <td><span class="channel-tag tag-signal">${lead.canal_origen}</span></td>
-      <td><span class="badge-count" style="background:rgba(139,92,246,0.2); color:#c084fc;">${lead.etapa || 'Cita Agendada'}</span></td>
+      <td><span class="badge-count" style="background:rgba(139,92,246,0.2); color:#c084fc;">${getStageLabel(lead)}</span></td>
       <td><button class="glass-btn" style="padding:4px 10px; font-size:11px;" onclick="openModal('${lead.id}')"><i class="fa-solid fa-eye"></i> Detalle</button></td>
     `;
     tbody.appendChild(tr);
@@ -256,13 +303,18 @@ function openModal(id) {
   document.getElementById('modalCompany').innerText = lead.empresa_o_proyecto || 'Proyecto no especificado';
   document.getElementById('modalEmail').innerText = lead.email || 'No especificado';
   document.getElementById('modalPhone').innerText = lead.telefono_whatsapp || 'No especificado';
-  document.getElementById('modalDateTime').innerText = `${lead.fecha_propuesta || 'Por confirmar'} a las ${lead.hora_propuesta || 'Por confirmar'}`;
+  const activity = getLeadActivity(lead);
+  document.getElementById('modalDateTimeLabel').innerText = `${activity.label.toUpperCase()}:`;
+  document.getElementById('modalDateTime').innerText = `${activity.date} a las ${activity.time}`;
   document.getElementById('modalNeed').innerText = lead.resumen_necesidad || 'Sin detalles especificados';
   document.getElementById('modalChannel').innerText = lead.canal_origen || 'Canal General';
-  document.getElementById('stageSelect').value = lead.etapa || 'Cita Agendada';
+  document.getElementById('stageSelect').value = getStageLabel(lead);
+  document.getElementById('appointmentDateInput').value = lead.fecha_propuesta && lead.fecha_propuesta !== 'Por confirmar' ? lead.fecha_propuesta : '';
+  document.getElementById('appointmentTimeInput').value = lead.hora_propuesta && lead.hora_propuesta !== 'Por confirmar' ? lead.hora_propuesta : '';
+  toggleAppointmentFields();
 
   const cleanPhone = (lead.telefono_whatsapp || '').replace(/\D/g, '');
-  const waMsg = encodeURIComponent(`Hola ${lead.nombre_cliente}, te escribo de Origin One sobre tu cita de diagnóstico.`);
+  const waMsg = encodeURIComponent(getWhatsAppMessage(lead));
   const waBtn = document.getElementById('modalWaBtn');
   if (cleanPhone) {
     waBtn.href = `https://wa.me/${cleanPhone.startsWith('52') ? cleanPhone : '52' + cleanPhone}?text=${waMsg}`;
@@ -313,18 +365,42 @@ function closeModal() {
   currentActiveLeadId = null;
 }
 
+function toggleAppointmentFields() {
+  const selectedStage = (document.getElementById('stageSelect').value || '').toLowerCase();
+  const requiresSlot = selectedStage.includes('cita') || selectedStage.includes('diag');
+  document.getElementById('appointmentFields').classList.toggle('hidden', !requiresSlot);
+}
+
 async function updateLeadStage() {
   if (!currentActiveLeadId) return;
   const newStage = document.getElementById('stageSelect').value;
+  const requestedStage = newStage.toLowerCase();
+  const requiresSlot = requestedStage.includes('cita') || requestedStage.includes('diag');
+  const appointmentDate = document.getElementById('appointmentDateInput').value.trim();
+  const appointmentTime = document.getElementById('appointmentTimeInput').value.trim();
+
+  if (requiresSlot && (!appointmentDate || !appointmentTime)) {
+    alert('Para confirmar la cita, captura la fecha y la hora acordadas.');
+    return;
+  }
+
   try {
     const res = await fetch(`/api/crm/leads/${currentActiveLeadId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ etapa: newStage })
+      body: JSON.stringify({
+        etapa: newStage,
+        ...(requiresSlot ? { fecha_propuesta: appointmentDate, hora_propuesta: appointmentTime } : {})
+      })
     });
     const data = await res.json();
-    if (data.success) loadCrmModule();
-  } catch (e) { console.error(e); }
+    if (!res.ok || !data.success) throw new Error(data.error || 'No fue posible guardar la etapa');
+    closeModal();
+    await loadCrmModule();
+  } catch (e) {
+    console.error(e);
+    alert(e.message);
+  }
 }
 
 async function addNote() {

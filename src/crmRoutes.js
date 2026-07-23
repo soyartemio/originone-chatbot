@@ -27,7 +27,7 @@ router.get('/api/crm/leads', async (req, res) => {
     const { etapa, canal, q } = req.query;
 
     if (etapa) {
-      leads = leads.filter(l => (l.etapa || 'Cita Agendada').toLowerCase() === etapa.toLowerCase());
+      leads = leads.filter(l => (l.etapa || 'Nuevo contacto').toLowerCase() === etapa.toLowerCase());
     }
 
     if (canal) {
@@ -82,7 +82,7 @@ router.get('/api/crm/kpis', async (req, res) => {
     };
 
     leads.forEach(lead => {
-      const etapa = (lead.etapa || 'Cita Agendada').toLowerCase();
+      const etapa = (lead.etapa || 'Nuevo contacto').toLowerCase();
       if (etapa.includes('nuevo')) etapasCount.nuevo++;
       else if (etapa.includes('cita')) etapasCount.cita++;
       else if (etapa.includes('diag')) etapasCount.diagnostico++;

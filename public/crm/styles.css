@@ -431,8 +431,10 @@ body {
 /* Kanban Board */
 .kanban-board {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(230px, 1fr));
   gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 10px;
 }
 
 .kanban-column {
@@ -571,6 +573,11 @@ body {
 
 .need-box { background: var(--bg); border: 1px solid var(--line); padding: 14px; border-radius: 10px; font-size: 13px; color: #d1d5db; }
 .custom-select { width: 100%; padding: 10px 14px; border-radius: 100px; background: var(--bg); border: 1px solid var(--gold); color: var(--white); font-size: 13px; font-weight: 600; }
+.appointment-input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.custom-stage-input { width: 100%; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); color: var(--white); font-size: 13px; }
+.custom-stage-input:focus { outline: none; border-color: var(--gold); }
+.btn-save-stage { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 100px; padding: 10px 14px; background: var(--gold); color: var(--bg); font-size: 13px; font-weight: 700; cursor: pointer; }
+.btn-save-stage:hover { background: var(--gold-hover); }
 
 .btn-whatsapp-action {
   display: flex; align-items: center; justify-content: center; gap: 10px;

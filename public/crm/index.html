@@ -33,7 +33,7 @@
       <nav class="sidebar-nav">
         <button class="nav-item active" id="navCrm" onclick="switchModule('crm', this)">
           <i class="fa-solid fa-users-viewfinder"></i>
-          <span>CRM & Citas</span>
+          <span>CRM & Prospectos</span>
         </button>
 
         <button class="nav-item" id="navFacturacion" onclick="switchModule('facturacion', this)">
@@ -79,7 +79,7 @@
         <div class="header-title-box">
           <div class="slogan-badge font-mono">DEJA DE USAR LA IA COMO UN JUGUETE</div>
 
-          <h1 id="moduleTitle" class="font-grotesk">CRM & Agenda de Prospectos</h1>
+          <h1 id="moduleTitle" class="font-grotesk">CRM & Seguimiento de Prospectos</h1>
           <p id="moduleSubtitle" class="font-grotesk">Gestión omnicanal de leads e interacciones capturadas por S1GNAL Web, IG y Messenger</p>
         </div>
 
@@ -110,11 +110,11 @@
 
           <div class="kpi-card glass-card">
             <div class="kpi-header">
-              <span class="kpi-title font-mono">CITAS DE DIAGNÓSTICO</span>
+              <span class="kpi-title font-mono">CITAS CONFIRMADAS</span>
               <div class="kpi-icon"><i class="fa-solid fa-calendar-check"></i></div>
             </div>
             <div class="kpi-value font-grotesk" id="kpiCitasAgendadas">0</div>
-            <div class="kpi-footer font-mono">Sesiones de 30 min</div>
+            <div class="kpi-footer font-mono">Con fecha y hora acordadas</div>
           </div>
 
           <div class="kpi-card glass-card">
@@ -143,7 +143,7 @@
               Embudo Kanban
             </button>
             <button class="tab-btn font-grotesk" id="tabList" onclick="switchCrmSubView('list')">
-              Lista de Citas
+              Lista de Prospectos
             </button>
           </div>
 
@@ -161,7 +161,15 @@
           <div class="kanban-board">
             <div class="kanban-column glass-card">
               <div class="column-header">
-                <div class="col-title-group"><i class="fa-solid fa-calendar-plus col-gold"></i><h3 class="font-grotesk">Cita Agendada</h3></div>
+                <div class="col-title-group"><i class="fa-solid fa-user-plus col-gold"></i><h3 class="font-grotesk">Nuevo contacto</h3></div>
+                <span class="badge-count font-mono" id="countNuevo">0</span>
+              </div>
+              <div class="column-cards" id="colNuevo"></div>
+            </div>
+
+            <div class="kanban-column glass-card">
+              <div class="column-header">
+                <div class="col-title-group"><i class="fa-solid fa-calendar-check col-gold"></i><h3 class="font-grotesk">Cita Confirmada</h3></div>
                 <span class="badge-count font-mono" id="countCita">0</span>
               </div>
               <div class="column-cards" id="colCita"></div>
@@ -199,7 +207,7 @@
             <table class="custom-table">
               <thead>
                 <tr class="font-mono">
-                  <th>ID Cita</th><th>Cliente / Empresa</th><th>Contacto</th><th>Fecha y Hora</th><th>Canal Origen</th><th>Etapa</th><th>Acciones</th>
+                  <th>ID</th><th>Cliente / Empresa</th><th>Contacto</th><th>Actividad</th><th>Canal Origen</th><th>Etapa</th><th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="tableBody"></tbody>
@@ -309,19 +317,30 @@
         <div class="modal-left">
           <div class="info-group"><label class="font-mono">CORREO ELECTRÓNICO:</label><p id="modalEmail">correo@ejemplo.com</p></div>
           <div class="info-group"><label class="font-mono">WHATSAPP / TELÉFONO:</label><p id="modalPhone">+52 81 0000 0000</p></div>
-          <div class="info-group"><label class="font-mono">FECHA Y HORA DE DIAGNÓSTICO:</label><p id="modalDateTime" class="highlight-text font-mono">2026-07-25 a las 11:00 AM</p></div>
+          <div class="info-group"><label class="font-mono" id="modalDateTimeLabel">PRIMER CONTACTO:</label><p id="modalDateTime" class="highlight-text font-mono">2026-07-25 a las 11:00 AM</p></div>
           <div class="info-group"><label class="font-mono">RESUMEN DE NECESIDAD:</label><div class="need-box" id="modalNeed">Resumen del cliente...</div></div>
           
           <div class="info-group">
             <label class="font-mono">CAMBIAR ETAPA DEL EMBUDO:</label>
-            <select id="stageSelect" class="custom-select font-grotesk" onchange="updateLeadStage()">
-              <option value="Cita Agendada">🗓️ Cita Agendada</option>
+            <select id="stageSelect" class="custom-select font-grotesk" onchange="toggleAppointmentFields()">
+              <option value="Nuevo contacto">👋 Nuevo contacto</option>
+              <option value="Cita Confirmada">🗓️ Cita Confirmada</option>
               <option value="Diagnóstico Realizado">🔬 Diagnóstico Realizado</option>
               <option value="Propuesta Enviada">📄 Propuesta Enviada</option>
               <option value="Cliente Ganado">🤝 Cliente / Ganado</option>
               <option value="Perdido / Archivado">⛔ Archivado / Perdido</option>
             </select>
           </div>
+
+          <div class="info-group appointment-fields hidden" id="appointmentFields">
+            <label class="font-mono">FECHA Y HORA ACORDADAS:</label>
+            <div class="appointment-input-row">
+              <input id="appointmentDateInput" class="custom-stage-input font-grotesk" type="text" placeholder="2026-07-30">
+              <input id="appointmentTimeInput" class="custom-stage-input font-grotesk" type="text" placeholder="10:00 AM">
+            </div>
+          </div>
+
+          <button type="button" class="btn-save-stage font-grotesk" onclick="updateLeadStage()"><i class="fa-solid fa-check"></i> Guardar etapa</button>
 
           <div class="quick-action-box" style="display:flex; gap:10px; margin-top:16px;">
             <a id="modalWaBtn" href="#" target="_blank" class="btn-whatsapp-action font-grotesk"><i class="fa-brands fa-whatsapp"></i> Contactar por WhatsApp</a>

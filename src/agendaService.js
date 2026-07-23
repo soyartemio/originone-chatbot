@@ -56,17 +56,26 @@ async function saveAppointments(appointments) {
  * Agendar una nueva cita de diagnóstico de 30 minutos y notificar por WhatsApp
  */
 async function scheduleAppointment(params) {
+  const confirmedDate = String(params.fecha_propuesta || '').trim();
+  const confirmedTime = String(params.hora_propuesta || '').trim();
+  const isPendingValue = value => !value || value.toLowerCase().includes('por confirmar');
+
+  if (isPendingValue(confirmedDate) || isPendingValue(confirmedTime)) {
+    throw new Error('Para confirmar una cita se requieren una fecha y una hora acordadas');
+  }
+
   const newAppointment = {
     id: 'CITA-' + Date.now().toString(36).toUpperCase(),
     nombre_cliente: params.nombre_cliente || 'No especificado',
     email: params.email || 'No especificado',
     telefono_whatsapp: params.telefono_whatsapp || 'No especificado',
     empresa_o_proyecto: params.empresa_o_proyecto || 'Origin One Prospect',
-    fecha_propuesta: params.fecha_propuesta || 'Por confirmar',
-    hora_propuesta: params.hora_propuesta || 'Por confirmar',
+    fecha_propuesta: confirmedDate,
+    hora_propuesta: confirmedTime,
     resumen_necesidad: params.resumen_necesidad || 'Consulta sobre soluciones de IA / automatización',
     canal_origen: params.canal_origen || 'Chatbot Conversacional',
-    etapa: params.etapa || 'Cita Agendada',
+    etapa: 'Cita Confirmada',
+    etapa_fuente: 'agenda_confirmada',
     notas_internas: [],
     creado_el: new Date().toISOString(),
     estatus: 'Confirmada (Notificada por WhatsApp)'
@@ -121,9 +130,21 @@ async function updateLead(id, updateData) {
     const index = appointments.findIndex(item => item.id === id);
     if (index === -1) return null;
 
+    const manualStageUpdate = Object.prototype.hasOwnProperty.call(updateData, 'etapa');
+    const requestedStage = String(updateData.etapa || '').toLowerCase();
+    const requiresConfirmedSlot = requestedStage.includes('cita') || requestedStage.includes('diag');
+    const resultingDate = String(updateData.fecha_propuesta ?? appointments[index].fecha_propuesta ?? '').trim();
+    const resultingTime = String(updateData.hora_propuesta ?? appointments[index].hora_propuesta ?? '').trim();
+    const isPendingValue = value => !value || value.toLowerCase().includes('por confirmar');
+
+    if (manualStageUpdate && requiresConfirmedSlot && (isPendingValue(resultingDate) || isPendingValue(resultingTime))) {
+      throw new Error('Captura la fecha y la hora acordadas antes de confirmar la cita');
+    }
+
     appointments[index] = {
       ...appointments[index],
       ...updateData,
+      ...(manualStageUpdate ? { etapa_fuente: 'manual' } : {}),
       actualizado_el: new Date().toISOString()
     };
     return appointments[index];
@@ -204,11 +225,14 @@ function appendChatMessageToAppointments(appointments, {
       email: 'Por consultar',
       telefono_whatsapp: isWhatsApp ? normalizedUserId : 'Por consultar',
       empresa_o_proyecto: isTest ? 'Entorno de Pruebas' : 'Interacción en Vivo',
-      fecha_propuesta: now.split('T')[0],
-      hora_propuesta: new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+      fecha_primer_contacto: now.split('T')[0],
+      hora_primer_contacto: new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+      fecha_propuesta: 'Por confirmar',
+      hora_propuesta: 'Por confirmar',
       resumen_necesidad: isTest ? `Interacción de prueba vía ${channelName}` : `Contacto en vivo vía ${channelName}`,
       canal_origen: channelName,
-      etapa: isTest ? 'Prueba / Test' : 'Cita Agendada',
+      etapa: isTest ? 'Prueba / Test' : 'Nuevo contacto',
+      etapa_fuente: 'interaccion_automatica',
       es_prueba: isTest,
       notas_internas: [],
       historial_mensajes: [],
@@ -216,8 +240,26 @@ function appendChatMessageToAppointments(appointments, {
       estatus: 'En Conversación con IA'
     };
     appointments.unshift(lead);
-  } else if (userName && (lead.nombre_cliente?.startsWith('Usuario') || lead.nombre_cliente?.startsWith('🧪') || !lead.nombre_cliente)) {
-    lead.nombre_cliente = userName;
+  } else {
+    const isLegacyAutomaticContact =
+      String(lead.id || '').startsWith('LEAD-') &&
+      lead.etapa === 'Cita Agendada' &&
+      lead.estatus === 'En Conversación con IA' &&
+      lead.etapa_fuente !== 'manual';
+
+    if (isLegacyAutomaticContact) {
+      lead.fecha_primer_contacto = lead.fecha_primer_contacto || lead.fecha_propuesta || now.split('T')[0];
+      lead.hora_primer_contacto = lead.hora_primer_contacto || lead.hora_propuesta || new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+      lead.fecha_propuesta = 'Por confirmar';
+      lead.hora_propuesta = 'Por confirmar';
+      lead.etapa = 'Nuevo contacto';
+      lead.etapa_fuente = 'interaccion_automatica';
+      lead.etapa_migrada_el = new Date().toISOString();
+    }
+
+    if (userName && (lead.nombre_cliente?.startsWith('Usuario') || lead.nombre_cliente?.startsWith('🧪') || !lead.nombre_cliente)) {
+      lead.nombre_cliente = userName;
+    }
   }
 
   if (!lead.historial_mensajes) lead.historial_mensajes = [];

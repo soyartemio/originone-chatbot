@@ -11,7 +11,9 @@ const {
   appendChatMessage,
   getAppointments,
   importChatMessages,
-  saveAppointments
+  saveAppointments,
+  scheduleAppointment,
+  updateLead
 } = require('../src/agendaService');
 
 test.beforeEach(() => saveAppointments([]));
@@ -24,6 +26,9 @@ test('guarda una interacción de Instagram sin convertir su ID en teléfono', as
   assert.equal(lead.external_id, 'ig-user-123456789');
   assert.equal(lead.canal_origen, 'Instagram Direct');
   assert.equal(lead.telefono_whatsapp, 'Por consultar');
+  assert.equal(lead.etapa, 'Nuevo contacto');
+  assert.equal(lead.fecha_propuesta, 'Por confirmar');
+  assert.ok(lead.fecha_primer_contacto);
   assert.equal(lead.historial_mensajes.length, 1);
   assert.equal(lead.historial_mensajes[0].evento_id, 'mid-1');
 });
@@ -74,4 +79,72 @@ test('importa un historial de Instagram en una sola operación, conserva fechas 
   assert.equal(lead.nombre_cliente, 'cliente_nueve');
   assert.equal(lead.historial_mensajes.length, 2);
   assert.equal(lead.historial_mensajes[0].fecha, '2026-07-22T18:00:00.000Z');
+});
+
+test('corrige contactos heredados que se etiquetaron erróneamente como cita', async () => {
+  await saveAppointments([{
+    id: 'LEAD-ig-legacy-1',
+    external_id: 'ig-legacy-1',
+    nombre_cliente: 'Contacto anterior',
+    fecha_propuesta: '2026-07-22',
+    hora_propuesta: '05:30 p.m.',
+    etapa: 'Cita Agendada',
+    estatus: 'En Conversación con IA',
+    historial_mensajes: [{ rol: 'user', texto: 'Hola', evento_id: 'legacy-mid-1', fecha: '2026-07-22T17:30:00.000Z' }]
+  }]);
+
+  await importChatMessages([{
+    userId: 'ig-legacy-1',
+    role: 'user',
+    messageText: 'Hola',
+    channelName: 'Instagram Direct',
+    eventId: 'legacy-mid-1',
+    createdAt: '2026-07-22T17:30:00.000Z'
+  }]);
+
+  const [lead] = await getAppointments();
+  assert.equal(lead.etapa, 'Nuevo contacto');
+  assert.equal(lead.fecha_primer_contacto, '2026-07-22');
+  assert.equal(lead.fecha_propuesta, 'Por confirmar');
+  assert.equal(lead.historial_mensajes.length, 1);
+});
+
+test('una sincronización no revierte una etapa elegida manualmente', async () => {
+  await appendChatMessage('ig-manual-1', 'user', 'Hola', 'Instagram Direct', 'Contacto manual', 'manual-mid-1');
+  await updateLead('LEAD-ig-manual-1', {
+    etapa: 'Cita Confirmada',
+    fecha_propuesta: '2026-07-30',
+    hora_propuesta: '10:00 AM'
+  });
+  await appendChatMessage('ig-manual-1', 'user', 'Seguimos en contacto', 'Instagram Direct', 'Contacto manual', 'manual-mid-2');
+
+  const [lead] = await getAppointments();
+  assert.equal(lead.etapa, 'Cita Confirmada');
+  assert.equal(lead.etapa_fuente, 'manual');
+});
+
+test('impide confirmar manualmente una cita sin fecha ni hora', async () => {
+  await appendChatMessage('ig-no-slot', 'user', 'Hola', 'Instagram Direct', 'Sin horario', 'no-slot-mid-1');
+
+  await assert.rejects(
+    () => updateLead('LEAD-ig-no-slot', { etapa: 'Cita Confirmada' }),
+    /Captura la fecha y la hora acordadas/
+  );
+});
+
+test('sólo crea una cita confirmada cuando hay fecha y hora acordadas', async () => {
+  const result = await scheduleAppointment({
+    nombre_cliente: 'Cita real',
+    email: 'cliente@example.com',
+    telefono_whatsapp: '528100000000',
+    fecha_propuesta: '2026-07-30',
+    hora_propuesta: '10:00 AM'
+  });
+
+  assert.equal(result.appointment.etapa, 'Cita Confirmada');
+  assert.equal(result.appointment.etapa_fuente, 'agenda_confirmada');
+  await assert.rejects(
+    () => scheduleAppointment({ nombre_cliente: 'Sin horario' }),
+    /fecha y una hora acordadas/
+  );
 });
