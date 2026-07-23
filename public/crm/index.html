@@ -44,7 +44,19 @@
         <button class="nav-item" id="navCosts" data-module="costos" onclick="switchModule('costos')">
           <i class="fa-solid fa-coins"></i><span>Costos</span><span class="nav-count" id="navCostCount">0</span>
         </button>
-
+        <p class="nav-label">FINANZAS Y GESTIÓN</p>
+        <button class="nav-item" id="navFacturacion" data-module="facturacion" onclick="switchModule('facturacion')">
+          <i class="fa-solid fa-file-invoice-dollar"></i><span>Facturación</span>
+        </button>
+        <button class="nav-item" id="navContabilidad" data-module="contabilidad" onclick="switchModule('contabilidad')">
+          <i class="fa-solid fa-chart-pie"></i><span>Contabilidad &amp; P&amp;L</span>
+        </button>
+        <button class="nav-item" id="navBancos" data-module="bancos" onclick="switchModule('bancos')">
+          <i class="fa-solid fa-building-columns"></i><span>Bancos &amp; Tesorería</span>
+        </button>
+        <button class="nav-item" id="navSocios" data-module="socios" onclick="switchModule('socios')">
+          <i class="fa-solid fa-shield-halved"></i><span>Socios &amp; Transparencia</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -244,7 +256,7 @@
     <button class="active" data-module="dashboard" onclick="switchModule('dashboard')"><i class="fa-solid fa-table-cells-large"></i><span>Resumen</span></button>
     <button data-module="crm" onclick="switchModule('crm')"><i class="fa-solid fa-users"></i><span>Prospectos</span></button>
     <button data-module="costos" onclick="switchModule('costos')"><i class="fa-solid fa-coins"></i><span>Costos</span></button>
-    <button onclick="installApp()"><i class="fa-solid fa-download"></i><span>Guardar app</span></button>
+    <button type="button" onclick="toggleSidebar(true)"><i class="fa-solid fa-bars"></i><span>Más</span></button>
   </nav>
 
   <div class="modal-backdrop hidden" id="leadModal" role="dialog" aria-modal="true" aria-labelledby="modalName">

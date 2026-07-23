@@ -23,7 +23,6 @@ test('el rediseño incluye resumen operativo y navegación funcional', () => {
   assert.match(crmHtml, /id="activeCrmFilter"/);
   assert.match(crmApp, /window\.addEventListener\('popstate', restoreNavigationFromUrl\)/);
   assert.match(crmApp, /window\.history\[replace \? 'replaceState' : 'pushState'\]/);
-  assert.doesNotMatch(crmHtml, /data-module="facturacion"/);
 });
 
 test('los flujos principales exponen fuente, responsable, próximo paso y notas', () => {
@@ -43,6 +42,17 @@ test('costos multiproyecto tiene fuente, filtros y formulario operativo', () => 
   assert.match(crmHtml, /id="costProjectsInput"/);
   assert.match(crmApp, /async function loadCostsModule/);
   assert.match(crmApp, /async function submitCostForm/);
+});
+
+test('conserva navegación a facturación, contabilidad, bancos y socios', () => {
+  for (const moduleName of ['facturacion', 'contabilidad', 'bancos', 'socios']) {
+    assert.match(crmHtml, new RegExp(`data-module="${moduleName}"`));
+    assert.match(crmApp, new RegExp(`currentModule === '${moduleName}'`));
+  }
+  assert.match(crmApp, /moduleFacturacionSection/);
+  assert.match(crmApp, /moduleContabilidadSection/);
+  assert.match(crmApp, /moduleBancosSection/);
+  assert.match(crmApp, /moduleSociosSection/);
 });
 
 test('Origin One OS cumple la configuración base para guardarse como app', () => {

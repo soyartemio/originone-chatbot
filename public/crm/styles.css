@@ -62,7 +62,7 @@ a { color: inherit; }
 .brand-name span { color: var(--gold); }
 .brand-tagline { overflow: hidden; color: var(--faint); font-family: var(--mono); font-size: 6px; letter-spacing: 0.17em; white-space: nowrap; }
 .sidebar-close { display: none !important; margin-left: auto; }
-.sidebar-nav { display: flex; flex: 1; flex-direction: column; gap: 5px; padding-top: 34px; }
+.sidebar-nav { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 5px; overflow-y: auto; padding-top: 34px; }
 .nav-label { margin: 18px 12px 7px; color: var(--faint); font-family: var(--mono); font-size: 9px; letter-spacing: 0.17em; }
 .nav-label:first-child { margin-top: 0; }
 .nav-item {

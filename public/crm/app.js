@@ -1,4 +1,4 @@
-const allowedModules = new Set(['dashboard', 'crm', 'costos']);
+const allowedModules = new Set(['dashboard', 'crm', 'costos', 'facturacion', 'contabilidad', 'bancos', 'socios']);
 const initialUrlParams = new URLSearchParams(window.location.search);
 const requestedModule = initialUrlParams.get('module');
 let currentModule = allowedModules.has(requestedModule) ? requestedModule : 'dashboard';
@@ -228,6 +228,8 @@ function updateNavigationUrl({ replace = false, leadId = currentActiveLeadId } =
   } else if (currentModule === 'costos') {
     url.searchParams.set('module', 'costos');
     if (currentCostFilter !== 'todos') url.searchParams.set('costFilter', currentCostFilter);
+  } else if (currentModule !== 'dashboard') {
+    url.searchParams.set('module', currentModule);
   }
   window.history[replace ? 'replaceState' : 'pushState']({}, '', url);
 }
@@ -305,7 +307,11 @@ async function switchModule(moduleName, options = {}) {
   const sections = {
     dashboard: document.getElementById('moduleDashboardSection'),
     crm: document.getElementById('moduleCrmSection'),
-    costos: document.getElementById('moduleCostsSection')
+    costos: document.getElementById('moduleCostsSection'),
+    facturacion: document.getElementById('moduleFacturacionSection'),
+    contabilidad: document.getElementById('moduleContabilidadSection'),
+    bancos: document.getElementById('moduleBancosSection'),
+    socios: document.getElementById('moduleSociosSection')
   };
 
   Object.keys(sections).forEach(key => {
@@ -319,7 +325,11 @@ async function switchModule(moduleName, options = {}) {
   const titles = {
     dashboard: { eyebrow: 'CENTRO DE CONTROL', title: 'Resumen operativo', sub: 'Lo importante de Origin One en un solo lugar.' },
     crm: { eyebrow: 'RELACIONES COMERCIALES', title: 'Prospectos y seguimiento', sub: 'Contactos, próximos pasos y citas confirmadas.' },
-    costos: { eyebrow: 'CONTROL OPERATIVO', title: 'Costos multiproyecto', sub: 'Planes, proveedores y renovaciones con visibilidad compartida.' }
+    costos: { eyebrow: 'CONTROL OPERATIVO', title: 'Costos multiproyecto', sub: 'Planes, proveedores y renovaciones con visibilidad compartida.' },
+    facturacion: { eyebrow: 'INGRESOS Y COBRANZA', title: 'Facturación y cotizaciones', sub: 'Documentos comerciales emitidos y su estado.' },
+    contabilidad: { eyebrow: 'RESULTADOS', title: 'Contabilidad y P&L', sub: 'Ingresos, egresos y utilidad del periodo.' },
+    bancos: { eyebrow: 'TESORERÍA', title: 'Bancos y disponibilidad', sub: 'Saldos registrados en cuentas corporativas.' },
+    socios: { eyebrow: 'TRANSPARENCIA', title: 'Socios y participación', sub: 'Participación y distribución de utilidades.' }
   };
 
   if (titles[moduleName]) {
@@ -329,7 +339,7 @@ async function switchModule(moduleName, options = {}) {
   }
 
   document.getElementById('globalSearchBox').classList.toggle('hidden', moduleName !== 'crm');
-  document.getElementById('globalSyncButton').classList.toggle('hidden', moduleName === 'costos');
+  document.getElementById('globalSyncButton').classList.toggle('hidden', !['dashboard', 'crm'].includes(moduleName));
   document.getElementById('backToDashboardButton').classList.toggle('hidden', moduleName === 'dashboard');
 
   if (options.updateUrl !== false) {
@@ -352,6 +362,10 @@ async function loadModuleData() {
       await loadDashboardModule();
     } else if (currentModule === 'crm') await loadCrmModule();
     else if (currentModule === 'costos') await loadCostsModule();
+    else if (currentModule === 'facturacion') await loadFacturacionModule();
+    else if (currentModule === 'contabilidad') await loadContabilidadModule();
+    else if (currentModule === 'bancos') await loadBancosModule();
+    else if (currentModule === 'socios') await loadSociosModule();
   } catch (error) {
     console.error('Error cargando módulo:', error);
     showToast(`No fue posible cargar esta sección: ${error.message}`);
