@@ -187,9 +187,9 @@ async function openCrmSource(stageKey = null) {
   updateNavigationUrl();
 }
 
-async function openCrmAttention() {
+async function openCrmAttention(mode = 'today') {
   currentFilterStage = null;
-  currentAttentionFilter = 'today';
+  currentAttentionFilter = mode;
   currentFilterChannel = 'todos';
   currentCrmView = 'list';
   await switchModule('crm', { updateUrl: false, preserveFilters: true });
@@ -514,7 +514,9 @@ function getFilteredLeads() {
       );
     }
     const matchesStage = !currentFilterStage || getStageKey(lead) === currentFilterStage;
-    const matchesAttention = currentAttentionFilter !== 'today' || isActionDueToday(lead);
+    let matchesAttention = true;
+    if (currentAttentionFilter === 'today') matchesAttention = isActionDueToday(lead);
+    else if (currentAttentionFilter === 'priority') matchesAttention = !['ganado', 'archivado'].includes(getStageKey(lead));
     return matchesChannel && matchesSearch && matchesStage && matchesAttention;
   });
 }
@@ -583,6 +585,7 @@ function updateCrmFilterUi() {
   };
   let filterLabel = currentFilterStage ? stageLabels[currentFilterStage] : '';
   if (currentAttentionFilter === 'today') filterLabel = 'Acciones vencidas o para hoy';
+  if (currentAttentionFilter === 'priority') filterLabel = 'Prioridades comerciales activas';
   if (currentFilterChannel !== 'todos') filterLabel += `${filterLabel ? ' · ' : ''}Canal: ${currentFilterChannel}`;
   banner.classList.toggle('hidden', !filterLabel);
   label.innerText = filterLabel || 'Filtro activo';
