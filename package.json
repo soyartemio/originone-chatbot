@@ -8,7 +8,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "test:bot": "node test/testChatbot.js",
-    "test:crm": "node --test test/testCrmInteractionStorage.js test/testMetaCrmCapture.js test/testR2Storage.js test/testAuth.js test/testStorageGateway.js test/testInstagramSync.js",
+    "test:crm": "node --test test/testCrmAssetPaths.js test/testCrmInteractionStorage.js test/testMetaCrmCapture.js test/testR2Storage.js test/testAuth.js test/testStorageGateway.js test/testInstagramSync.js",
     "auth:setup-links": "node scripts/generateAuthSetupLinks.js"
   },
   "keywords": [
