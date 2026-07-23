@@ -1,4 +1,4 @@
-const allowedModules = new Set(['dashboard', 'crm']);
+const allowedModules = new Set(['dashboard', 'crm', 'costos']);
 const initialUrlParams = new URLSearchParams(window.location.search);
 const requestedModule = initialUrlParams.get('module');
 let currentModule = allowedModules.has(requestedModule) ? requestedModule : 'dashboard';
@@ -7,6 +7,9 @@ let currentFilterChannel = initialUrlParams.get('channel') || 'todos';
 let currentFilterStage = initialUrlParams.get('stage');
 let currentAttentionFilter = initialUrlParams.get('attention');
 let currentCrmView = initialUrlParams.get('view') === 'list' ? 'list' : 'kanban';
+let allCosts = [];
+let currentCostFilter = initialUrlParams.get('costFilter') || 'todos';
+let currentCostEditId = null;
 let currentActiveLeadId = null;
 let currentUserDisplayName = 'Usuario';
 let deferredInstallPrompt = null;
@@ -53,6 +56,7 @@ function initializeShell() {
   });
   document.getElementById('invoiceForm').addEventListener('submit', submitInvoiceForm);
   document.getElementById('transactionForm').addEventListener('submit', submitTransactionForm);
+  document.getElementById('costForm').addEventListener('submit', submitCostForm);
 
   window.addEventListener('popstate', restoreNavigationFromUrl);
 }
@@ -131,6 +135,8 @@ function closeRecordModal() {
   document.getElementById('recordModal').classList.add('hidden');
   document.getElementById('invoiceForm').classList.add('hidden');
   document.getElementById('transactionForm').classList.add('hidden');
+  document.getElementById('costForm').classList.add('hidden');
+  currentCostEditId = null;
 }
 
 function toggleSidebar(open) {
@@ -211,7 +217,7 @@ async function openChannelSource(channel) {
 
 function updateNavigationUrl({ replace = false, leadId = currentActiveLeadId } = {}) {
   const url = new URL(window.location.href);
-  ['module', 'stage', 'attention', 'channel', 'view', 'lead'].forEach(key => url.searchParams.delete(key));
+  ['module', 'stage', 'attention', 'channel', 'view', 'lead', 'costFilter'].forEach(key => url.searchParams.delete(key));
   if (currentModule === 'crm') {
     url.searchParams.set('module', 'crm');
     if (currentFilterStage) url.searchParams.set('stage', currentFilterStage);
@@ -219,6 +225,9 @@ function updateNavigationUrl({ replace = false, leadId = currentActiveLeadId } =
     if (currentFilterChannel !== 'todos') url.searchParams.set('channel', currentFilterChannel);
     if (currentCrmView === 'list') url.searchParams.set('view', 'list');
     if (leadId) url.searchParams.set('lead', leadId);
+  } else if (currentModule === 'costos') {
+    url.searchParams.set('module', 'costos');
+    if (currentCostFilter !== 'todos') url.searchParams.set('costFilter', currentCostFilter);
   }
   window.history[replace ? 'replaceState' : 'pushState']({}, '', url);
 }
@@ -231,7 +240,9 @@ async function restoreNavigationFromUrl() {
   currentAttentionFilter = params.get('attention');
   currentFilterChannel = params.get('channel') || 'todos';
   currentCrmView = params.get('view') === 'list' ? 'list' : 'kanban';
+  currentCostFilter = params.get('costFilter') || 'todos';
   hideLeadModal();
+  closeRecordModal();
   await switchModule(moduleName, { updateUrl: false, preserveFilters: true });
   const leadId = params.get('lead');
   if (leadId) openModal(leadId, { updateUrl: false });
@@ -283,6 +294,7 @@ async function switchModule(moduleName, options = {}) {
     currentFilterChannel = 'todos';
     currentCrmView = 'kanban';
   }
+  if (moduleName === 'costos' && !options.preserveFilters) currentCostFilter = 'todos';
   if (moduleName === 'dashboard') hideLeadModal();
   currentModule = moduleName;
   document.querySelectorAll('[data-module]').forEach(button => {
@@ -292,7 +304,8 @@ async function switchModule(moduleName, options = {}) {
 
   const sections = {
     dashboard: document.getElementById('moduleDashboardSection'),
-    crm: document.getElementById('moduleCrmSection')
+    crm: document.getElementById('moduleCrmSection'),
+    costos: document.getElementById('moduleCostsSection')
   };
 
   Object.keys(sections).forEach(key => {
@@ -305,7 +318,8 @@ async function switchModule(moduleName, options = {}) {
 
   const titles = {
     dashboard: { eyebrow: 'CENTRO DE CONTROL', title: 'Resumen operativo', sub: 'Lo importante de Origin One en un solo lugar.' },
-    crm: { eyebrow: 'RELACIONES COMERCIALES', title: 'Prospectos y seguimiento', sub: 'Contactos, próximos pasos y citas confirmadas.' }
+    crm: { eyebrow: 'RELACIONES COMERCIALES', title: 'Prospectos y seguimiento', sub: 'Contactos, próximos pasos y citas confirmadas.' },
+    costos: { eyebrow: 'CONTROL OPERATIVO', title: 'Costos multiproyecto', sub: 'Planes, proveedores y renovaciones con visibilidad compartida.' }
   };
 
   if (titles[moduleName]) {
@@ -315,6 +329,7 @@ async function switchModule(moduleName, options = {}) {
   }
 
   document.getElementById('globalSearchBox').classList.toggle('hidden', moduleName !== 'crm');
+  document.getElementById('globalSyncButton').classList.toggle('hidden', moduleName === 'costos');
   document.getElementById('backToDashboardButton').classList.toggle('hidden', moduleName === 'dashboard');
 
   if (options.updateUrl !== false) {
@@ -336,6 +351,7 @@ async function loadModuleData() {
     if (currentModule === 'dashboard') {
       await loadDashboardModule();
     } else if (currentModule === 'crm') await loadCrmModule();
+    else if (currentModule === 'costos') await loadCostsModule();
   } catch (error) {
     console.error('Error cargando módulo:', error);
     showToast(`No fue posible cargar esta sección: ${error.message}`);
@@ -1004,6 +1020,183 @@ function filterChannel(channel, btn, options = {}) {
 
 function handleSearch() {
   if (currentModule === 'crm') { renderBoard(); renderTable(); }
+}
+
+/* ==================== COSTOS MULTIPROYECTO ==================== */
+async function loadCostsModule() {
+  const response = await fetch('/api/costos', { credentials: 'same-origin' });
+  const data = await response.json();
+  if (!response.ok || !data.success) throw new Error(data.error || 'No fue posible cargar los costos');
+  allCosts = data.costs || [];
+  setText('costMonthlyMxn', `${formatCurrency(data.summary?.mensualMxn)} MXN`);
+  setText('costMonthlyUsd', `${formatCurrency(data.summary?.mensualUsd)} USD`);
+  setText('costFreeCount', data.summary?.gratuitos || 0);
+  setText('costRenewalsCount', data.summary?.renovaciones30 || 0);
+  setText('costPendingCount', data.summary?.porCapturar || 0);
+  setText('navCostCount', data.summary?.totalServicios || 0);
+  document.getElementById('costCaptureAlert').classList.toggle('hidden', !(data.summary?.porCapturar > 0));
+  updateCostFilterUi();
+  renderCostTable();
+}
+
+function isRenewalWithinThirtyDays(cost) {
+  if (!cost.proxima_renovacion) return false;
+  const renewal = new Date(`${cost.proxima_renovacion}T23:59:59`);
+  const now = new Date();
+  const limit = new Date(now);
+  limit.setDate(limit.getDate() + 30);
+  return renewal >= now && renewal <= limit;
+}
+
+function getFilteredCosts() {
+  return allCosts.filter(cost => {
+    if (currentCostFilter === 'activos') return cost.estado === 'activo';
+    if (currentCostFilter === 'gratuitos') return cost.estado === 'gratuito';
+    if (currentCostFilter === 'por_capturar') return cost.estado === 'por_capturar';
+    if (currentCostFilter === 'archivados') return cost.estado === 'archivado';
+    if (currentCostFilter === 'renovaciones') return isRenewalWithinThirtyDays(cost);
+    return cost.estado !== 'archivado';
+  });
+}
+
+function updateCostFilterUi() {
+  const labels = {
+    todos: 'Todos los costos',
+    activos: 'Servicios con costo',
+    gratuitos: 'Planes gratuitos',
+    por_capturar: 'Datos por capturar',
+    archivados: 'Costos archivados',
+    renovaciones: 'Renovaciones en 30 días'
+  };
+  setText('costFilterLabel', labels[currentCostFilter] || labels.todos);
+  document.querySelectorAll('[data-cost-filter]').forEach(button => {
+    button.classList.toggle('active', button.dataset.costFilter === currentCostFilter);
+  });
+}
+
+async function openCostSource(filter = 'todos') {
+  currentCostFilter = filter;
+  await switchModule('costos', { updateUrl: false, preserveFilters: true });
+  updateCostFilterUi();
+  renderCostTable();
+  updateNavigationUrl();
+}
+
+function filterCosts(filter, button, options = {}) {
+  currentCostFilter = filter;
+  document.querySelectorAll('[data-cost-filter]').forEach(item => item.classList.remove('active'));
+  button?.classList.add('active');
+  updateCostFilterUi();
+  renderCostTable();
+  if (options.updateUrl !== false) updateNavigationUrl({ replace: true });
+}
+
+function costStatusLabel(status) {
+  return ({
+    gratuito: 'Gratuito',
+    activo: 'Activo',
+    por_capturar: 'Por capturar',
+    pausado: 'Pausado',
+    archivado: 'Archivado'
+  })[status] || status;
+}
+
+function renderCostTable() {
+  const body = document.getElementById('costTableBody');
+  body.innerHTML = '';
+  const costs = getFilteredCosts();
+  if (!costs.length) {
+    body.innerHTML = '<tr><td colspan="8" class="table-empty">No hay costos en este filtro.</td></tr>';
+    return;
+  }
+
+  costs.forEach(cost => {
+    const row = document.createElement('tr');
+    const amount = cost.estado === 'gratuito'
+      ? 'Sin costo'
+      : cost.estado === 'por_capturar'
+        ? 'Por capturar'
+        : `${formatCurrency(cost.monto)} ${escapeHtml(cost.moneda)}`;
+    const renewal = cost.proxima_renovacion
+      ? new Date(`${cost.proxima_renovacion}T12:00:00`).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
+      : 'Sin fecha';
+    row.innerHTML = `
+      <td><strong>${escapeHtml(cost.servicio)}</strong><small>${escapeHtml(cost.proveedor)}</small></td>
+      <td><span class="project-list">${(cost.proyectos || []).map(project => `<i>${escapeHtml(project)}</i>`).join('')}</span></td>
+      <td><strong>${escapeHtml(cost.plan)}</strong><small>${escapeHtml(cost.categoria)}</small></td>
+      <td>${escapeHtml(cost.periodicidad)}</td>
+      <td><strong class="${cost.estado === 'gratuito' ? 'cost-free' : ''}">${amount}</strong></td>
+      <td>${escapeHtml(renewal)}</td>
+      <td><span class="cost-status status-${escapeHtml(cost.estado)}">${escapeHtml(costStatusLabel(cost.estado))}</span></td>
+      <td><button type="button" class="glass-btn"><i class="fa-solid fa-pen"></i> Editar</button></td>
+    `;
+    row.querySelector('button').addEventListener('click', () => openCostModal(cost.id));
+    body.appendChild(row);
+  });
+}
+
+function openCostModal(id = null) {
+  currentCostEditId = id;
+  const cost = id ? allCosts.find(item => item.id === id) : null;
+  document.getElementById('invoiceForm').classList.add('hidden');
+  document.getElementById('transactionForm').classList.add('hidden');
+  const form = document.getElementById('costForm');
+  form.reset();
+  form.classList.remove('hidden');
+  setText('recordModalKicker', cost ? 'EDITAR COSTO' : 'NUEVO COSTO');
+  setText('recordModalTitle', cost ? cost.servicio : 'Añadir costo operativo');
+  setText('recordModalDescription', 'Asigna el servicio a uno o varios proyectos.');
+
+  document.getElementById('costServiceInput').value = cost?.servicio || '';
+  document.getElementById('costProviderInput').value = cost?.proveedor || '';
+  document.getElementById('costProjectsInput').value = (cost?.proyectos || []).join(', ');
+  document.getElementById('costCategoryInput').value = cost?.categoria || 'Cloud';
+  document.getElementById('costPlanInput').value = cost?.plan || 'Free';
+  document.getElementById('costAmountInput').value = cost?.monto ?? 0;
+  document.getElementById('costCurrencyInput').value = cost?.moneda || 'MXN';
+  document.getElementById('costPeriodInput').value = cost?.periodicidad || 'mensual';
+  document.getElementById('costStatusInput').value = cost?.estado || 'gratuito';
+  document.getElementById('costRenewalInput').value = cost?.proxima_renovacion || '';
+  document.getElementById('costNotesInput').value = cost?.notas || '';
+  document.getElementById('recordModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('costServiceInput').focus(), 50);
+}
+
+async function submitCostForm(event) {
+  event.preventDefault();
+  const button = document.getElementById('saveCostButton');
+  const payload = {
+    servicio: document.getElementById('costServiceInput').value.trim(),
+    proveedor: document.getElementById('costProviderInput').value.trim(),
+    proyectos: document.getElementById('costProjectsInput').value.split(',').map(value => value.trim()).filter(Boolean),
+    categoria: document.getElementById('costCategoryInput').value,
+    plan: document.getElementById('costPlanInput').value.trim(),
+    monto: Number(document.getElementById('costAmountInput').value || 0),
+    moneda: document.getElementById('costCurrencyInput').value,
+    periodicidad: document.getElementById('costPeriodInput').value,
+    estado: document.getElementById('costStatusInput').value,
+    proxima_renovacion: document.getElementById('costRenewalInput').value || null,
+    notas: document.getElementById('costNotesInput').value.trim()
+  };
+
+  button.disabled = true;
+  try {
+    const response = await fetch(currentCostEditId ? `/api/costos/${encodeURIComponent(currentCostEditId)}` : '/api/costos', {
+      method: currentCostEditId ? 'PATCH' : 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'No fue posible guardar el costo');
+    closeRecordModal();
+    await loadCostsModule();
+    showToast('Costo guardado en R2.');
+  } catch (error) {
+    showToast(`No se guardó: ${error.message}`);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 /* ==================== MÓDULO 2: FACTURACIÓN ==================== */

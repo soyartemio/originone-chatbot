@@ -37,10 +37,13 @@ test('firma lecturas y escrituras sin enviar la clave fuente', async () => {
     const read = await readGatewayObject('appointments');
     assert.deepEqual(read.data, []);
     await writeGatewayObject('appointments', [{ id: 'lead-1' }], '"etag-test"');
+    await readGatewayObject('costs');
+    await writeGatewayObject('costs', [{ id: 'cost-1' }], '"etag-test"');
 
-    assert.equal(requests.length, 2);
+    assert.equal(requests.length, 4);
     assert.equal(requests[0].url, 'https://storage.example.test/v1/appointments');
     assert.equal(requests[1].options.headers['If-Match'], '"etag-test"');
+    assert.equal(requests[2].url, 'https://storage.example.test/v1/costs');
     assert.equal(requests[1].options.headers['Content-Length'], Buffer.byteLength(requests[1].options.body).toString());
     assert.equal(JSON.stringify(requests).includes(process.env.CRM_GATEWAY_SOURCE_SECRET), false);
 
@@ -48,10 +51,30 @@ test('firma lecturas y escrituras sin enviar la clave fuente', async () => {
       const headers = request.options.headers;
       const body = request.options.body || '';
       const contentHash = crypto.createHash('sha256').update(body).digest('hex');
-      const canonical = `${request.options.method}\n/v1/appointments\n${headers['X-O1-Timestamp']}\n${contentHash}`;
+      const pathname = new URL(request.url).pathname;
+      const canonical = `${request.options.method}\n${pathname}\n${headers['X-O1-Timestamp']}\n${contentHash}`;
       const expected = crypto.createHmac('sha256', Buffer.from(deriveGatewaySecret(), 'hex')).update(canonical).digest('hex');
       assert.equal(headers['X-O1-Signature'], expected);
     }
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('sólo interpreta un 404 de lectura como objeto todavía inexistente', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => new Response('{"error":"not found"}', {
+    status: 404,
+    headers: { 'Content-Type': 'application/json' }
+  });
+
+  try {
+    const read = await readGatewayObject('costs');
+    assert.equal(read.missing, true);
+    await assert.rejects(
+      () => writeGatewayObject('costs', [{ id: 'cost-1' }], null),
+      /Gateway R2 respondió 404/
+    );
   } finally {
     global.fetch = originalFetch;
   }

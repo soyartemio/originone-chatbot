@@ -36,6 +36,15 @@ test('los flujos principales exponen fuente, responsable, próximo paso y notas'
   assert.match(crmApp, /async function saveNextAction/);
 });
 
+test('costos multiproyecto tiene fuente, filtros y formulario operativo', () => {
+  assert.match(crmHtml, /id="moduleCostsSection"/);
+  assert.match(crmHtml, /data-module="costos"/);
+  assert.match(crmHtml, /Fuente: R2 privado \/ Costos/);
+  assert.match(crmHtml, /id="costProjectsInput"/);
+  assert.match(crmApp, /async function loadCostsModule/);
+  assert.match(crmApp, /async function submitCostForm/);
+});
+
 test('Origin One OS cumple la configuración base para guardarse como app', () => {
   assert.match(crmHtml, /rel="manifest" href="\/crm\/manifest\.webmanifest" crossorigin="use-credentials"/);
   assert.match(crmHtml, /id="installAppButton"/);

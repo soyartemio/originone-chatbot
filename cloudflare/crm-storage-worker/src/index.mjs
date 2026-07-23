@@ -4,7 +4,8 @@ const encoder = new TextEncoder();
 
 const OBJECTS = Object.freeze({
   '/v1/appointments': { key: 'crm/appointments.json', shape: 'appointments' },
-  '/v1/auth': { key: 'crm/auth.json', shape: 'auth' }
+  '/v1/auth': { key: 'crm/auth.json', shape: 'auth' },
+  '/v1/costs': { key: 'crm/costs.json', shape: 'costs' }
 });
 
 function bytesToHex(bytes) {
@@ -63,6 +64,14 @@ async function verifyRequest(request, env, pathname) {
 
 function validatePayload(payload, shape) {
   if (shape === 'appointments') return Array.isArray(payload);
+  if (shape === 'costs') {
+    return Array.isArray(payload) && payload.length <= 2000 && payload.every(cost => (
+      cost && typeof cost === 'object' && !Array.isArray(cost) &&
+      typeof cost.id === 'string' && cost.id.length <= 100 &&
+      typeof cost.servicio === 'string' && cost.servicio.length <= 200 &&
+      Array.isArray(cost.proyectos) && cost.proyectos.length <= 20
+    ));
+  }
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
   const usernames = Object.keys(payload.users || {}).sort();
   return payload.version === 1 && usernames.join(',') === 'artemio,edgar';

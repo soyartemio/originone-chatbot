@@ -94,6 +94,7 @@ app.use('/crm', requirePageAuth, express.static(crmAssetsPath, crmStaticOptions)
 
 app.use([
   '/api/crm',
+  '/api/costos',
   '/api/facturacion',
   '/api/contabilidad',
   '/api/bancos',
@@ -104,6 +105,7 @@ const facturacionModule = require('./modules/facturacion');
 const contabilidadModule = require('./modules/contabilidad');
 const bancosModule = require('./modules/bancos');
 const sociosModule = require('./modules/socios');
+const costRoutes = require('./costRoutes');
 
 // Ruta principal de salud
 app.get('/', (req, res) => {
@@ -113,7 +115,7 @@ app.get('/', (req, res) => {
     statement: 'Deja de usar la IA como un juguete. Empieza a usarla estratégicamente.',
     servicio: 'Origin One OS — Plataforma ERP Modular Empresarial',
 
-    modulos: ['CRM & Citas', 'Facturación & Cotizaciones', 'Contabilidad & P&L', 'Bancos & Tesorería', 'Transparencia de Socios'],
+    modulos: ['CRM & Citas', 'Costos Operativos', 'Facturación & Cotizaciones', 'Contabilidad & P&L', 'Bancos & Tesorería', 'Transparencia de Socios'],
     canales: ['Facebook Messenger', 'Instagram Direct', 'WhatsApp Cloud API', 'S1GNAL Web Chat'],
     almacenamiento_crm: isR2Configured() ? 'cloudflare_r2_privado' : 'archivo_local_no_persistente',
     notificacion_whatsapp: process.env.ADMIN_WHATSAPP_NUMBERS || '528110653947, 528120989813',
@@ -124,6 +126,7 @@ app.get('/', (req, res) => {
 
 // Montar endpoints de Módulos ERP y Webhooks
 app.use('/', crmRoutes);
+app.use('/', costRoutes);
 app.use('/', facturacionModule);
 app.use('/', contabilidadModule);
 app.use('/', bancosModule);

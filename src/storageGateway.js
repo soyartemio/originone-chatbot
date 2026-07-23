@@ -3,7 +3,8 @@ const crypto = require('crypto');
 const DEFAULT_GATEWAY_URL = 'https://originone-crm-storage.4nwq6cqmyj.workers.dev';
 const ROUTES = {
   appointments: '/v1/appointments',
-  auth: '/v1/auth'
+  auth: '/v1/auth',
+  costs: '/v1/costs'
 };
 
 function getSourceSecret() {
@@ -67,7 +68,7 @@ async function requestGateway(objectName, method, options = {}) {
     ...(method === 'PUT' ? { body } : {}),
     signal: AbortSignal.timeout(15000)
   });
-  if (response.status === 404) return { missing: true, etag: null, data: null };
+  if (method === 'GET' && response.status === 404) return { missing: true, etag: null, data: null };
   if (response.status === 412) {
     const error = new Error('Precondition failed');
     error.name = 'PreconditionFailed';

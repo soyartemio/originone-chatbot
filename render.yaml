@@ -30,6 +30,8 @@ services:
         value: crm/appointments.json
       - key: R2_AUTH_OBJECT_KEY
         value: crm/auth.json
+      - key: R2_COSTS_OBJECT_KEY
+        value: crm/costs.json
       - key: AUTH_SESSION_SECRET
         generateValue: true
       - key: AUTH_SETUP_SECRET

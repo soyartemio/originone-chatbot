@@ -41,6 +41,9 @@
         <button class="nav-item" id="navCrm" data-module="crm" onclick="switchModule('crm')">
           <i class="fa-solid fa-users"></i><span>Prospectos</span><span class="nav-count" id="navLeadCount">0</span>
         </button>
+        <button class="nav-item" id="navCosts" data-module="costos" onclick="switchModule('costos')">
+          <i class="fa-solid fa-coins"></i><span>Costos</span><span class="nav-count" id="navCostCount">0</span>
+        </button>
 
       </nav>
 
@@ -77,7 +80,7 @@
             <input type="search" id="searchInput" placeholder="Buscar prospecto..." oninput="handleSearch()" autocomplete="off">
             <kbd>⌘ K</kbd>
           </label>
-          <button class="button secondary sync-button" type="button" onclick="syncInstagramInBackground(true)">
+          <button class="button secondary sync-button" id="globalSyncButton" type="button" onclick="syncInstagramInBackground(true)">
             <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i><span>Sincronizar</span>
           </button>
           <button class="button primary top-install-button" type="button" onclick="installApp()">
@@ -166,6 +169,40 @@
           </div>
         </section>
 
+        <section id="moduleCostsSection" class="module-section hidden">
+          <div class="section-heading cost-section-heading">
+            <div><p class="section-kicker">VISIBILIDAD OPERATIVA</p><h2>Costos multiproyecto</h2><p>Servicios, planes y renovaciones compartidos entre proyectos.</p></div>
+            <button class="button primary" type="button" onclick="openCostModal()"><i class="fa-solid fa-plus"></i> Añadir costo</button>
+          </div>
+
+          <div class="metric-grid cost-metrics">
+            <button class="metric-card metric-link" type="button" onclick="openCostSource('activos')"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-peso-sign"></i></span><small>MENSUAL EQUIVALENTE</small></div><strong id="costMonthlyMxn">$0.00</strong><p>MXN comprometidos</p></button>
+            <button class="metric-card metric-link" type="button" onclick="openCostSource('activos')"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-dollar-sign"></i></span><small>MENSUAL EQUIVALENTE</small></div><strong id="costMonthlyUsd">$0.00</strong><p>USD comprometidos</p></button>
+            <button class="metric-card metric-link" type="button" onclick="openCostSource('gratuitos')"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-gift"></i></span><small>PLANES GRATUITOS</small></div><strong id="costFreeCount">0</strong><p>Sin cargo actualmente</p></button>
+            <button class="metric-card metric-link" type="button" onclick="openCostSource('renovaciones')"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-calendar-day"></i></span><small>RENOVACIONES</small></div><strong id="costRenewalsCount">0</strong><p>En los próximos 30 días</p></button>
+          </div>
+
+          <div class="cost-capture-alert hidden" id="costCaptureAlert">
+            <span><i class="fa-solid fa-circle-exclamation"></i> <strong id="costPendingCount">0</strong> servicios necesitan monto o fecha real.</span>
+            <button type="button" onclick="openCostSource('por_capturar')">Revisar pendientes <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+
+          <div class="cost-toolbar panel">
+            <div class="cost-filter-copy"><span id="costFilterLabel">Todos los costos</span><small id="costSourceLabel">Fuente: R2 privado / Costos</small></div>
+            <div class="cost-filters" aria-label="Filtrar costos">
+              <button class="chip-filter active" data-cost-filter="todos" type="button" onclick="filterCosts('todos', this)">Todos</button>
+              <button class="chip-filter" data-cost-filter="activos" type="button" onclick="filterCosts('activos', this)">Con costo</button>
+              <button class="chip-filter" data-cost-filter="gratuitos" type="button" onclick="filterCosts('gratuitos', this)">Gratis</button>
+              <button class="chip-filter" data-cost-filter="por_capturar" type="button" onclick="filterCosts('por_capturar', this)">Por capturar</button>
+              <button class="chip-filter" data-cost-filter="archivados" type="button" onclick="filterCosts('archivados', this)">Archivados</button>
+            </div>
+          </div>
+
+          <div class="table-card panel cost-table-card">
+            <table class="custom-table"><thead><tr><th>SERVICIO / PROVEEDOR</th><th>PROYECTOS</th><th>PLAN</th><th>PERIODICIDAD</th><th>COSTO</th><th>PRÓXIMA RENOVACIÓN</th><th>ESTADO</th><th></th></tr></thead><tbody id="costTableBody"></tbody></table>
+          </div>
+        </section>
+
         <section id="moduleFacturacionSection" class="module-section hidden">
           <div class="section-heading"><div><p class="section-kicker">INGRESOS Y COBRANZA</p><h2>Facturas y cotizaciones</h2><p>Control sencillo de documentos comerciales emitidos.</p></div><button class="button primary" type="button" onclick="openNewInvoiceModal()"><i class="fa-solid fa-plus"></i> Nueva factura</button></div>
           <div class="table-card panel"><table class="custom-table"><thead><tr><th>FOLIO</th><th>CLIENTE / EMPRESA</th><th>CONCEPTO</th><th>SUBTOTAL</th><th>IVA</th><th>TOTAL</th><th>ESTADO</th><th>EMISIÓN</th></tr></thead><tbody id="facturacionTableBody"></tbody></table></div>
@@ -206,7 +243,7 @@
   <nav class="mobile-nav" aria-label="Navegación móvil">
     <button class="active" data-module="dashboard" onclick="switchModule('dashboard')"><i class="fa-solid fa-table-cells-large"></i><span>Resumen</span></button>
     <button data-module="crm" onclick="switchModule('crm')"><i class="fa-solid fa-users"></i><span>Prospectos</span></button>
-    <button onclick="syncInstagramInBackground(true)"><i class="fa-solid fa-arrows-rotate"></i><span>Sincronizar</span></button>
+    <button data-module="costos" onclick="switchModule('costos')"><i class="fa-solid fa-coins"></i><span>Costos</span></button>
     <button onclick="installApp()"><i class="fa-solid fa-download"></i><span>Guardar app</span></button>
   </nav>
 
@@ -285,6 +322,29 @@
         <label><span>Concepto</span><input class="custom-input" id="transactionConceptInput" type="text" required placeholder="Descripción del movimiento"></label>
         <label><span>Monto en MXN</span><input class="custom-input" id="transactionAmountInput" type="number" min="0" step="0.01" required placeholder="10000"></label>
         <div class="record-form-actions"><button type="button" class="button secondary" onclick="closeRecordModal()">Cancelar</button><button type="submit" class="button primary"><i class="fa-solid fa-check"></i> Guardar movimiento</button></div>
+      </form>
+
+      <form id="costForm" class="record-form hidden">
+        <div class="record-form-grid">
+          <label><span>Servicio</span><input class="custom-input" id="costServiceInput" type="text" required placeholder="Ej. Render"></label>
+          <label><span>Proveedor</span><input class="custom-input" id="costProviderInput" type="text" required placeholder="Nombre del proveedor"></label>
+        </div>
+        <label><span>Proyectos asociados</span><input class="custom-input" id="costProjectsInput" type="text" required placeholder="CRM Origin One, Sitio web"></label>
+        <div class="record-form-grid">
+          <label><span>Categoría</span><select class="custom-select" id="costCategoryInput"><option>Cloud</option><option>Hosting</option><option>Dominio</option><option>Telefonía</option><option>Software</option><option>IA</option><option>Otro</option></select></label>
+          <label><span>Plan</span><input class="custom-input" id="costPlanInput" type="text" placeholder="Free, Pro, Business..."></label>
+        </div>
+        <div class="record-form-grid three-columns">
+          <label><span>Monto</span><input class="custom-input" id="costAmountInput" type="number" min="0" step="0.01" value="0"></label>
+          <label><span>Moneda</span><select class="custom-select" id="costCurrencyInput"><option>MXN</option><option>USD</option></select></label>
+          <label><span>Periodicidad</span><select class="custom-select" id="costPeriodInput"><option value="mensual">Mensual</option><option value="anual">Anual</option><option value="unico">Único</option></select></label>
+        </div>
+        <div class="record-form-grid">
+          <label><span>Estado</span><select class="custom-select" id="costStatusInput"><option value="gratuito">Gratuito</option><option value="activo">Activo / con costo</option><option value="por_capturar">Por capturar</option><option value="pausado">Pausado</option><option value="archivado">Archivado</option></select></label>
+          <label><span>Próxima renovación</span><input class="custom-input" id="costRenewalInput" type="date"></label>
+        </div>
+        <label><span>Notas</span><textarea class="custom-textarea" id="costNotesInput" rows="3" placeholder="Qué cubre, condiciones o dato pendiente"></textarea></label>
+        <div class="record-form-actions"><button type="button" class="button secondary" onclick="closeRecordModal()">Cancelar</button><button id="saveCostButton" type="submit" class="button primary"><i class="fa-solid fa-check"></i> Guardar costo</button></div>
       </form>
     </div>
   </div>
