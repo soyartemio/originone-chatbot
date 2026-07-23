@@ -19,6 +19,21 @@ test('el rediseño incluye resumen operativo y navegación funcional', () => {
   assert.match(crmHtml, /data-module="dashboard"/);
   assert.match(crmApp, /async function loadDashboardModule/);
   assert.match(crmApp, /function renderDashboardPipeline/);
+  assert.match(crmHtml, /id="backToDashboardButton"/);
+  assert.match(crmHtml, /id="activeCrmFilter"/);
+  assert.match(crmApp, /window\.addEventListener\('popstate', restoreNavigationFromUrl\)/);
+  assert.match(crmApp, /window\.history\[replace \? 'replaceState' : 'pushState'\]/);
+  assert.doesNotMatch(crmHtml, /data-module="facturacion"/);
+});
+
+test('los flujos principales exponen fuente, responsable, próximo paso y notas', () => {
+  assert.match(crmHtml, /Fuente: Prospectos/);
+  assert.match(crmHtml, /id="leadOwnerSelect"/);
+  assert.match(crmHtml, /id="nextActionInput"/);
+  assert.match(crmHtml, /id="saveNoteButton"/);
+  assert.match(crmHtml, /onclick="archiveCurrentLead\(\)"/);
+  assert.match(crmApp, /async function syncInstagramInBackground/);
+  assert.match(crmApp, /async function saveNextAction/);
 });
 
 test('Origin One OS cumple la configuración base para guardarse como app', () => {

@@ -132,6 +132,24 @@ test('impide confirmar manualmente una cita sin fecha ni hora', async () => {
   );
 });
 
+test('guarda responsable y próximo paso estructurado del prospecto', async () => {
+  await appendChatMessage('ig-follow-up', 'user', 'Quiero una propuesta', 'Instagram Direct', 'Seguimiento', 'follow-up-mid-1');
+  const updated = await updateLead('LEAD-ig-follow-up', {
+    responsable: 'Edgar',
+    siguiente_accion: 'Enviar propuesta',
+    siguiente_accion_fecha: '2026-07-23T16:00:00.000Z',
+    siguiente_accion_estado: 'pendiente'
+  });
+
+  assert.equal(updated.responsable, 'Edgar');
+  assert.equal(updated.siguiente_accion, 'Enviar propuesta');
+  assert.equal(updated.siguiente_accion_estado, 'pendiente');
+  await assert.rejects(
+    () => updateLead('LEAD-ig-follow-up', { responsable: 'Otra persona' }),
+    /Artemio o Edgar/
+  );
+});
+
 test('sólo crea una cita confirmada cuando hay fecha y hora acordadas', async () => {
   const result = await scheduleAppointment({
     nombre_cliente: 'Cita real',

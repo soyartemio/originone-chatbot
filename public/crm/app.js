@@ -1,18 +1,27 @@
-const allowedModules = new Set(['dashboard', 'crm', 'facturacion', 'contabilidad', 'bancos', 'socios']);
-const requestedModule = new URLSearchParams(window.location.search).get('module');
+const allowedModules = new Set(['dashboard', 'crm']);
+const initialUrlParams = new URLSearchParams(window.location.search);
+const requestedModule = initialUrlParams.get('module');
 let currentModule = allowedModules.has(requestedModule) ? requestedModule : 'dashboard';
 let allLeads = [];
-let currentFilterChannel = 'todos';
+let currentFilterChannel = initialUrlParams.get('channel') || 'todos';
+let currentFilterStage = initialUrlParams.get('stage');
+let currentAttentionFilter = initialUrlParams.get('attention');
+let currentCrmView = initialUrlParams.get('view') === 'list' ? 'list' : 'kanban';
 let currentActiveLeadId = null;
 let currentUserDisplayName = 'Usuario';
 let deferredInstallPrompt = null;
 let toastTimer = null;
+let instagramSyncPromise = null;
+let lastInstagramSyncAt = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
   initializeShell();
   initializePwa();
   loadCurrentUser();
-  switchModule(currentModule, { updateUrl: false });
+  switchModule(currentModule, { updateUrl: false, preserveFilters: true }).then(() => {
+    const leadId = new URLSearchParams(window.location.search).get('lead');
+    if (leadId) openModal(leadId, { updateUrl: false });
+  });
 });
 
 function initializeShell() {
@@ -44,6 +53,8 @@ function initializeShell() {
   });
   document.getElementById('invoiceForm').addEventListener('submit', submitInvoiceForm);
   document.getElementById('transactionForm').addEventListener('submit', submitTransactionForm);
+
+  window.addEventListener('popstate', restoreNavigationFromUrl);
 }
 
 async function initializePwa() {
@@ -139,6 +150,15 @@ function setText(id, value) {
   if (element) element.innerText = value;
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
 function formatCurrency(value) {
   return `$${Number(value || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -152,6 +172,69 @@ function updateDashboardGreeting() {
 async function openLeadFromDashboard(id) {
   await switchModule('crm');
   openModal(id);
+}
+
+async function openCrmSource(stageKey = null) {
+  currentFilterStage = stageKey;
+  currentAttentionFilter = null;
+  currentFilterChannel = 'todos';
+  currentCrmView = 'list';
+  await switchModule('crm', { updateUrl: false, preserveFilters: true });
+  updateCrmFilterUi();
+  switchCrmSubView(currentCrmView, { updateUrl: false });
+  renderBoard();
+  renderTable();
+  updateNavigationUrl();
+}
+
+async function openCrmAttention() {
+  currentFilterStage = null;
+  currentAttentionFilter = 'today';
+  currentFilterChannel = 'todos';
+  currentCrmView = 'list';
+  await switchModule('crm', { updateUrl: false, preserveFilters: true });
+  updateCrmFilterUi();
+  switchCrmSubView('list', { updateUrl: false });
+  renderBoard();
+  renderTable();
+  updateNavigationUrl();
+}
+
+async function openChannelSource(channel) {
+  currentFilterStage = null;
+  currentAttentionFilter = null;
+  currentFilterChannel = channel;
+  await switchModule('crm', { updateUrl: false, preserveFilters: true });
+  const button = document.querySelector(`.chip-filter[data-channel="${channel}"]`);
+  filterChannel(channel, button, { updateUrl: true });
+}
+
+function updateNavigationUrl({ replace = false, leadId = currentActiveLeadId } = {}) {
+  const url = new URL(window.location.href);
+  ['module', 'stage', 'attention', 'channel', 'view', 'lead'].forEach(key => url.searchParams.delete(key));
+  if (currentModule === 'crm') {
+    url.searchParams.set('module', 'crm');
+    if (currentFilterStage) url.searchParams.set('stage', currentFilterStage);
+    if (currentAttentionFilter) url.searchParams.set('attention', currentAttentionFilter);
+    if (currentFilterChannel !== 'todos') url.searchParams.set('channel', currentFilterChannel);
+    if (currentCrmView === 'list') url.searchParams.set('view', 'list');
+    if (leadId) url.searchParams.set('lead', leadId);
+  }
+  window.history[replace ? 'replaceState' : 'pushState']({}, '', url);
+}
+
+async function restoreNavigationFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const requested = params.get('module');
+  const moduleName = allowedModules.has(requested) ? requested : 'dashboard';
+  currentFilterStage = params.get('stage');
+  currentAttentionFilter = params.get('attention');
+  currentFilterChannel = params.get('channel') || 'todos';
+  currentCrmView = params.get('view') === 'list' ? 'list' : 'kanban';
+  hideLeadModal();
+  await switchModule(moduleName, { updateUrl: false, preserveFilters: true });
+  const leadId = params.get('lead');
+  if (leadId) openModal(leadId, { updateUrl: false });
 }
 
 async function refreshCurrentModule() {
@@ -190,10 +273,17 @@ async function logout() {
 }
 
 /**
- * Conmutar entre módulos del ERP
+ * Conmutar entre las dos vistas del CRM.
  */
 async function switchModule(moduleName, options = {}) {
   if (!allowedModules.has(moduleName)) moduleName = 'dashboard';
+  if (moduleName === 'crm' && !options.preserveFilters) {
+    currentFilterStage = null;
+    currentAttentionFilter = null;
+    currentFilterChannel = 'todos';
+    currentCrmView = 'kanban';
+  }
+  if (moduleName === 'dashboard') hideLeadModal();
   currentModule = moduleName;
   document.querySelectorAll('[data-module]').forEach(button => {
     button.classList.toggle('active', button.dataset.module === moduleName);
@@ -202,11 +292,7 @@ async function switchModule(moduleName, options = {}) {
 
   const sections = {
     dashboard: document.getElementById('moduleDashboardSection'),
-    crm: document.getElementById('moduleCrmSection'),
-    facturacion: document.getElementById('moduleFacturacionSection'),
-    contabilidad: document.getElementById('moduleContabilidadSection'),
-    bancos: document.getElementById('moduleBancosSection'),
-    socios: document.getElementById('moduleSociosSection')
+    crm: document.getElementById('moduleCrmSection')
   };
 
   Object.keys(sections).forEach(key => {
@@ -219,11 +305,7 @@ async function switchModule(moduleName, options = {}) {
 
   const titles = {
     dashboard: { eyebrow: 'CENTRO DE CONTROL', title: 'Resumen operativo', sub: 'Lo importante de Origin One en un solo lugar.' },
-    crm: { eyebrow: 'RELACIONES COMERCIALES', title: 'Prospectos y seguimiento', sub: 'Contactos, citas confirmadas y oportunidades.' },
-    facturacion: { eyebrow: 'ADMINISTRACIÓN', title: 'Facturación', sub: 'Cotizaciones, cobranza y comprobantes.' },
-    contabilidad: { eyebrow: 'FINANZAS', title: 'Contabilidad y resultados', sub: 'Ingresos, egresos y utilidad neta.' },
-    bancos: { eyebrow: 'TESORERÍA', title: 'Bancos', sub: 'Disponibilidad y saldos corporativos.' },
-    socios: { eyebrow: 'TRANSPARENCIA', title: 'Socios', sub: 'Participación y distribución de utilidades.' }
+    crm: { eyebrow: 'RELACIONES COMERCIALES', title: 'Prospectos y seguimiento', sub: 'Contactos, próximos pasos y citas confirmadas.' }
   };
 
   if (titles[moduleName]) {
@@ -233,99 +315,103 @@ async function switchModule(moduleName, options = {}) {
   }
 
   document.getElementById('globalSearchBox').classList.toggle('hidden', moduleName !== 'crm');
+  document.getElementById('backToDashboardButton').classList.toggle('hidden', moduleName === 'dashboard');
 
   if (options.updateUrl !== false) {
-    const url = new URL(window.location.href);
-    if (moduleName === 'dashboard') url.searchParams.delete('module');
-    else url.searchParams.set('module', moduleName);
-    window.history.replaceState({}, '', url);
+    updateNavigationUrl();
   }
 
   await loadModuleData();
+  if (moduleName === 'crm') {
+    updateCrmFilterUi();
+    switchCrmSubView(currentCrmView, { updateUrl: false });
+  }
 }
 
 /**
  * Cargar datos según el módulo activo
  */
 async function loadModuleData() {
-  const refreshIcon = document.getElementById('refreshIcon');
-  if (refreshIcon) refreshIcon.classList.add('fa-spin');
-
   try {
-    if (currentModule === 'dashboard' || currentModule === 'crm') {
-      try {
-        const syncResponse = await fetch('/api/crm/sync/instagram', {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
-          body: '{}'
-        });
-        const syncResult = await syncResponse.json();
-        if (!syncResponse.ok || !syncResult.success) {
-          throw new Error(syncResult.error || 'No fue posible sincronizar Instagram');
-        }
-        setText('syncStatusText', 'Sincronizado ahora');
-      } catch (syncError) {
-        console.warn('Sincronización de Instagram pendiente:', syncError.message);
-        setText('syncStatusText', 'Mostrando últimos datos guardados');
-        showToast('El CRM está mostrando los últimos datos guardados.');
-      }
-    }
-
     if (currentModule === 'dashboard') {
       await loadDashboardModule();
-    } else if (currentModule === 'crm') {
-      await loadCrmModule();
-    } else if (currentModule === 'facturacion') {
-      await loadFacturacionModule();
-    } else if (currentModule === 'contabilidad') {
-      await loadContabilidadModule();
-    } else if (currentModule === 'bancos') {
-      await loadBancosModule();
-    } else if (currentModule === 'socios') {
-      await loadSociosModule();
-    }
+    } else if (currentModule === 'crm') await loadCrmModule();
   } catch (error) {
     console.error('Error cargando módulo:', error);
     showToast(`No fue posible cargar esta sección: ${error.message}`);
-  } finally {
-    if (refreshIcon) refreshIcon.classList.remove('fa-spin');
   }
+
+  if ((currentModule === 'dashboard' || currentModule === 'crm') && Date.now() - lastInstagramSyncAt > 60000) {
+    syncInstagramInBackground(false);
+  }
+}
+
+async function syncInstagramInBackground(showCompletion = false) {
+  if (instagramSyncPromise) {
+    if (showCompletion) showToast('La sincronización ya está en curso.');
+    return instagramSyncPromise;
+  }
+
+  const refreshIcon = document.getElementById('refreshIcon');
+  refreshIcon?.classList.add('fa-spin');
+  setText('syncStatusText', 'Sincronizando en segundo plano…');
+
+  instagramSyncPromise = (async () => {
+    try {
+      const response = await fetch('/api/crm/sync/instagram', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || 'No fue posible sincronizar Instagram');
+
+      lastInstagramSyncAt = Date.now();
+      setText('syncStatusText', result.importedMessages
+        ? `${result.importedMessages} mensajes nuevos`
+        : 'Todo está actualizado');
+
+      if (currentModule === 'dashboard') await loadDashboardModule();
+      else if (currentModule === 'crm') await loadCrmModule();
+      if (showCompletion) showToast(result.importedMessages ? 'Se agregaron mensajes nuevos.' : 'Instagram ya estaba actualizado.');
+      return result;
+    } catch (error) {
+      console.warn('Sincronización de Instagram pendiente:', error.message);
+      setText('syncStatusText', 'Últimos datos guardados');
+      if (showCompletion) showToast(`No se pudo sincronizar: ${error.message}`);
+      return null;
+    } finally {
+      refreshIcon?.classList.remove('fa-spin');
+      instagramSyncPromise = null;
+    }
+  })();
+
+  return instagramSyncPromise;
 }
 
 /* ==================== RESUMEN OPERATIVO ==================== */
 async function loadDashboardModule() {
-  const [leadsResponse, kpisResponse, pnlResponse] = await Promise.all([
+  const [leadsResponse, kpisResponse] = await Promise.all([
     fetch('/api/crm/leads'),
-    fetch('/api/crm/kpis'),
-    fetch('/api/contabilidad/pnl')
+    fetch('/api/crm/kpis')
   ]);
 
-  const [leadsData, kpisData, pnlData] = await Promise.all([
+  const [leadsData, kpisData] = await Promise.all([
     leadsResponse.json(),
-    kpisResponse.json(),
-    pnlResponse.json()
+    kpisResponse.json()
   ]);
 
   if (leadsData.success) allLeads = leadsData.leads || [];
   const kpis = kpisData.kpis || {};
   const stages = kpis.porEtapa || {};
-  const channels = kpis.porCanal || {};
 
   setText('dashNewContacts', stages.nuevo || 0);
   setText('dashConfirmed', kpis.citasAgendadas || 0);
-  setText('dashWon', kpis.clientesGanados || 0);
+  setText('dashActionsToday', allLeads.filter(isActionDueToday).length);
   setText('dashConversion', kpis.tasaConversion || '0.0%');
-  setText('dashInstagramCount', channels.instagram || 0);
-  setText('dashSignalCount', channels.signal_web || 0);
-  setText('dashFacebookCount', channels.facebook || 0);
   setText('dashPipelineTotal', `${kpis.totalLeads || 0} prospectos`);
   setText('navLeadCount', kpis.totalLeads || 0);
-
-  if (pnlData.pnl) {
-    setText('dashRevenue', formatCurrency(pnlData.pnl.totalIngresos));
-    setText('dashProfit', formatCurrency(pnlData.pnl.utilidadNeta));
-  }
 
   renderDashboardRecentContacts();
   renderDashboardPipeline(stages, kpis.totalLeads || 0);
@@ -335,19 +421,19 @@ function renderDashboardRecentContacts() {
   const container = document.getElementById('dashRecentContacts');
   container.innerHTML = '';
   const recent = [...allLeads]
-    .filter(lead => getStageKey(lead) === 'nuevo')
-    .sort((a, b) => new Date(b.actualizado_el || b.creado_el || 0) - new Date(a.actualizado_el || a.creado_el || 0))
+    .filter(lead => !['ganado', 'archivado'].includes(getStageKey(lead)))
+    .sort((a, b) => getAttentionPriority(a) - getAttentionPriority(b) || new Date(a.siguiente_accion_fecha || a.actualizado_el || 0) - new Date(b.siguiente_accion_fecha || b.actualizado_el || 0))
     .slice(0, 5);
 
   if (!recent.length) {
-    container.innerHTML = '<p class="empty-state">No hay contactos nuevos pendientes.</p>';
+    container.innerHTML = '<p class="empty-state">No hay seguimientos pendientes.</p>';
     return;
   }
 
   recent.forEach(lead => {
     const channel = (lead.canal_origen || '').toLowerCase();
     const icon = channel.includes('instagram') ? 'fa-brands fa-instagram' : channel.includes('facebook') ? 'fa-brands fa-facebook-messenger' : 'fa-solid fa-wave-square';
-    const activity = getLeadActivity(lead);
+    const actionMeta = getNextActionMeta(lead);
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'recent-contact';
@@ -357,8 +443,8 @@ function renderDashboardRecentContacts() {
       <span class="recent-time"></span>
     `;
     button.querySelector('.recent-name').innerText = lead.nombre_cliente || 'Prospecto sin nombre';
-    button.querySelector('.recent-meta').innerText = lead.canal_origen || 'Canal general';
-    button.querySelector('.recent-time').innerText = `${activity.date} · ${activity.time}`;
+    button.querySelector('.recent-meta').innerText = actionMeta.label;
+    button.querySelector('.recent-time').innerText = actionMeta.when;
     button.addEventListener('click', () => openLeadFromDashboard(lead.id));
     container.appendChild(button);
   });
@@ -367,22 +453,24 @@ function renderDashboardRecentContacts() {
 function renderDashboardPipeline(stages, total) {
   const container = document.getElementById('dashPipeline');
   const items = [
-    ['Nuevo contacto', stages.nuevo || 0],
-    ['Cita confirmada', stages.cita || 0],
-    ['Diagnóstico', stages.diagnostico || 0],
-    ['Propuesta', stages.propuesta || 0],
-    ['Ganado', stages.ganado || 0]
+    ['Nuevo contacto', stages.nuevo || 0, 'nuevo'],
+    ['Cita confirmada', stages.cita || 0, 'cita'],
+    ['Diagnóstico', stages.diagnostico || 0, 'diagnostico'],
+    ['Propuesta', stages.propuesta || 0, 'propuesta'],
+    ['Ganado', stages.ganado || 0, 'ganado']
   ];
   container.innerHTML = '';
 
-  items.forEach(([label, count]) => {
-    const row = document.createElement('div');
+  items.forEach(([label, count, stageKey]) => {
+    const row = document.createElement('button');
+    row.type = 'button';
     row.className = 'pipeline-row';
     const width = total ? Math.max((count / total) * 100, count ? 4 : 0) : 0;
     row.innerHTML = `<span></span><div class="pipeline-track"><div class="pipeline-fill"></div></div><b></b>`;
     row.querySelector('span').innerText = label;
     row.querySelector('.pipeline-fill').style.width = `${width}%`;
     row.querySelector('b').innerText = count;
+    row.addEventListener('click', () => openCrmSource(stageKey));
     container.appendChild(row);
   });
 }
@@ -425,7 +513,9 @@ function getFilteredLeads() {
         (lead.telefono_whatsapp || '').toLowerCase().includes(searchVal)
       );
     }
-    return matchesChannel && matchesSearch;
+    const matchesStage = !currentFilterStage || getStageKey(lead) === currentFilterStage;
+    const matchesAttention = currentAttentionFilter !== 'today' || isActionDueToday(lead);
+    return matchesChannel && matchesSearch && matchesStage && matchesAttention;
   });
 }
 
@@ -444,6 +534,72 @@ function getStageLabel(lead) {
   if (key === 'cita') return 'Cita Confirmada';
   if (key === 'nuevo' && !(lead.etapa || '').toLowerCase().includes('prueba')) return 'Nuevo contacto';
   return lead.etapa || 'Nuevo contacto';
+}
+
+function parseActionDate(lead) {
+  if (!lead.siguiente_accion_fecha) return null;
+  const date = new Date(lead.siguiente_accion_fecha);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function isActionDueToday(lead) {
+  if (!lead.siguiente_accion || lead.siguiente_accion_estado === 'completada') return false;
+  const dueDate = parseActionDate(lead);
+  if (!dueDate) return false;
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+  return dueDate <= endOfToday;
+}
+
+function getAttentionPriority(lead) {
+  if (isActionDueToday(lead)) return 0;
+  if (!lead.siguiente_accion) return 1;
+  return 2;
+}
+
+function getNextActionMeta(lead) {
+  if (!lead.siguiente_accion) return { label: 'Sin próximo paso', when: 'Definir hoy' };
+  const dueDate = parseActionDate(lead);
+  if (!dueDate) return { label: lead.siguiente_accion, when: 'Sin fecha' };
+  const overdue = dueDate < new Date() && lead.siguiente_accion_estado !== 'completada';
+  return {
+    label: `${lead.siguiente_accion}${lead.responsable ? ` · ${lead.responsable}` : ''}`,
+    when: overdue
+      ? 'Vencida'
+      : dueDate.toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  };
+}
+
+function updateCrmFilterUi() {
+  const banner = document.getElementById('activeCrmFilter');
+  const label = document.getElementById('activeCrmFilterLabel');
+  const stageLabels = {
+    nuevo: 'Etapa: Nuevo contacto',
+    cita: 'Etapa: Cita confirmada',
+    diagnostico: 'Etapa: Diagnóstico',
+    propuesta: 'Etapa: Propuesta',
+    ganado: 'Etapa: Ganado',
+    archivado: 'Etapa: Archivado'
+  };
+  let filterLabel = currentFilterStage ? stageLabels[currentFilterStage] : '';
+  if (currentAttentionFilter === 'today') filterLabel = 'Acciones vencidas o para hoy';
+  if (currentFilterChannel !== 'todos') filterLabel += `${filterLabel ? ' · ' : ''}Canal: ${currentFilterChannel}`;
+  banner.classList.toggle('hidden', !filterLabel);
+  label.innerText = filterLabel || 'Filtro activo';
+
+  document.querySelectorAll('.chip-filter').forEach(button => {
+    button.classList.toggle('active', button.dataset.channel === currentFilterChannel);
+  });
+}
+
+function clearCrmFilters() {
+  currentFilterStage = null;
+  currentAttentionFilter = null;
+  currentFilterChannel = 'todos';
+  updateCrmFilterUi();
+  renderBoard();
+  renderTable();
+  updateNavigationUrl();
 }
 
 function getLeadActivity(lead) {
@@ -522,22 +678,31 @@ function createLeadCard(lead) {
   const waMsg = encodeURIComponent(getWhatsAppMessage(lead));
   const waUrl = cleanPhone ? `https://wa.me/${cleanPhone.startsWith('52') ? cleanPhone : '52' + cleanPhone}?text=${waMsg}` : '#';
   const activity = getLeadActivity(lead);
+  const nextAction = getNextActionMeta(lead);
 
   div.innerHTML = `
     <div class="card-top">
-      <span class="channel-tag ${tagClass}"><i class="${iconClass}"></i> ${canalName}</span>
+      <span class="channel-tag ${tagClass}"><i class="${iconClass}"></i> ${escapeHtml(canalName)}</span>
       ${isTestBadge}
-      <span class="date-badge" title="${activity.label}">${activity.date}</span>
+      <span class="date-badge" title="${escapeHtml(activity.label)}">${escapeHtml(activity.date)}</span>
     </div>
-    <h4 class="lead-name">${lead.nombre_cliente || 'Prospecto sin nombre'}</h4>
-    <p class="lead-company"><i class="fa-solid fa-building"></i> ${lead.empresa_o_proyecto || 'Origin One Prospect'}</p>
-    <div class="card-info-row"><i class="fa-solid fa-clock"></i> <span>${activity.time}</span></div>
-    <div class="card-info-row"><i class="fa-solid fa-phone"></i> <span>${lead.telefono_whatsapp || 'No especificado'}</span></div>
+    <h4 class="lead-name">${escapeHtml(lead.nombre_cliente || 'Prospecto sin nombre')}</h4>
+    <p class="lead-company"><i class="fa-solid fa-building"></i> ${escapeHtml(lead.empresa_o_proyecto || 'Origin One Prospect')}</p>
+    <div class="card-info-row"><i class="fa-solid fa-list-check"></i> <span>${escapeHtml(nextAction.label)}</span></div>
+    <div class="card-info-row"><i class="fa-solid fa-clock"></i> <span>${escapeHtml(nextAction.when)}</span></div>
     <div class="card-footer">
-      <span style="font-size:11px; color:#9ca3af;">ID: ${lead.id}</span>
-      <a href="${waUrl}" target="_blank" onclick="event.stopPropagation()" class="btn-card-action"><i class="fa-brands fa-whatsapp"></i> Chat</a>
+      <span>${escapeHtml(lead.responsable || 'Sin responsable')}</span>
+      <span class="card-actions">
+        <button type="button" class="btn-card-secondary" aria-label="Agregar nota"><i class="fa-solid fa-note-sticky"></i> Nota</button>
+        ${cleanPhone ? `<a href="${waUrl}" target="_blank" class="btn-card-action"><i class="fa-brands fa-whatsapp"></i> Chat</a>` : ''}
+      </span>
     </div>
   `;
+  div.querySelector('.btn-card-secondary').addEventListener('click', event => {
+    event.stopPropagation();
+    openNotes(lead.id);
+  });
+  div.querySelector('.btn-card-action')?.addEventListener('click', event => event.stopPropagation());
   return div;
 }
 
@@ -554,21 +719,23 @@ function renderTable() {
 
   filtered.forEach(lead => {
     const activity = getLeadActivity(lead);
+    const nextAction = getNextActionMeta(lead);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>${lead.id}</strong></td>
-      <td><div style="font-weight:700;">${lead.nombre_cliente}</div><div style="font-size:12px; color:#9ca3af;">${lead.empresa_o_proyecto}</div></td>
-      <td><div>${lead.telefono_whatsapp}</div><div style="font-size:11px; color:#9ca3af;">${lead.email}</div></td>
-      <td><strong>${activity.label}</strong><div style="font-size:11px; color:#9ca3af;">${activity.date} - ${activity.time}</div></td>
-      <td><span class="channel-tag tag-signal">${lead.canal_origen}</span></td>
-      <td><span class="badge-count" style="background:rgba(139,92,246,0.2); color:#c084fc;">${getStageLabel(lead)}</span></td>
-      <td><button class="glass-btn" style="padding:4px 10px; font-size:11px;" onclick="openModal('${lead.id}')"><i class="fa-solid fa-eye"></i> Detalle</button></td>
+      <td><strong>${escapeHtml(lead.id)}</strong></td>
+      <td><div style="font-weight:700;">${escapeHtml(lead.nombre_cliente || 'Prospecto sin nombre')}</div><div style="font-size:12px; color:#9ca3af;">${escapeHtml(lead.empresa_o_proyecto || '—')}</div></td>
+      <td><div>${escapeHtml(lead.telefono_whatsapp || '—')}</div><div style="font-size:11px; color:#9ca3af;">${escapeHtml(lead.email || '—')}</div></td>
+      <td><strong>${escapeHtml(nextAction.label)}</strong><div style="font-size:11px; color:#9ca3af;">${escapeHtml(nextAction.when)}</div></td>
+      <td><span class="channel-tag tag-signal">${escapeHtml(lead.canal_origen || '—')}</span></td>
+      <td><span class="badge-count">${escapeHtml(getStageLabel(lead))}</span></td>
+      <td><button class="glass-btn" style="padding:4px 10px; font-size:11px;"><i class="fa-solid fa-eye"></i> Detalle</button></td>
     `;
+    tr.querySelector('button').addEventListener('click', () => openModal(lead.id));
     tbody.appendChild(tr);
   });
 }
 
-function openModal(id) {
+function openModal(id, options = {}) {
   const lead = allLeads.find(l => l.id === id);
   if (!lead) return;
 
@@ -585,6 +752,15 @@ function openModal(id) {
   document.getElementById('stageSelect').value = getStageLabel(lead);
   document.getElementById('appointmentDateInput').value = lead.fecha_propuesta && lead.fecha_propuesta !== 'Por confirmar' ? lead.fecha_propuesta : '';
   document.getElementById('appointmentTimeInput').value = lead.hora_propuesta && lead.hora_propuesta !== 'Por confirmar' ? lead.hora_propuesta : '';
+  document.getElementById('leadOwnerSelect').value = lead.responsable === 'Edgar' ? 'Edgar' : 'Artemio';
+  document.getElementById('nextActionInput').value = lead.siguiente_accion || '';
+  document.getElementById('nextActionStatusSelect').value = lead.siguiente_accion_estado === 'completada' ? 'completada' : 'pendiente';
+  const nextActionDate = parseActionDate(lead);
+  document.getElementById('nextActionDateInput').value = nextActionDate
+    ? new Date(nextActionDate.getTime() - nextActionDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+    : '';
+  document.getElementById('noteInput').value = '';
+  document.getElementById('modalArchiveBtn').classList.toggle('hidden', getStageKey(lead) === 'archivado');
   toggleAppointmentFields();
 
   const cleanPhone = (lead.telefono_whatsapp || '').replace(/\D/g, '');
@@ -600,6 +776,12 @@ function openModal(id) {
   renderNotesTimeline(lead.notas_internas || []);
   renderChatTranscript(lead.historial_mensajes || []);
   document.getElementById('leadModal').classList.remove('hidden');
+  if (options.updateUrl !== false) updateNavigationUrl({ leadId: id });
+}
+
+function openNotes(id) {
+  openModal(id);
+  setTimeout(() => document.getElementById('noteInput')?.focus(), 50);
 }
 
 /**
@@ -622,10 +804,13 @@ function renderChatTranscript(messages) {
 
     const dateFormatted = msg.fecha ? new Date(msg.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '';
 
-    div.innerHTML = `
-      <span class="bubble-role font-mono">${isUser ? '👤 Cliente' : '⚡ Origin One AI'} <span style="float:right; opacity:0.6;">${dateFormatted}</span></span>
-      <div class="bubble-text">${msg.texto}</div>
-    `;
+    const role = document.createElement('span');
+    role.className = 'bubble-role font-mono';
+    role.innerText = `${isUser ? 'Cliente' : 'Origin One AI'} · ${dateFormatted}`;
+    const text = document.createElement('div');
+    text.className = 'bubble-text';
+    text.innerText = msg.texto || '';
+    div.append(role, text);
     container.appendChild(div);
   });
 
@@ -634,9 +819,14 @@ function renderChatTranscript(messages) {
 }
 
 
-function closeModal() {
+function hideLeadModal() {
   document.getElementById('leadModal').classList.add('hidden');
   currentActiveLeadId = null;
+}
+
+function closeModal(options = {}) {
+  hideLeadModal();
+  if (options.updateUrl !== false) updateNavigationUrl({ replace: true, leadId: null });
 }
 
 function toggleAppointmentFields() {
@@ -654,7 +844,7 @@ async function updateLeadStage() {
   const appointmentTime = document.getElementById('appointmentTimeInput').value.trim();
 
   if (requiresSlot && (!appointmentDate || !appointmentTime)) {
-    alert('Para confirmar la cita, captura la fecha y la hora acordadas.');
+    showToast('Para confirmar la cita, captura la fecha y la hora acordadas.');
     return;
   }
 
@@ -671,9 +861,66 @@ async function updateLeadStage() {
     if (!res.ok || !data.success) throw new Error(data.error || 'No fue posible guardar la etapa');
     closeModal();
     await loadCrmModule();
+    showToast('Etapa actualizada.');
   } catch (e) {
     console.error(e);
-    alert(e.message);
+    showToast(e.message);
+  }
+}
+
+async function saveNextAction() {
+  if (!currentActiveLeadId) return;
+  const action = document.getElementById('nextActionInput').value.trim();
+  const dueValue = document.getElementById('nextActionDateInput').value;
+  if (action && !dueValue) {
+    showToast('Agrega una fecha límite para el próximo paso.');
+    return;
+  }
+
+  const button = document.getElementById('saveNextActionButton');
+  button.disabled = true;
+  try {
+    const response = await fetch(`/api/crm/leads/${currentActiveLeadId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        responsable: document.getElementById('leadOwnerSelect').value,
+        siguiente_accion: action,
+        siguiente_accion_fecha: dueValue ? new Date(dueValue).toISOString() : null,
+        siguiente_accion_estado: action ? document.getElementById('nextActionStatusSelect').value : null
+      })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'No fue posible guardar el próximo paso');
+    const index = allLeads.findIndex(lead => lead.id === currentActiveLeadId);
+    if (index !== -1) allLeads[index] = data.lead;
+    renderBoard();
+    renderTable();
+    showToast('Próximo paso guardado.');
+  } catch (error) {
+    console.error(error);
+    showToast(`No se guardó: ${error.message}`);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function archiveCurrentLead() {
+  if (!currentActiveLeadId) return;
+  const leadId = currentActiveLeadId;
+  try {
+    const response = await fetch(`/api/crm/leads/${leadId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ etapa: 'Perdido / Archivado' })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'No fue posible archivar');
+    closeModal();
+    await loadCrmModule();
+    showToast('Prospecto archivado.');
+  } catch (error) {
+    showToast(`No se archivó: ${error.message}`);
   }
 }
 
@@ -683,6 +930,8 @@ async function addNote() {
   const author = document.getElementById('noteAuthor').value.trim() || 'Artemio Gonzalez';
   if (!text) return;
 
+  const button = document.getElementById('saveNoteButton');
+  button.disabled = true;
   try {
     const res = await fetch(`/api/crm/leads/${currentActiveLeadId}/notes`, {
       method: 'POST',
@@ -690,15 +939,20 @@ async function addNote() {
       body: JSON.stringify({ texto: text, autor: author })
     });
     const data = await res.json();
-    if (data.success) {
-      document.getElementById('noteInput').value = '';
-      const idx = allLeads.findIndex(l => l.id === currentActiveLeadId);
-      if (idx !== -1) {
-        allLeads[idx] = data.lead;
-        renderNotesTimeline(data.lead.notas_internas || []);
-      }
+    if (!res.ok || !data.success) throw new Error(data.error || 'No fue posible guardar la nota');
+    document.getElementById('noteInput').value = '';
+    const idx = allLeads.findIndex(l => l.id === currentActiveLeadId);
+    if (idx !== -1) {
+      allLeads[idx] = data.lead;
+      renderNotesTimeline(data.lead.notas_internas || []);
     }
-  } catch (e) { console.error(e); }
+    showToast('Nota guardada.');
+  } catch (e) {
+    console.error(e);
+    showToast(`La nota sigue en el campo. No se guardó: ${e.message}`);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function renderNotesTimeline(notes) {
@@ -712,12 +966,15 @@ function renderNotesTimeline(notes) {
     const div = document.createElement('div');
     div.className = 'note-item';
     const dateFormatted = new Date(n.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
-    div.innerHTML = `<div class="note-meta"><strong>${n.autor}</strong><span>${dateFormatted}</span></div><div class="note-text">${n.texto}</div>`;
+    div.innerHTML = '<div class="note-meta"><strong></strong><span></span></div><div class="note-text"></div>';
+    div.querySelector('strong').innerText = n.autor || 'Origin One';
+    div.querySelector('.note-meta span').innerText = dateFormatted;
+    div.querySelector('.note-text').innerText = n.texto || '';
     container.appendChild(div);
   });
 }
 
-function switchCrmSubView(viewName) {
+function switchCrmSubView(viewName, options = {}) {
   const kanban = document.getElementById('viewKanban');
   const list = document.getElementById('viewList');
   const tabK = document.getElementById('tabKanban');
@@ -729,13 +986,17 @@ function switchCrmSubView(viewName) {
     kanban.classList.add('hidden'); list.classList.remove('hidden');
     tabK.classList.remove('active'); tabL.classList.add('active');
   }
+  currentCrmView = viewName;
+  if (options.updateUrl !== false && currentModule === 'crm') updateNavigationUrl({ replace: true });
 }
 
-function filterChannel(channel, btn) {
+function filterChannel(channel, btn, options = {}) {
   currentFilterChannel = channel;
   document.querySelectorAll('.chip-filter').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  btn?.classList.add('active');
+  updateCrmFilterUi();
   renderBoard(); renderTable();
+  if (options.updateUrl !== false) updateNavigationUrl({ replace: true });
 }
 
 function handleSearch() {

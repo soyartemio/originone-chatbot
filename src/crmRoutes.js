@@ -104,7 +104,7 @@ router.get('/api/crm/kpis', async (req, res) => {
       success: true,
       kpis: {
         totalLeads,
-        citasAgendadas: etapasCount.cita + etapasCount.diagnostico,
+        citasAgendadas: etapasCount.cita,
         clientesGanados: etapasCount.ganado,
         tasaConversion: `${tasaConversion}%`,
         porEtapa: etapasCount,

@@ -2,6 +2,7 @@ const axios = require('axios');
 const { importChatMessages } = require('./agendaService');
 
 const GRAPH_BASE_URL = 'https://graph.instagram.com/v21.0';
+let activeInstagramSync = null;
 
 function getInstagramToken() {
   const token = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN;
@@ -29,7 +30,23 @@ function getAttachmentText(message) {
     : '[Contenido multimedia recibido]';
 }
 
-async function syncInstagramInteractions({ conversationLimit = 50, messageLimit = 100 } = {}) {
+async function mapWithConcurrency(items, limit, mapper) {
+  const results = new Array(items.length);
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await mapper(items[index], index);
+    }
+  }
+
+  const workerCount = Math.min(Math.max(1, limit), items.length);
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return results;
+}
+
+async function performInstagramSync({ conversationLimit = 50, messageLimit = 100 } = {}) {
   const account = await instagramGet('/me', { fields: 'id,user_id,username' });
   const accountIds = new Set([account.id, account.user_id].filter(Boolean).map(String));
   const conversationResponse = await instagramGet('/me/conversations', {
@@ -39,15 +56,14 @@ async function syncInstagramInteractions({ conversationLimit = 50, messageLimit 
   });
 
   const conversations = conversationResponse.data || [];
-  const interactions = [];
-
-  for (const conversation of conversations) {
+  const conversationInteractions = await mapWithConcurrency(conversations, 5, async conversation => {
     const detail = await instagramGet(`/${encodeURIComponent(conversation.id)}`, {
       fields: `id,participants,messages.limit(${messageLimit}){id,created_time,from,to,message,attachments}`
     });
     const participants = detail.participants?.data || [];
     const customer = participants.find(participant => !accountIds.has(String(participant.id))) || null;
     const messages = detail.messages?.data || [];
+    const interactions = [];
 
     for (const message of messages) {
       const senderId = String(message.from?.id || '');
@@ -68,7 +84,10 @@ async function syncInstagramInteractions({ conversationLimit = 50, messageLimit 
         createdAt: message.created_time || conversation.updated_time || null
       });
     }
-  }
+    return interactions;
+  });
+
+  const interactions = conversationInteractions.flat();
 
   const importResult = await importChatMessages(interactions);
   return {
@@ -78,7 +97,16 @@ async function syncInstagramInteractions({ conversationLimit = 50, messageLimit 
   };
 }
 
+function syncInstagramInteractions(options = {}) {
+  if (activeInstagramSync) return activeInstagramSync;
+  activeInstagramSync = performInstagramSync(options).finally(() => {
+    activeInstagramSync = null;
+  });
+  return activeInstagramSync;
+}
+
 module.exports = {
   getAttachmentText,
+  mapWithConcurrency,
   syncInstagramInteractions
 };

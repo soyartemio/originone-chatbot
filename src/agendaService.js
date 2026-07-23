@@ -130,6 +130,19 @@ async function updateLead(id, updateData) {
     const index = appointments.findIndex(item => item.id === id);
     if (index === -1) return null;
 
+    if (Object.prototype.hasOwnProperty.call(updateData, 'responsable') && !['Artemio', 'Edgar'].includes(updateData.responsable)) {
+      throw new Error('El responsable debe ser Artemio o Edgar');
+    }
+    if (Object.prototype.hasOwnProperty.call(updateData, 'siguiente_accion_estado') && ![null, 'pendiente', 'completada'].includes(updateData.siguiente_accion_estado)) {
+      throw new Error('El estado del próximo paso no es válido');
+    }
+
+    const resultingAction = String(updateData.siguiente_accion ?? appointments[index].siguiente_accion ?? '').trim();
+    const resultingActionDate = updateData.siguiente_accion_fecha ?? appointments[index].siguiente_accion_fecha ?? null;
+    if (resultingAction && (!resultingActionDate || Number.isNaN(new Date(resultingActionDate).getTime()))) {
+      throw new Error('El próximo paso requiere una fecha límite válida');
+    }
+
     const manualStageUpdate = Object.prototype.hasOwnProperty.call(updateData, 'etapa');
     const requestedStage = String(updateData.etapa || '').toLowerCase();
     const requiresConfirmedSlot = requestedStage.includes('cita') || requestedStage.includes('diag');

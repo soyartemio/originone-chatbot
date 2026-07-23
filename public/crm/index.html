@@ -42,19 +42,6 @@
           <i class="fa-solid fa-users"></i><span>Prospectos</span><span class="nav-count" id="navLeadCount">0</span>
         </button>
 
-        <p class="nav-label">ADMINISTRACIÓN</p>
-        <button class="nav-item" id="navFacturacion" data-module="facturacion" onclick="switchModule('facturacion')">
-          <i class="fa-solid fa-file-invoice-dollar"></i><span>Facturación</span>
-        </button>
-        <button class="nav-item" id="navContabilidad" data-module="contabilidad" onclick="switchModule('contabilidad')">
-          <i class="fa-solid fa-chart-line"></i><span>Contabilidad</span>
-        </button>
-        <button class="nav-item" id="navBancos" data-module="bancos" onclick="switchModule('bancos')">
-          <i class="fa-solid fa-building-columns"></i><span>Bancos</span>
-        </button>
-        <button class="nav-item" id="navSocios" data-module="socios" onclick="switchModule('socios')">
-          <i class="fa-solid fa-shield-halved"></i><span>Socios</span>
-        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -76,6 +63,7 @@
       <header class="topbar">
         <div class="topbar-title">
           <button type="button" class="icon-button menu-button" aria-label="Abrir menú" onclick="toggleSidebar(true)"><i class="fa-solid fa-bars"></i></button>
+          <button type="button" class="icon-button back-button hidden" id="backToDashboardButton" aria-label="Volver al resumen" title="Volver al resumen" onclick="switchModule('dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
           <div>
             <p class="topbar-eyebrow" id="moduleEyebrow">CENTRO DE CONTROL</p>
             <h1 id="moduleTitle">Resumen operativo</h1>
@@ -89,7 +77,7 @@
             <input type="search" id="searchInput" placeholder="Buscar prospecto..." oninput="handleSearch()" autocomplete="off">
             <kbd>⌘ K</kbd>
           </label>
-          <button class="button secondary sync-button" type="button" onclick="loadModuleData()">
+          <button class="button secondary sync-button" type="button" onclick="syncInstagramInBackground(true)">
             <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i><span>Sincronizar</span>
           </button>
           <button class="button primary top-install-button" type="button" onclick="installApp()">
@@ -100,83 +88,49 @@
 
       <main class="main-content">
         <section id="moduleDashboardSection" class="module-section">
-          <div class="welcome-panel surface-accent">
-            <div class="welcome-copy">
-              <div class="status-pill"><span></span> OPERACIÓN EN LÍNEA</div>
-              <p class="welcome-kicker" id="dashboardGreeting">Buenas tardes</p>
-              <h2>Lo que requiere atención,<br><span>sin perder el contexto.</span></h2>
-              <p class="welcome-description">Conversaciones, citas y operación concentradas en un solo tablero.</p>
-              <div class="welcome-actions">
-                <button class="button primary" type="button" onclick="switchModule('crm')"><i class="fa-solid fa-user-plus"></i> Ver prospectos</button>
-                <button class="button ghost" type="button" onclick="loadModuleData()"><i class="fa-solid fa-arrows-rotate"></i> Actualizar datos</button>
-              </div>
-            </div>
-            <div class="signal-orbit" aria-hidden="true">
-              <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="orbit orbit-three"></span>
-              <span class="orbit-core"><i></i></span>
-              <span class="orbit-label">S1GNAL / LIVE</span>
-            </div>
-          </div>
-
-          <div class="section-heading compact-heading">
-            <div><p class="section-kicker">HOY · <span id="dashboardDate">—</span></p><h2>Pulso del negocio</h2></div>
-            <p class="sync-status"><i></i><span id="syncStatusText">Datos actualizados</span></p>
+          <div class="dashboard-intro panel">
+            <div><p class="section-kicker">HOY · <span id="dashboardDate">—</span></p><h2 id="dashboardGreeting">Buenas tardes</h2><p>Prioridades comerciales y siguientes acciones.</p></div>
+            <div class="dashboard-intro-actions"><p class="sync-status"><i></i><span id="syncStatusText">Mostrando datos guardados</span></p><button class="button primary" type="button" onclick="openCrmSource('nuevo')"><i class="fa-solid fa-users"></i> Abrir prospectos</button></div>
           </div>
 
           <div class="metric-grid dashboard-metrics">
-            <article class="metric-card">
+            <button class="metric-card metric-link" type="button" onclick="openCrmSource('nuevo')">
               <div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-user-plus"></i></span><small>CONTACTOS NUEVOS</small></div>
-              <strong id="dashNewContacts">0</strong><p>Requieren seguimiento</p>
-            </article>
-            <article class="metric-card">
+              <strong id="dashNewContacts">0</strong><p>Requieren seguimiento</p><span class="source-link">Fuente: Prospectos <i class="fa-solid fa-arrow-right"></i></span>
+            </button>
+            <button class="metric-card metric-link" type="button" onclick="openCrmSource('cita')">
               <div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-calendar-check"></i></span><small>CITAS CONFIRMADAS</small></div>
-              <strong id="dashConfirmed">0</strong><p>Con fecha y hora</p>
-            </article>
-            <article class="metric-card">
-              <div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-trophy"></i></span><small>CLIENTES GANADOS</small></div>
-              <strong id="dashWon">0</strong><p>Proyectos cerrados</p>
-            </article>
-            <article class="metric-card">
-              <div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-bolt"></i></span><small>CONVERSIÓN</small></div>
-              <strong id="dashConversion">0.0%</strong><p>Del embudo actual</p>
-            </article>
+              <strong id="dashConfirmed">0</strong><p>Con fecha y hora</p><span class="source-link">Fuente: Embudo / Citas <i class="fa-solid fa-arrow-right"></i></span>
+            </button>
+            <button class="metric-card metric-link" type="button" onclick="openCrmAttention()">
+              <div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-bell"></i></span><small>ACCIONES PARA HOY</small></div>
+              <strong id="dashActionsToday">0</strong><p>Vencidas o por completar</p><span class="source-link">Fuente: Próximos pasos <i class="fa-solid fa-arrow-right"></i></span>
+            </button>
           </div>
 
           <div class="dashboard-grid">
             <article class="panel attention-panel">
               <div class="panel-header">
                 <div><p class="section-kicker">PRIORIDAD</p><h3>Atención ahora</h3></div>
-                <button class="text-button" type="button" onclick="switchModule('crm')">Ver CRM <i class="fa-solid fa-arrow-right"></i></button>
+                <button class="text-button" type="button" onclick="openCrmAttention()">Fuente: Próximos pasos <i class="fa-solid fa-arrow-right"></i></button>
               </div>
               <div class="recent-list" id="dashRecentContacts"></div>
             </article>
 
             <article class="panel pipeline-panel">
-              <div class="panel-header"><div><p class="section-kicker">EMBUDO</p><h3>Avance comercial</h3></div><span class="panel-total" id="dashPipelineTotal">0 prospectos</span></div>
+              <div class="panel-header"><div><p class="section-kicker">EMBUDO</p><h3>Avance comercial</h3></div><button class="text-button" type="button" onclick="switchModule('crm')">Fuente: Embudo <i class="fa-solid fa-arrow-right"></i></button></div>
+              <div class="pipeline-meta"><span id="dashPipelineTotal">0 prospectos</span><span>Conversión: <b id="dashConversion">0.0%</b></span></div>
               <div class="pipeline-summary" id="dashPipeline"></div>
-            </article>
-
-            <article class="panel channel-panel">
-              <div class="panel-header"><div><p class="section-kicker">ORIGEN</p><h3>Canales activos</h3></div></div>
-              <div class="channel-stat"><span class="channel-icon instagram"><i class="fa-brands fa-instagram"></i></span><div><strong>Instagram</strong><small>Conversaciones sincronizadas</small></div><b id="dashInstagramCount">0</b></div>
-              <div class="channel-stat"><span class="channel-icon signal"><i class="fa-solid fa-wave-square"></i></span><div><strong>S1GNAL Web</strong><small>Contactos del sitio</small></div><b id="dashSignalCount">0</b></div>
-              <div class="channel-stat"><span class="channel-icon messenger"><i class="fa-brands fa-facebook-messenger"></i></span><div><strong>Messenger</strong><small>Mensajes capturados</small></div><b id="dashFacebookCount">0</b></div>
-            </article>
-
-            <article class="panel finance-snapshot">
-              <div class="panel-header"><div><p class="section-kicker">FINANZAS</p><h3>Vista rápida</h3></div><button class="text-button" type="button" onclick="switchModule('contabilidad')">Detalle <i class="fa-solid fa-arrow-right"></i></button></div>
-              <div class="finance-value"><small>INGRESOS</small><strong id="dashRevenue">$0.00</strong><span>MXN</span></div>
-              <div class="finance-value profit"><small>UTILIDAD NETA</small><strong id="dashProfit">$0.00</strong><span>MXN</span></div>
             </article>
           </div>
         </section>
 
         <section id="moduleCrmSection" class="module-section hidden">
           <div class="metric-grid crm-metrics">
-            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-users"></i></span><small>TOTAL PROSPECTOS</small></div><strong id="kpiTotalLeads">0</strong><p>Capturados por IA</p></article>
-            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-calendar-check"></i></span><small>CITAS CONFIRMADAS</small></div><strong id="kpiCitasAgendadas">0</strong><p>Con fecha y hora</p></article>
-            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-handshake"></i></span><small>CLIENTES GANADOS</small></div><strong id="kpiClientesGanados">0</strong><p>Proyectos cerrados</p></article>
-            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-bolt"></i></span><small>CONVERSIÓN</small></div><strong id="kpiTasaConversion">0.0%</strong><p>Eficiencia del embudo</p></article>
+            <button class="metric-card metric-link" type="button" onclick="openCrmSource()"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-users"></i></span><small>TOTAL PROSPECTOS</small></div><strong id="kpiTotalLeads">0</strong><p>Ver todos los registros</p></button>
+            <button class="metric-card metric-link" type="button" onclick="openCrmSource('cita')"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-calendar-check"></i></span><small>CITAS CONFIRMADAS</small></div><strong id="kpiCitasAgendadas">0</strong><p>Ver citas con fecha y hora</p></button>
+            <button class="metric-card metric-link" type="button" onclick="openCrmSource('ganado')"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-handshake"></i></span><small>CLIENTES GANADOS</small></div><strong id="kpiClientesGanados">0</strong><p>Ver proyectos cerrados</p></button>
+            <button class="metric-card metric-link" type="button" onclick="openCrmSource()"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-bolt"></i></span><small>CONVERSIÓN</small></div><strong id="kpiTasaConversion">0.0%</strong><p>Ver el embudo completo</p></button>
           </div>
 
           <div class="crm-toolbar panel">
@@ -185,11 +139,16 @@
               <button class="tab-btn" id="tabList" type="button" onclick="switchCrmSubView('list')"><i class="fa-solid fa-list"></i> Lista</button>
             </div>
             <div class="channel-filters" aria-label="Filtrar por canal">
-              <button class="chip-filter active" type="button" onclick="filterChannel('todos', this)">Todos</button>
-              <button class="chip-filter" type="button" onclick="filterChannel('signal', this)"><i class="fa-solid fa-wave-square"></i> S1GNAL</button>
-              <button class="chip-filter" type="button" onclick="filterChannel('instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram</button>
-              <button class="chip-filter" type="button" onclick="filterChannel('facebook', this)"><i class="fa-brands fa-facebook-messenger"></i> Messenger</button>
+              <button class="chip-filter active" data-channel="todos" type="button" onclick="filterChannel('todos', this)">Todos</button>
+              <button class="chip-filter" data-channel="signal" type="button" onclick="filterChannel('signal', this)"><i class="fa-solid fa-wave-square"></i> S1GNAL</button>
+              <button class="chip-filter" data-channel="instagram" type="button" onclick="filterChannel('instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram</button>
+              <button class="chip-filter" data-channel="facebook" type="button" onclick="filterChannel('facebook', this)"><i class="fa-brands fa-facebook-messenger"></i> Messenger</button>
             </div>
+          </div>
+
+          <div class="active-filter hidden" id="activeCrmFilter">
+            <span><i class="fa-solid fa-filter"></i> <strong id="activeCrmFilterLabel">Filtro activo</strong></span>
+            <button type="button" onclick="clearCrmFilters()">Ver todos <i class="fa-solid fa-xmark"></i></button>
           </div>
 
           <div id="viewKanban" class="view-container">
@@ -246,10 +205,9 @@
 
   <nav class="mobile-nav" aria-label="Navegación móvil">
     <button class="active" data-module="dashboard" onclick="switchModule('dashboard')"><i class="fa-solid fa-table-cells-large"></i><span>Resumen</span></button>
-    <button data-module="crm" onclick="switchModule('crm')"><i class="fa-solid fa-users"></i><span>CRM</span></button>
-    <button data-module="facturacion" onclick="switchModule('facturacion')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Facturas</span></button>
-    <button data-module="contabilidad" onclick="switchModule('contabilidad')"><i class="fa-solid fa-chart-line"></i><span>Resultados</span></button>
-    <button onclick="toggleSidebar(true)"><i class="fa-solid fa-ellipsis"></i><span>Más</span></button>
+    <button data-module="crm" onclick="switchModule('crm')"><i class="fa-solid fa-users"></i><span>Prospectos</span></button>
+    <button onclick="syncInstagramInBackground(true)"><i class="fa-solid fa-arrows-rotate"></i><span>Sincronizar</span></button>
+    <button onclick="installApp()"><i class="fa-solid fa-download"></i><span>Guardar app</span></button>
   </nav>
 
   <div class="modal-backdrop hidden" id="leadModal" role="dialog" aria-modal="true" aria-labelledby="modalName">
@@ -271,14 +229,26 @@
             <div class="info-group appointment-fields hidden" id="appointmentFields"><label>FECHA Y HORA ACORDADAS</label><div class="appointment-input-row"><input id="appointmentDateInput" class="custom-input" type="text" placeholder="2026-07-30"><input id="appointmentTimeInput" class="custom-input" type="text" placeholder="10:00 AM"></div></div>
             <button type="button" class="button primary full-button" onclick="updateLeadStage()"><i class="fa-solid fa-check"></i> Guardar cambios</button>
           </div>
-          <div class="modal-actions"><a id="modalWaBtn" href="#" target="_blank" class="button whatsapp"><i class="fa-brands fa-whatsapp"></i> Contactar</a><button id="modalDeleteBtn" type="button" onclick="deleteCurrentLead()" class="button danger"><i class="fa-solid fa-trash"></i> Eliminar</button></div>
+          <div class="modal-actions"><a id="modalWaBtn" href="#" target="_blank" class="button whatsapp"><i class="fa-brands fa-whatsapp"></i> Contactar</a><button id="modalArchiveBtn" type="button" onclick="archiveCurrentLead()" class="button secondary"><i class="fa-solid fa-box-archive"></i> Archivar</button></div>
         </section>
         <section class="modal-right">
-          <div class="modal-section-title"><span><i class="fa-solid fa-comments"></i></span><div><h3>Conversación</h3><p>Historial capturado por S1GNAL</p></div></div>
-          <div class="chat-transcript-box" id="chatTranscriptBox"></div>
-          <div class="modal-section-title notes-title"><span><i class="fa-solid fa-note-sticky"></i></span><div><h3>Seguimiento interno</h3><p>Acuerdos visibles para el equipo</p></div></div>
-          <div class="add-note-form"><textarea id="noteInput" placeholder="Escribe una nota o siguiente acción..." rows="3"></textarea><div class="note-form-footer"><input type="text" id="noteAuthor" placeholder="Tu nombre"><button type="button" class="button primary small-button" onclick="addNote()"><i class="fa-solid fa-paper-plane"></i> Guardar</button></div></div>
+          <div class="modal-section-title"><span><i class="fa-solid fa-list-check"></i></span><div><h3>Próximo paso</h3><p>Responsable, acción y fecha límite</p></div></div>
+          <div class="follow-up-editor">
+            <div class="follow-up-grid">
+              <label><span>RESPONSABLE</span><select id="leadOwnerSelect" class="custom-select"><option value="Artemio">Artemio</option><option value="Edgar">Edgar</option></select></label>
+              <label><span>ESTADO</span><select id="nextActionStatusSelect" class="custom-select"><option value="pendiente">Pendiente</option><option value="completada">Completada</option></select></label>
+            </div>
+            <label><span>SIGUIENTE ACCIÓN</span><input id="nextActionInput" class="custom-input" type="text" placeholder="Ej. Enviar propuesta por WhatsApp"></label>
+            <label><span>FECHA LÍMITE</span><input id="nextActionDateInput" class="custom-input" type="datetime-local"></label>
+            <button id="saveNextActionButton" type="button" class="button primary full-button" onclick="saveNextAction()"><i class="fa-solid fa-check"></i> Guardar próximo paso</button>
+          </div>
+          <div class="modal-section-title notes-title"><span><i class="fa-solid fa-note-sticky"></i></span><div><h3>Notas internas</h3><p>Contexto y acuerdos para Artemio y Edgar</p></div></div>
+          <div class="add-note-form"><textarea id="noteInput" placeholder="Escribe una nota de seguimiento..." rows="3"></textarea><div class="note-form-footer"><input type="text" id="noteAuthor" placeholder="Tu nombre"><button id="saveNoteButton" type="button" class="button primary small-button" onclick="addNote()"><i class="fa-solid fa-paper-plane"></i> Guardar nota</button></div></div>
           <div class="notes-timeline" id="notesTimeline"></div>
+          <details class="conversation-panel">
+            <summary><span><i class="fa-solid fa-comments"></i> Conversación original</span><i class="fa-solid fa-chevron-down"></i></summary>
+            <div class="chat-transcript-box" id="chatTranscriptBox"></div>
+          </details>
         </section>
       </div>
     </div>
