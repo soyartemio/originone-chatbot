@@ -19,20 +19,36 @@ function getSecrets() {
   return { sessionSecret, setupSecret };
 }
 
-function getWebAuthnConfig() {
-  const defaultOrigin = process.env.NODE_ENV === 'production'
-    ? 'https://originone-chatbot.onrender.com'
-    : 'http://localhost:3000';
-  const origins = (process.env.AUTH_ORIGIN || defaultOrigin)
+function getWebAuthnConfig(req = null) {
+  const defaultOrigins = process.env.NODE_ENV === 'production'
+    ? ['https://crm.originone.com.mx', 'https://originone-chatbot.onrender.com']
+    : ['http://localhost:3000'];
+  const configuredOrigins = (process.env.AUTH_ORIGIN || '')
     .split(',')
     .map(value => value.trim().replace(/\/$/, ''))
     .filter(Boolean);
+  const origins = [...new Set([...configuredOrigins, ...defaultOrigins])];
   const primary = new URL(origins[0]);
+  const suppliedOrigin = String(req?.get?.('origin') || '').replace(/\/$/, '');
+  const requestOrigin = origins.includes(suppliedOrigin) ? suppliedOrigin : origins[0];
+  const requestHostname = new URL(requestOrigin).hostname;
+  const configuredRpIDs = String(process.env.AUTH_RP_ID || '')
+    .split(',')
+    .map(value => value.trim())
+    .filter(Boolean);
   return {
     rpName: process.env.AUTH_RP_NAME || 'Origin One CRM',
-    rpID: process.env.AUTH_RP_ID || primary.hostname,
-    origins
+    rpID: origins.some(origin => new URL(origin).hostname === requestHostname)
+      ? requestHostname
+      : (configuredRpIDs[0] || primary.hostname),
+    origin: requestOrigin,
+    origins,
+    legacyRPID: process.env.AUTH_LEGACY_RP_ID || 'originone-chatbot.onrender.com'
   };
+}
+
+function getPasskeyRpID(passkey, config = getWebAuthnConfig()) {
+  return passkey?.rpID || config.legacyRPID;
 }
 
 async function getWebAuthn() {
@@ -323,10 +339,11 @@ function createAuthRouter() {
       clearFailures(req, username);
       const latest = (await readAuthSnapshot()).data.users[username];
       const webAuthn = await getWebAuthn();
-      const config = getWebAuthnConfig();
+      const config = getWebAuthnConfig(req);
+      const rpPasskeys = latest.passkeys.filter(passkey => getPasskeyRpID(passkey, config) === config.rpID);
 
-      if (!latest.passkeys.length) {
-        if (!verifySetupToken(username, req.body.setupToken)) {
+      if (!rpPasskeys.length) {
+        if (!latest.passkeys.length && !verifySetupToken(username, req.body.setupToken)) {
           return res.status(403).json({ success: false, error: 'Abre el enlace privado para terminar la activación' });
         }
         const options = await webAuthn.generateRegistrationOptions({
@@ -343,16 +360,28 @@ function createAuthRouter() {
           },
           supportedAlgorithmIDs: [-7, -257]
         });
-        issueChallenge(res, { ceremony: 'registration', username, challenge: options.challenge });
+        issueChallenge(res, {
+          ceremony: 'registration',
+          username,
+          challenge: options.challenge,
+          rpID: config.rpID,
+          origin: config.origin
+        });
         return res.json({ success: true, next: 'register_passkey', options });
       }
 
       const options = await webAuthn.generateAuthenticationOptions({
         rpID: config.rpID,
-        allowCredentials: latest.passkeys.map(passkey => ({ id: passkey.id, transports: passkey.transports })),
+        allowCredentials: rpPasskeys.map(passkey => ({ id: passkey.id, transports: passkey.transports })),
         userVerification: 'required'
       });
-      issueChallenge(res, { ceremony: 'authentication', username, challenge: options.challenge });
+      issueChallenge(res, {
+        ceremony: 'authentication',
+        username,
+        challenge: options.challenge,
+        rpID: config.rpID,
+        origin: config.origin
+      });
       res.json({ success: true, next: 'authenticate_passkey', options });
     } catch (error) {
       next(error);
@@ -365,15 +394,20 @@ function createAuthRouter() {
       if (!challenge) return res.status(400).json({ success: false, error: 'La activación expiró. Inténtalo de nuevo.' });
       const { data } = await readAuthSnapshot();
       const user = data.users[challenge.username];
-      if (!user?.password || user.passkeys.length) return res.status(409).json({ success: false, error: 'La cuenta ya fue activada' });
+      if (!user?.password) return res.status(409).json({ success: false, error: 'La cuenta aún no tiene contraseña' });
 
       const webAuthn = await getWebAuthn();
-      const config = getWebAuthnConfig();
+      const config = getWebAuthnConfig(req);
+      const expectedRPID = challenge.rpID || config.rpID;
+      const expectedOrigin = challenge.origin || config.origin;
+      if (expectedRPID !== config.rpID || expectedOrigin !== config.origin) {
+        return res.status(400).json({ success: false, error: 'El dominio de activación no coincide' });
+      }
       const verification = await webAuthn.verifyRegistrationResponse({
         response: req.body.response,
         expectedChallenge: challenge.challenge,
-        expectedOrigin: config.origins.length === 1 ? config.origins[0] : config.origins,
-        expectedRPID: config.rpID,
+        expectedOrigin,
+        expectedRPID,
         requireUserVerification: true
       });
       if (!verification.verified || !verification.registrationInfo) {
@@ -391,6 +425,7 @@ function createAuthRouter() {
           transports: credential.transports || req.body.response?.response?.transports || [],
           deviceType: credentialDeviceType,
           backedUp: credentialBackedUp,
+          rpID: expectedRPID,
           createdAt: new Date().toISOString()
         });
         current.setupCompletedAt = new Date().toISOString();
@@ -409,16 +444,23 @@ function createAuthRouter() {
       if (!challenge) return res.status(400).json({ success: false, error: 'El acceso expiró. Inténtalo de nuevo.' });
       const { data } = await readAuthSnapshot();
       const user = data.users[challenge.username];
-      const passkey = user?.passkeys.find(item => item.id === req.body.response?.id);
+      const config = getWebAuthnConfig(req);
+      const expectedRPID = challenge.rpID || config.rpID;
+      const expectedOrigin = challenge.origin || config.origin;
+      if (expectedRPID !== config.rpID || expectedOrigin !== config.origin) {
+        return res.status(400).json({ success: false, error: 'El dominio de acceso no coincide' });
+      }
+      const passkey = user?.passkeys.find(item =>
+        item.id === req.body.response?.id && getPasskeyRpID(item, config) === expectedRPID
+      );
       if (!passkey) return res.status(400).json({ success: false, error: 'Passkey no reconocida' });
 
       const webAuthn = await getWebAuthn();
-      const config = getWebAuthnConfig();
       const verification = await webAuthn.verifyAuthenticationResponse({
         response: req.body.response,
         expectedChallenge: challenge.challenge,
-        expectedOrigin: config.origins.length === 1 ? config.origins[0] : config.origins,
-        expectedRPID: config.rpID,
+        expectedOrigin,
+        expectedRPID,
         credential: {
           id: passkey.id,
           publicKey: new Uint8Array(Buffer.from(passkey.publicKey, 'base64url')),
@@ -463,6 +505,7 @@ module.exports = {
   createAuthRouter,
   createSetupToken,
   getWebAuthnConfig,
+  getPasskeyRpID,
   hashPassword,
   verifyPassword,
   requireApiAuth,

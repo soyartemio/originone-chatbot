@@ -16,6 +16,8 @@ for (const key of ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 
 const {
   createAuthRouter,
   createSetupToken,
+  getPasskeyRpID,
+  getWebAuthnConfig,
   hashPassword,
   verifyPassword,
   requireApiAuth
@@ -80,4 +82,20 @@ test('solo el enlace privado puede iniciar el alta y después exige passkey', as
 
 test('los enlaces de activación son distintos por usuario', () => {
   assert.notEqual(createSetupToken('artemio'), createSetupToken('edgar'));
+});
+
+test('elige un RP ID por dominio y conserva las passkeys heredadas de Render', () => {
+  process.env.NODE_ENV = 'production';
+  process.env.AUTH_ORIGIN = 'https://crm.originone.com.mx,https://originone-chatbot.onrender.com';
+  process.env.AUTH_RP_ID = 'crm.originone.com.mx';
+  process.env.AUTH_LEGACY_RP_ID = 'originone-chatbot.onrender.com';
+
+  const customConfig = getWebAuthnConfig({ get: name => name === 'origin' ? 'https://crm.originone.com.mx' : null });
+  const renderConfig = getWebAuthnConfig({ get: name => name === 'origin' ? 'https://originone-chatbot.onrender.com' : null });
+
+  assert.equal(customConfig.rpID, 'crm.originone.com.mx');
+  assert.equal(renderConfig.rpID, 'originone-chatbot.onrender.com');
+  assert.equal(getPasskeyRpID({}, customConfig), 'originone-chatbot.onrender.com');
+
+  process.env.NODE_ENV = 'test';
 });

@@ -35,8 +35,10 @@ services:
       - key: AUTH_SETUP_SECRET
         generateValue: true
       - key: AUTH_ORIGIN
-        value: https://originone-chatbot.onrender.com
+        value: https://crm.originone.com.mx,https://originone-chatbot.onrender.com
       - key: AUTH_RP_ID
+        value: crm.originone.com.mx
+      - key: AUTH_LEGACY_RP_ID
         value: originone-chatbot.onrender.com
       - key: AUTH_RP_NAME
         value: Origin One CRM
