@@ -1,0 +1,49 @@
+{
+  "id": "/crm/",
+  "name": "Origin One OS",
+  "short_name": "Origin One",
+  "description": "Panel privado para gestionar prospectos, citas y operación de Origin One.",
+  "lang": "es-MX",
+  "start_url": "/crm/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0B0C0E",
+  "theme_color": "#0B0C0E",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/crm/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/crm/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/crm/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Abrir CRM",
+      "short_name": "CRM",
+      "url": "/crm/?module=crm",
+      "icons": [{ "src": "/crm/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Resumen operativo",
+      "short_name": "Resumen",
+      "url": "/crm/?module=dashboard",
+      "icons": [{ "src": "/crm/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

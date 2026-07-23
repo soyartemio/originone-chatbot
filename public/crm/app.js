@@ -1,12 +1,162 @@
-let currentModule = 'crm';
+const allowedModules = new Set(['dashboard', 'crm', 'facturacion', 'contabilidad', 'bancos', 'socios']);
+const requestedModule = new URLSearchParams(window.location.search).get('module');
+let currentModule = allowedModules.has(requestedModule) ? requestedModule : 'dashboard';
 let allLeads = [];
 let currentFilterChannel = 'todos';
 let currentActiveLeadId = null;
+let currentUserDisplayName = 'Usuario';
+let deferredInstallPrompt = null;
+let toastTimer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  initializeShell();
+  initializePwa();
   loadCurrentUser();
-  loadModuleData();
+  switchModule(currentModule, { updateUrl: false });
 });
+
+function initializeShell() {
+  document.getElementById('dashboardDate').innerText = new Intl.DateTimeFormat('es-MX', {
+    weekday: 'short', day: 'numeric', month: 'short'
+  }).format(new Date()).replace('.', '').toUpperCase();
+
+  document.addEventListener('keydown', event => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      switchModule('crm').then(() => document.getElementById('searchInput')?.focus());
+    }
+    if (event.key === 'Escape') {
+      if (!document.getElementById('recordModal').classList.contains('hidden')) closeRecordModal();
+      else if (!document.getElementById('installModal').classList.contains('hidden')) closeInstallModal();
+      else if (!document.getElementById('leadModal').classList.contains('hidden')) closeModal();
+      else toggleSidebar(false);
+    }
+  });
+
+  document.getElementById('leadModal').addEventListener('click', event => {
+    if (event.target.id === 'leadModal') closeModal();
+  });
+  document.getElementById('installModal').addEventListener('click', event => {
+    if (event.target.id === 'installModal') closeInstallModal();
+  });
+  document.getElementById('recordModal').addEventListener('click', event => {
+    if (event.target.id === 'recordModal') closeRecordModal();
+  });
+  document.getElementById('invoiceForm').addEventListener('submit', submitInvoiceForm);
+  document.getElementById('transactionForm').addEventListener('submit', submitTransactionForm);
+}
+
+async function initializePwa() {
+  updateInstallUi();
+  if ('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.register('/crm/sw.js', { scope: '/' });
+    } catch (error) {
+      console.warn('No fue posible registrar la app instalable:', error.message);
+    }
+  }
+}
+
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  updateInstallUi();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  updateInstallUi(true);
+  showToast('Origin One OS quedó guardada como app.');
+});
+
+function isStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function updateInstallUi(installed = isStandaloneMode()) {
+  const sidebarLabel = document.getElementById('sidebarInstallLabel');
+  const installButton = document.getElementById('installAppButton');
+  if (sidebarLabel) sidebarLabel.innerText = installed ? 'App instalada' : 'Guardar como app';
+  if (installButton) {
+    installButton.querySelector('span').innerText = installed ? 'App instalada' : 'Guardar como app';
+    installButton.disabled = installed;
+  }
+}
+
+async function installApp() {
+  if (isStandaloneMode()) {
+    showToast('Ya estás usando Origin One OS como app.');
+    return;
+  }
+
+  if (deferredInstallPrompt) {
+    const prompt = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    await prompt.prompt();
+    const result = await prompt.userChoice;
+    if (result.outcome === 'accepted') updateInstallUi(true);
+    return;
+  }
+
+  const userAgent = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
+  const instructions = document.getElementById('installInstructions');
+  if (isIOS) {
+    instructions.innerHTML = 'En Safari, toca <strong>Compartir</strong> y después <strong>Agregar a pantalla de inicio</strong>.';
+  } else if (isSafari) {
+    instructions.innerHTML = 'En Safari, abre el menú <strong>Archivo</strong> y elige <strong>Agregar al Dock</strong>.';
+  } else {
+    instructions.innerHTML = 'Abre el menú de tu navegador y elige <strong>Instalar Origin One OS</strong> o <strong>Crear acceso directo</strong>.';
+  }
+  document.getElementById('installModal').classList.remove('hidden');
+}
+
+function closeInstallModal() {
+  document.getElementById('installModal').classList.add('hidden');
+}
+
+function closeRecordModal() {
+  document.getElementById('recordModal').classList.add('hidden');
+  document.getElementById('invoiceForm').classList.add('hidden');
+  document.getElementById('transactionForm').classList.add('hidden');
+}
+
+function toggleSidebar(open) {
+  document.body.classList.toggle('sidebar-open', Boolean(open));
+}
+
+function showToast(message) {
+  const toast = document.getElementById('appToast');
+  document.getElementById('toastMessage').innerText = message;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+}
+
+function setText(id, value) {
+  const element = document.getElementById(id);
+  if (element) element.innerText = value;
+}
+
+function formatCurrency(value) {
+  return `$${Number(value || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function updateDashboardGreeting() {
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
+  setText('dashboardGreeting', `${greeting}, ${currentUserDisplayName}`);
+}
+
+async function openLeadFromDashboard(id) {
+  await switchModule('crm');
+  openModal(id);
+}
+
+async function refreshCurrentModule() {
+  loadModuleData();
+}
 
 async function loadCurrentUser() {
   const response = await fetch('/api/auth/session', { credentials: 'same-origin' });
@@ -16,7 +166,9 @@ async function loadCurrentUser() {
     return;
   }
   const nameElement = document.getElementById('currentUserName');
-  if (nameElement) nameElement.innerText = data.user.displayName;
+  currentUserDisplayName = data.user.displayName;
+  if (nameElement) nameElement.innerText = currentUserDisplayName;
+  updateDashboardGreeting();
   const noteAuthor = document.getElementById('noteAuthor');
   if (noteAuthor) {
     noteAuthor.value = data.user.displayName;
@@ -31,18 +183,25 @@ async function logout() {
     headers: { 'Content-Type': 'application/json' },
     body: '{}'
   });
+  if (navigator.serviceWorker?.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_PRIVATE_CACHE' });
+  }
   window.location.replace('/auth');
 }
 
 /**
  * Conmutar entre módulos del ERP
  */
-function switchModule(moduleName, btnEl) {
+async function switchModule(moduleName, options = {}) {
+  if (!allowedModules.has(moduleName)) moduleName = 'dashboard';
   currentModule = moduleName;
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  btnEl.classList.add('active');
+  document.querySelectorAll('[data-module]').forEach(button => {
+    button.classList.toggle('active', button.dataset.module === moduleName);
+  });
+  toggleSidebar(false);
 
   const sections = {
+    dashboard: document.getElementById('moduleDashboardSection'),
     crm: document.getElementById('moduleCrmSection'),
     facturacion: document.getElementById('moduleFacturacionSection'),
     contabilidad: document.getElementById('moduleContabilidadSection'),
@@ -59,19 +218,30 @@ function switchModule(moduleName, btnEl) {
   });
 
   const titles = {
-    crm: { title: 'CRM & Seguimiento de Prospectos', sub: 'Gestión omnicanal de contactos, citas confirmadas y oportunidades' },
-    facturacion: { title: 'Facturación & Cotizaciones', sub: 'Control de cotizaciones emitidas, cobranza y comprobantes fiscales' },
-    contabilidad: { title: 'Contabilidad & Estado de Resultados (P&L)', sub: 'Visibilidad transparente de ingresos, egresos y utilidad neta' },
-    bancos: { title: 'Bancos & Tesorería', sub: 'Control de saldos en cuentas corporativas y flujo de efectivo' },
-    socios: { title: 'Transparencia de Socios & Utilidades', sub: 'Auditoría de participaciones accionarias y distribución de beneficios' }
+    dashboard: { eyebrow: 'CENTRO DE CONTROL', title: 'Resumen operativo', sub: 'Lo importante de Origin One en un solo lugar.' },
+    crm: { eyebrow: 'RELACIONES COMERCIALES', title: 'Prospectos y seguimiento', sub: 'Contactos, citas confirmadas y oportunidades.' },
+    facturacion: { eyebrow: 'ADMINISTRACIÓN', title: 'Facturación', sub: 'Cotizaciones, cobranza y comprobantes.' },
+    contabilidad: { eyebrow: 'FINANZAS', title: 'Contabilidad y resultados', sub: 'Ingresos, egresos y utilidad neta.' },
+    bancos: { eyebrow: 'TESORERÍA', title: 'Bancos', sub: 'Disponibilidad y saldos corporativos.' },
+    socios: { eyebrow: 'TRANSPARENCIA', title: 'Socios', sub: 'Participación y distribución de utilidades.' }
   };
 
   if (titles[moduleName]) {
+    document.getElementById('moduleEyebrow').innerText = titles[moduleName].eyebrow;
     document.getElementById('moduleTitle').innerText = titles[moduleName].title;
     document.getElementById('moduleSubtitle').innerText = titles[moduleName].sub;
   }
 
-  loadModuleData();
+  document.getElementById('globalSearchBox').classList.toggle('hidden', moduleName !== 'crm');
+
+  if (options.updateUrl !== false) {
+    const url = new URL(window.location.href);
+    if (moduleName === 'dashboard') url.searchParams.delete('module');
+    else url.searchParams.set('module', moduleName);
+    window.history.replaceState({}, '', url);
+  }
+
+  await loadModuleData();
 }
 
 /**
@@ -82,17 +252,29 @@ async function loadModuleData() {
   if (refreshIcon) refreshIcon.classList.add('fa-spin');
 
   try {
-    if (currentModule === 'crm') {
-      const syncResponse = await fetch('/api/crm/sync/instagram', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}'
-      });
-      const syncResult = await syncResponse.json();
-      if (!syncResponse.ok || !syncResult.success) {
-        throw new Error(syncResult.error || 'No fue posible sincronizar Instagram');
+    if (currentModule === 'dashboard' || currentModule === 'crm') {
+      try {
+        const syncResponse = await fetch('/api/crm/sync/instagram', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+        const syncResult = await syncResponse.json();
+        if (!syncResponse.ok || !syncResult.success) {
+          throw new Error(syncResult.error || 'No fue posible sincronizar Instagram');
+        }
+        setText('syncStatusText', 'Sincronizado ahora');
+      } catch (syncError) {
+        console.warn('Sincronización de Instagram pendiente:', syncError.message);
+        setText('syncStatusText', 'Mostrando últimos datos guardados');
+        showToast('El CRM está mostrando los últimos datos guardados.');
       }
+    }
+
+    if (currentModule === 'dashboard') {
+      await loadDashboardModule();
+    } else if (currentModule === 'crm') {
       await loadCrmModule();
     } else if (currentModule === 'facturacion') {
       await loadFacturacionModule();
@@ -105,13 +287,104 @@ async function loadModuleData() {
     }
   } catch (error) {
     console.error('Error cargando módulo:', error);
-    if (currentModule === 'crm') {
-      alert(`No fue posible sincronizar Instagram: ${error.message}`);
-      await loadCrmModule();
-    }
+    showToast(`No fue posible cargar esta sección: ${error.message}`);
   } finally {
     if (refreshIcon) refreshIcon.classList.remove('fa-spin');
   }
+}
+
+/* ==================== RESUMEN OPERATIVO ==================== */
+async function loadDashboardModule() {
+  const [leadsResponse, kpisResponse, pnlResponse] = await Promise.all([
+    fetch('/api/crm/leads'),
+    fetch('/api/crm/kpis'),
+    fetch('/api/contabilidad/pnl')
+  ]);
+
+  const [leadsData, kpisData, pnlData] = await Promise.all([
+    leadsResponse.json(),
+    kpisResponse.json(),
+    pnlResponse.json()
+  ]);
+
+  if (leadsData.success) allLeads = leadsData.leads || [];
+  const kpis = kpisData.kpis || {};
+  const stages = kpis.porEtapa || {};
+  const channels = kpis.porCanal || {};
+
+  setText('dashNewContacts', stages.nuevo || 0);
+  setText('dashConfirmed', kpis.citasAgendadas || 0);
+  setText('dashWon', kpis.clientesGanados || 0);
+  setText('dashConversion', kpis.tasaConversion || '0.0%');
+  setText('dashInstagramCount', channels.instagram || 0);
+  setText('dashSignalCount', channels.signal_web || 0);
+  setText('dashFacebookCount', channels.facebook || 0);
+  setText('dashPipelineTotal', `${kpis.totalLeads || 0} prospectos`);
+  setText('navLeadCount', kpis.totalLeads || 0);
+
+  if (pnlData.pnl) {
+    setText('dashRevenue', formatCurrency(pnlData.pnl.totalIngresos));
+    setText('dashProfit', formatCurrency(pnlData.pnl.utilidadNeta));
+  }
+
+  renderDashboardRecentContacts();
+  renderDashboardPipeline(stages, kpis.totalLeads || 0);
+}
+
+function renderDashboardRecentContacts() {
+  const container = document.getElementById('dashRecentContacts');
+  container.innerHTML = '';
+  const recent = [...allLeads]
+    .filter(lead => getStageKey(lead) === 'nuevo')
+    .sort((a, b) => new Date(b.actualizado_el || b.creado_el || 0) - new Date(a.actualizado_el || a.creado_el || 0))
+    .slice(0, 5);
+
+  if (!recent.length) {
+    container.innerHTML = '<p class="empty-state">No hay contactos nuevos pendientes.</p>';
+    return;
+  }
+
+  recent.forEach(lead => {
+    const channel = (lead.canal_origen || '').toLowerCase();
+    const icon = channel.includes('instagram') ? 'fa-brands fa-instagram' : channel.includes('facebook') ? 'fa-brands fa-facebook-messenger' : 'fa-solid fa-wave-square';
+    const activity = getLeadActivity(lead);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'recent-contact';
+    button.innerHTML = `
+      <span class="recent-channel"><i class="${icon}"></i></span>
+      <span class="recent-copy"><span class="recent-name"></span><span class="recent-meta"></span></span>
+      <span class="recent-time"></span>
+    `;
+    button.querySelector('.recent-name').innerText = lead.nombre_cliente || 'Prospecto sin nombre';
+    button.querySelector('.recent-meta').innerText = lead.canal_origen || 'Canal general';
+    button.querySelector('.recent-time').innerText = `${activity.date} · ${activity.time}`;
+    button.addEventListener('click', () => openLeadFromDashboard(lead.id));
+    container.appendChild(button);
+  });
+}
+
+function renderDashboardPipeline(stages, total) {
+  const container = document.getElementById('dashPipeline');
+  const items = [
+    ['Nuevo contacto', stages.nuevo || 0],
+    ['Cita confirmada', stages.cita || 0],
+    ['Diagnóstico', stages.diagnostico || 0],
+    ['Propuesta', stages.propuesta || 0],
+    ['Ganado', stages.ganado || 0]
+  ];
+  container.innerHTML = '';
+
+  items.forEach(([label, count]) => {
+    const row = document.createElement('div');
+    row.className = 'pipeline-row';
+    const width = total ? Math.max((count / total) * 100, count ? 4 : 0) : 0;
+    row.innerHTML = `<span></span><div class="pipeline-track"><div class="pipeline-fill"></div></div><b></b>`;
+    row.querySelector('span').innerText = label;
+    row.querySelector('.pipeline-fill').style.width = `${width}%`;
+    row.querySelector('b').innerText = count;
+    container.appendChild(row);
+  });
 }
 
 /* ==================== MÓDULO 1: CRM ==================== */
@@ -127,6 +400,7 @@ async function loadCrmModule() {
     document.getElementById('kpiCitasAgendadas').innerText = dataKpis.kpis.citasAgendadas || 0;
     document.getElementById('kpiClientesGanados').innerText = dataKpis.kpis.clientesGanados || 0;
     document.getElementById('kpiTasaConversion').innerText = dataKpis.kpis.tasaConversion || '0.0%';
+    setText('navLeadCount', dataKpis.kpis.totalLeads || 0);
   }
 
   renderBoard();
@@ -253,7 +527,7 @@ function createLeadCard(lead) {
     <div class="card-top">
       <span class="channel-tag ${tagClass}"><i class="${iconClass}"></i> ${canalName}</span>
       ${isTestBadge}
-      <span class="date-badge">${activity.label}: ${activity.date}</span>
+      <span class="date-badge" title="${activity.label}">${activity.date}</span>
     </div>
     <h4 class="lead-name">${lead.nombre_cliente || 'Prospecto sin nombre'}</h4>
     <p class="lead-company"><i class="fa-solid fa-building"></i> ${lead.empresa_o_proyecto || 'Origin One Prospect'}</p>
@@ -496,20 +770,36 @@ async function loadFacturacionModule() {
   });
 }
 
-async function openNewInvoiceModal() {
-  const cliente = prompt("Nombre del cliente o empresa:");
-  if (!cliente) return;
-  const montoStr = prompt("Monto Subtotal ($ MXN):", "50000");
-  if (!montoStr) return;
+function openNewInvoiceModal() {
+  document.getElementById('recordModalKicker').innerText = 'FACTURACIÓN';
+  document.getElementById('recordModalTitle').innerText = 'Nueva factura o cotización';
+  document.getElementById('recordModalDescription').innerText = 'Registra los datos esenciales del documento.';
+  document.getElementById('transactionForm').classList.add('hidden');
+  document.getElementById('invoiceForm').classList.remove('hidden');
+  document.getElementById('invoiceForm').reset();
+  document.getElementById('recordModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('invoiceClientInput').focus(), 50);
+}
 
+async function submitInvoiceForm(event) {
+  event.preventDefault();
+  const cliente = document.getElementById('invoiceClientInput').value.trim();
+  const concepto = document.getElementById('invoiceConceptInput').value.trim();
+  const subtotal = Number(document.getElementById('invoiceAmountInput').value);
   try {
-    await fetch('/api/facturacion/invoices', {
+    const response = await fetch('/api/facturacion/invoices', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cliente, empresa: cliente, subtotal: parseFloat(montoStr) })
+      body: JSON.stringify({ cliente, empresa: cliente, concepto: concepto || 'Servicios Origin One', subtotal })
     });
-    loadFacturacionModule();
-  } catch (e) { console.error(e); }
+    if (!response.ok) throw new Error('No fue posible guardar el documento');
+    closeRecordModal();
+    await loadFacturacionModule();
+    showToast('Factura o cotización guardada.');
+  } catch (error) {
+    console.error(error);
+    showToast(error.message);
+  }
 }
 
 /* ==================== MÓDULO 3: CONTABILIDAD & PNL ==================== */
@@ -544,22 +834,36 @@ async function loadContabilidadModule() {
   });
 }
 
-async function openNewTrxModal() {
-  const tipo = prompt("Tipo de movimiento ('ingreso' o 'egreso'):", "ingreso");
-  if (!tipo) return;
-  const concepto = prompt("Concepto o descripción:");
-  if (!concepto) return;
-  const monto = prompt("Monto ($ MXN):", "10000");
-  if (!monto) return;
+function openNewTrxModal() {
+  document.getElementById('recordModalKicker').innerText = 'CONTABILIDAD';
+  document.getElementById('recordModalTitle').innerText = 'Registrar movimiento';
+  document.getElementById('recordModalDescription').innerText = 'Agrega un ingreso o egreso al resultado del periodo.';
+  document.getElementById('invoiceForm').classList.add('hidden');
+  document.getElementById('transactionForm').classList.remove('hidden');
+  document.getElementById('transactionForm').reset();
+  document.getElementById('recordModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('transactionConceptInput').focus(), 50);
+}
 
+async function submitTransactionForm(event) {
+  event.preventDefault();
+  const tipo = document.getElementById('transactionTypeInput').value;
+  const concepto = document.getElementById('transactionConceptInput').value.trim();
+  const monto = Number(document.getElementById('transactionAmountInput').value);
   try {
-    await fetch('/api/contabilidad/transaccion', {
+    const response = await fetch('/api/contabilidad/transaccion', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipo, concepto, monto: parseFloat(monto), categoria: tipo === 'ingreso' ? 'Venta Proyecto IA' : 'Operación' })
+      body: JSON.stringify({ tipo, concepto, monto, categoria: tipo === 'ingreso' ? 'Venta Proyecto IA' : 'Operación' })
     });
-    loadContabilidadModule();
-  } catch (e) { console.error(e); }
+    if (!response.ok) throw new Error('No fue posible guardar el movimiento');
+    closeRecordModal();
+    await loadContabilidadModule();
+    showToast('Movimiento guardado.');
+  } catch (error) {
+    console.error(error);
+    showToast(error.message);
+  }
 }
 
 /* ==================== MÓDULO 4: BANCOS ==================== */
@@ -631,12 +935,13 @@ async function deleteCurrentLead() {
       const data = await res.json();
       if (data.success) {
         closeModal();
-        fetchLeadsAndRender();
+        await loadCrmModule();
+        showToast('Prospecto eliminado.');
       } else {
-        alert('Error eliminando lead: ' + (data.error || 'Desconocido'));
+        showToast('No fue posible eliminar: ' + (data.error || 'Error desconocido'));
       }
     } catch (e) {
-      alert('Error de conexión al eliminar: ' + e.message);
+      showToast('Error de conexión: ' + e.message);
     }
   }
 }

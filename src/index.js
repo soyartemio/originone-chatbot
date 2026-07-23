@@ -76,8 +76,21 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/admin', requirePageAuth, express.static(path.join(__dirname, '../public/crm')));
-app.use('/crm', requirePageAuth, express.static(path.join(__dirname, '../public/crm')));
+const crmAssetsPath = path.join(__dirname, '../public/crm');
+const crmStaticOptions = {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith(`${path.sep}sw.js`)) {
+      res.set('Service-Worker-Allowed', '/');
+      res.set('Cache-Control', 'no-cache');
+    }
+    if (filePath.endsWith(`${path.sep}manifest.webmanifest`)) {
+      res.type('application/manifest+json');
+    }
+  }
+};
+
+app.use('/admin', requirePageAuth, express.static(crmAssetsPath, crmStaticOptions));
+app.use('/crm', requirePageAuth, express.static(crmAssetsPath, crmStaticOptions));
 
 app.use([
   '/api/crm',
