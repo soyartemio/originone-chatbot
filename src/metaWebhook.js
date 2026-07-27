@@ -296,20 +296,29 @@ async function sendMetaMessage(recipientPsid, text, channelName = 'Facebook Mess
         message: { text: text }
       };
 
-      const fbEndpoints = [
-        `https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`,
-        `https://graph.facebook.com/v21.0/1287784707740447/messages?access_token=${pageAccessToken}`
-      ];
-
-      for (const ep of fbEndpoints) {
-        try {
-          const response = await axios.post(ep, fbPayload);
-          console.log(`[MetaWebhook] ✅ Respuesta entregada exitosamente en Facebook Messenger:`, response.data);
-          return;
-        } catch (err) {
-          console.warn(`[MetaWebhook] ⚠️ Falló intento FB en ${ep}:`, err.response?.data?.error?.message || err.message);
+      const accessTokens = [...new Set([pageAccessToken, igAccessToken].filter(Boolean))];
+      const endpointIds = ['me', '1287784707740447'];
+      let lastError = null;
+      for (const accessToken of accessTokens) {
+        for (const endpointId of endpointIds) {
+          try {
+            const response = await axios.post(
+              `https://graph.facebook.com/v25.0/${endpointId}/messages`,
+              fbPayload,
+              { headers: { Authorization: `Bearer ${accessToken}` } }
+            );
+            console.log(`[MetaWebhook] ✅ Respuesta entregada exitosamente en Facebook Messenger:`, response.data);
+            return;
+          } catch (error) {
+            lastError = error;
+            console.warn(
+              `[MetaWebhook] ⚠️ Falló intento FB (${endpointId}):`,
+              error.response?.data?.error?.message || error.message
+            );
+          }
         }
       }
+      throw lastError || new Error('No hay un token de página configurado para Facebook');
     }
   } catch (error) {
     console.error(`[MetaWebhook] ❌ Error entregando respuesta en ${channelName}:`, error.response?.data || error.message);
