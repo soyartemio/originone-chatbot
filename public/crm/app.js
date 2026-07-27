@@ -457,6 +457,7 @@ function openPublicationModal(id = null) {
   document.getElementById('publicationVisualInput').value = publication?.visualBrief || '';
   document.getElementById('publicationAssetProviderInput').value = publication?.assetProvider || 'pomelli';
   document.getElementById('publicationAssetStatusInput').value = publication?.assetStatus || 'pendiente';
+  document.getElementById('publicationAssetUrlInput').value = publication?.assetUrl || '';
   document.getElementById('publicationVoiceoverInput').value = publication?.voiceoverScript || '';
   document.getElementById('publicationVoiceNameInput').value = publication?.voiceConfig?.name || 'es-US-Neural2-A';
   document.getElementById('publicationVoiceRateInput').value = String(publication?.voiceConfig?.speakingRate || 1.03);
@@ -497,6 +498,7 @@ function publicationPayload() {
     visualBrief: document.getElementById('publicationVisualInput').value.trim(),
     assetProvider: document.getElementById('publicationAssetProviderInput').value,
     assetStatus: document.getElementById('publicationAssetStatusInput').value,
+    assetUrl: document.getElementById('publicationAssetUrlInput').value.trim(),
     voiceoverScript: document.getElementById('publicationVoiceoverInput').value.trim(),
     voiceConfig: {
       languageCode: 'es-US',

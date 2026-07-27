@@ -15,6 +15,9 @@ const DEFAULT_PUBLICATIONS = [
     solution: 'S1GNAL conversa de voz a voz desde la web, entiende contexto y convierte la conversación en seguimiento comercial.',
     evidence: 'Demo S1GNAL disponible en originone.com.mx.',
     visualBrief: 'Dueño hablando con naturalidad frente a una onda de voz dorada; al lado, un laberinto absurdo de menús “presiona 1”. Estilo editorial premium, fondo oscuro Origin One.',
+    assetProvider: 'pomelli',
+    assetStatus: 'listo',
+    assetUrl: 'https://labs.google.com/pomelli/campaigns/biYih_QX4BqcCvLQSi_OwI',
     voiceoverScript: 'Tu cliente no quiere jugar a presiona uno. Quiere explicar lo que necesita. S1GNAL convierte tu página en una conversación de voz a voz, entiende el contexto y prepara el seguimiento. ¿Hablarías con tu propia página?',
     copies: {
       instagram: 'Tu cliente no quiere llenar otro formulario. Quiere explicar lo que necesita. S1GNAL conversa de voz a voz, entiende el contexto y convierte esa conversación en una oportunidad real. ¿Hablarías con tu propia página?',
@@ -80,6 +83,7 @@ function normalizePublication(input, existing = {}) {
     visualBrief: String(input.visualBrief ?? existing.visualBrief ?? '').trim().slice(0, 3000),
     assetProvider: String(input.assetProvider ?? existing.assetProvider ?? 'pomelli').trim().slice(0, 80),
     assetStatus: String(input.assetStatus ?? existing.assetStatus ?? 'pendiente').trim().slice(0, 80),
+    assetUrl: String(input.assetUrl ?? existing.assetUrl ?? '').trim().slice(0, 1000),
     voiceoverScript: String(input.voiceoverScript ?? existing.voiceoverScript ?? '').trim().slice(0, 5000),
     voiceConfig: {
       languageCode: String(input.voiceConfig?.languageCode ?? existing.voiceConfig?.languageCode ?? 'es-US').slice(0, 20),
