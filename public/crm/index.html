@@ -451,8 +451,15 @@
         <label><span>Destino del llamado a la acción</span><input class="custom-input" id="publicationCtaUrlInput" type="url" placeholder="https://originone.com.mx/?utm_source=..."></label>
         <label><span>Guion de locución</span><textarea class="custom-textarea" id="publicationVoiceoverInput" rows="4" placeholder="Texto breve para Reel o video. La voz se genera después de guardar."></textarea></label>
         <div class="record-form-grid">
-          <label><span>Voz natural de Google</span><select class="custom-select" id="publicationVoiceNameInput"><option value="es-US-Chirp3-HD-Charon">Chirp 3 · Charon · masculina</option><option value="es-US-Chirp3-HD-Achird">Chirp 3 · Achird · masculina</option><option value="es-US-Chirp3-HD-Kore">Chirp 3 · Kore · femenina</option><option value="es-US-Chirp3-HD-Aoede">Chirp 3 · Aoede · femenina</option></select></label>
-          <label><span>Velocidad</span><select class="custom-select" id="publicationVoiceRateInput"><option value="0.95">Pausada</option><option value="1.03" selected>Natural</option><option value="1.12">Ágil para Reel</option></select></label>
+          <label><span>Voz 1 · Gemini TTS gratuito</span><select class="custom-select" id="publicationVoiceNameInput"><option value="Charon">Charon · informativa</option><option value="Achird">Achird · amistosa</option><option value="Kore">Kore · firme</option><option value="Aoede">Aoede · ligera</option></select></label>
+          <label><span>Voz 2 · diálogo</span><select class="custom-select" id="publicationSecondaryVoiceInput"><option value="Kore">Kore · firme</option><option value="Aoede">Aoede · ligera</option><option value="Puck">Puck · animada</option><option value="Achird">Achird · amistosa</option></select></label>
+        </div>
+        <label><span>Dirección del programa</span><textarea class="custom-textarea" id="publicationVoiceStyleInput" rows="2" placeholder="Tono, ritmo y personalidad de las dos voces."></textarea></label>
+        <div class="audiogram-preview" id="audiogramPreview">
+          <div class="audiogram-brand">ORIGIN <span>ONE</span></div>
+          <canvas id="audiogramWave" width="720" height="220" aria-label="Onda de voz reactiva"></canvas>
+          <p id="audiogramCaption">Los subtítulos aparecerán aquí mientras se reproduce la voz.</p>
+          <audio id="publicationAudioPlayer" controls preload="metadata"></audio>
         </div>
         <div class="publication-copy-tabs">
           <label><span>Instagram</span><textarea class="custom-textarea" id="publicationInstagramInput" rows="4"></textarea></label>
@@ -469,7 +476,8 @@
           <button type="button" class="button secondary" onclick="requestPublicationChanges()"><i class="fa-solid fa-rotate-left"></i> Pedir cambios</button>
           <button type="button" class="button secondary" onclick="savePublicationNote()"><i class="fa-solid fa-note-sticky"></i> Guardar nota</button>
           <button type="button" class="button secondary" onclick="approvePublication()"><i class="fa-solid fa-thumbs-up"></i> Aprobar</button>
-          <button type="button" class="button secondary" id="generateVoiceButton" onclick="generatePublicationVoice()"><i class="fa-solid fa-microphone-lines"></i> Generar voz</button>
+          <button type="button" class="button secondary" id="generateVoiceButton" onclick="generatePublicationVoice()"><i class="fa-solid fa-microphone-lines"></i> Generar y escuchar</button>
+          <button type="button" class="button secondary" id="generateAudiogramButton" onclick="generatePublicationAudiogram()"><i class="fa-solid fa-wave-square"></i> Descargar MP4</button>
           <button id="savePublicationButton" type="submit" class="button primary"><i class="fa-solid fa-check"></i> Guardar propuesta</button>
         </div>
       </form>

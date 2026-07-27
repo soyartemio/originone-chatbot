@@ -10,6 +10,10 @@ services:
         value: 22.16.0
       - key: NODE_ENV
         value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_TTS_MODEL
+        value: gemini-2.5-flash-preview-tts
       - key: META_VERIFY_TOKEN
         value: originone_secure_token_2026
       - key: META_PAGE_ACCESS_TOKEN
@@ -34,8 +38,6 @@ services:
         value: crm/costs.json
       - key: R2_PUBLICATIONS_OBJECT_KEY
         value: crm/publications.json
-      - key: GOOGLE_CLOUD_TTS_CREDENTIALS_JSON
-        sync: false
       - key: GOOGLE_TTS_MONTHLY_CHARACTER_LIMIT
         value: 900000
       - key: AUTH_SESSION_SECRET

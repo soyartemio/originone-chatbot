@@ -23,8 +23,12 @@ const {
 
 test('inicia con propuestas reales y copy multicanal', async () => {
   const publications = await getPublications();
-  assert.ok(publications.length >= 3);
+  assert.ok(publications.length >= 4);
   assert.ok(publications.some(item => item.title.includes('chatbot')));
+  const podcast = publications.find(item => item.id === 'pub-podcast-chatbot-resuelve');
+  assert.equal(podcast.contentType, 'podcast');
+  assert.match(podcast.voiceoverScript, /^Dueño:/);
+  assert.equal(podcast.voiceConfig.secondaryVoice, 'Kore');
   assert.ok(publications.every(item => item.copies.instagram && item.copies.facebook && item.copies.linkedin));
 });
 

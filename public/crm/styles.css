@@ -597,6 +597,12 @@ a { color: inherit; }
 .publication-schedule-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
 .schedule-disclaimer { margin: -5px 0 0; color: var(--faint); font-size: 10px; line-height: 1.5; }
 .schedule-disclaimer i { margin-right: 5px; color: var(--gold); }
+.audiogram-preview { position: relative; min-height: 430px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 24px; overflow: hidden; padding: 42px; border: 1px solid var(--line); border-radius: 20px; background: radial-gradient(circle at 50% 42%, rgba(245,170,0,.12), transparent 38%), #08090b; }
+.audiogram-brand { color: var(--white); font-family: "Michroma", sans-serif; font-size: 15px; letter-spacing: .28em; }
+.audiogram-brand span { color: var(--gold); }
+.audiogram-preview canvas { width: min(100%, 720px); height: 150px; }
+.audiogram-preview p { min-height: 58px; max-width: 720px; margin: 0; color: var(--white); font-size: clamp(18px, 2.5vw, 28px); font-weight: 600; line-height: 1.25; text-align: center; text-wrap: balance; }
+.audiogram-preview audio { width: min(100%, 720px); height: 42px; }
 
 .growth-hero { max-width: 900px; margin: 20px auto 42px; text-align: center; }
 .growth-hero h2 { margin: 10px 0 0; font-size: clamp(38px, 6vw, 74px); line-height: 1.02; letter-spacing: -.06em; }

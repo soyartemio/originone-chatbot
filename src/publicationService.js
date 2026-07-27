@@ -5,8 +5,8 @@ const VALID_STATUSES = new Set(['idea', 'borrador', 'revision', 'aprobada', 'pro
 const APPROVERS = ['artemio', 'edgar'];
 
 function normalizeVoiceName(value) {
-  const name = String(value || '');
-  return name.includes('Neural2') ? 'es-US-Chirp3-HD-Charon' : (name || 'es-US-Chirp3-HD-Charon');
+  const name = String(value || '').split('-').at(-1);
+  return name || 'Charon';
 }
 
 const DEFAULT_SCHEDULE = {
@@ -89,8 +89,58 @@ const DEFAULT_PUBLICATIONS = [
     },
     platforms: ['instagram', 'facebook', 'linkedin'],
     status: 'revision'
+  },
+  {
+    id: 'pub-podcast-chatbot-resuelve',
+    contentType: 'podcast',
+    title: 'Tu chatbot contesta, pero ¿realmente resuelve?',
+    industry: 'Empresas con atención digital',
+    ownerPain: 'El chatbot entrega respuestas genéricas, pero no entiende el negocio ni convierte conversaciones en acciones.',
+    situation: 'El prospecto explica su problema. El chatbot responde “¡Excelente pregunta!” y le devuelve el menú principal.',
+    humor: 'Muy amable. Muy disponible. Cero útil.',
+    solution: 'Origin One conecta el asistente con conocimiento autorizado, procesos y seguimiento para que pueda orientar, calificar y preparar una cita.',
+    evidence: 'S1GNAL demuestra conversación de voz a voz desde originone.com.mx; las acciones sensibles conservan aprobación humana.',
+    visualBrief: 'Audiograma vertical premium, fondo negro grafito, onda ámbar que reacciona a cada voz, subtítulos blancos grandes y etiqueta discreta Origin One. Sin personajes ni video grabado.',
+    assetProvider: 'origin-one-audiogram',
+    assetStatus: 'listo',
+    creativeAlt: 'Audiograma Origin One con onda de voz ámbar y subtítulos: Tu chatbot contesta, pero ¿realmente resuelve?',
+    voiceoverScript: `Dueño: Mi chatbot ya contesta preguntas.
+Origin One: Perfecto. ¿También entiende qué necesita el prospecto?
+Dueño: Le manda el menú principal.
+Origin One: Entonces contesta, pero no resuelve.
+Dueño: Es muy amable.
+Origin One: Muy amable. Muy disponible. Cero útil.
+Dueño: ¿Qué debería hacer?
+Origin One: Consultar información autorizada, hacer las preguntas correctas y convertir la conversación en seguimiento. Eso es lo que construimos en Origin One.
+Dueño: ¿Y puedo escucharlo?
+Origin One: Sí. Prueba S1GNAL en originone.com.mx.`,
+    voiceConfig: {
+      languageCode: 'es',
+      name: 'Charon',
+      primaryVoice: 'Charon',
+      secondaryVoice: 'Kore',
+      style: 'Programa de radio empresarial mexicano. El Dueño suena curioso y ligeramente escéptico; Origin One suena claro, cálido y seguro. Humor seco, sin tono de comercial.',
+      speakingRate: 1
+    },
+    copies: {
+      instagram: 'Tu chatbot puede estar disponible 24/7 y aun así no resolver nada. La diferencia está en conectarlo con conocimiento, procesos y seguimiento. Escucha el ejemplo y prueba S1GNAL en Origin One.',
+      facebook: '“¡Excelente pregunta!” no es una solución. Un asistente útil entiende el contexto, consulta información autorizada y prepara el siguiente paso. Escucha cómo debería funcionar.',
+      linkedin: 'Disponibilidad no equivale a utilidad. El valor de un asistente empresarial aparece cuando entiende el contexto, opera sobre conocimiento autorizado y convierte una conversación en una acción verificable.'
+    },
+    platforms: ['instagram', 'facebook', 'linkedin'],
+    status: 'revision'
   }
 ];
+
+function withMissingDefaults(publications) {
+  const knownIds = new Set(publications.map(item => item.id));
+  return [
+    ...publications,
+    ...DEFAULT_PUBLICATIONS
+      .filter(item => !knownIds.has(item.id))
+      .map(item => normalizePublication(item))
+  ];
+}
 
 function normalizePublication(input, existing = {}) {
   const now = new Date().toISOString();
@@ -98,6 +148,7 @@ function normalizePublication(input, existing = {}) {
   return {
     ...existing,
     id: existing.id || input.id || `pub-${crypto.randomUUID()}`,
+    contentType: String(input.contentType ?? existing.contentType ?? 'social').slice(0, 40),
     title: String(input.title ?? existing.title ?? '').trim().slice(0, 300),
     industry: String(input.industry ?? existing.industry ?? 'Negocios').trim().slice(0, 120),
     ownerPain: String(input.ownerPain ?? existing.ownerPain ?? '').trim().slice(0, 1200),
@@ -117,8 +168,11 @@ function normalizePublication(input, existing = {}) {
     creativeAlt: String(input.creativeAlt ?? existing.creativeAlt ?? input.title ?? existing.title ?? 'Visual de la publicación').trim().slice(0, 500),
     voiceoverScript: String(input.voiceoverScript ?? existing.voiceoverScript ?? '').trim().slice(0, 5000),
     voiceConfig: {
-      languageCode: String(input.voiceConfig?.languageCode ?? existing.voiceConfig?.languageCode ?? 'es-US').slice(0, 20),
+      languageCode: String(input.voiceConfig?.languageCode ?? existing.voiceConfig?.languageCode ?? 'es').slice(0, 20),
       name: normalizeVoiceName(input.voiceConfig?.name ?? existing.voiceConfig?.name).slice(0, 100),
+      primaryVoice: normalizeVoiceName(input.voiceConfig?.primaryVoice ?? existing.voiceConfig?.primaryVoice ?? input.voiceConfig?.name ?? existing.voiceConfig?.name).slice(0, 100),
+      secondaryVoice: normalizeVoiceName(input.voiceConfig?.secondaryVoice ?? existing.voiceConfig?.secondaryVoice ?? 'Kore').slice(0, 100),
+      style: String(input.voiceConfig?.style ?? existing.voiceConfig?.style ?? '').trim().slice(0, 800),
       speakingRate: Number(input.voiceConfig?.speakingRate ?? existing.voiceConfig?.speakingRate ?? 1.03)
     },
     voiceUsage: Array.isArray(input.voiceUsage)
@@ -149,7 +203,9 @@ function normalizePublication(input, existing = {}) {
 async function mutate(mutator) {
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const snapshot = await readPublicationsSnapshot();
-    const publications = snapshot.exists ? snapshot.publications : DEFAULT_PUBLICATIONS.map(item => normalizePublication(item));
+    const publications = snapshot.exists
+      ? withMissingDefaults(snapshot.publications)
+      : DEFAULT_PUBLICATIONS.map(item => normalizePublication(item));
     const result = mutator(publications);
     try {
       await writePublicationsSnapshot(publications, snapshot.etag, snapshot.backend);
@@ -163,7 +219,7 @@ async function mutate(mutator) {
 async function getPublications() {
   const snapshot = await readPublicationsSnapshot();
   return snapshot.exists
-    ? snapshot.publications.map(item => normalizePublication(item, item))
+    ? withMissingDefaults(snapshot.publications).map(item => normalizePublication(item, item))
     : DEFAULT_PUBLICATIONS.map(item => normalizePublication(item));
 }
 
