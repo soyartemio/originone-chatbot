@@ -4,6 +4,11 @@ const { readPublicationsSnapshot, writePublicationsSnapshot } = require('./publi
 const VALID_STATUSES = new Set(['idea', 'borrador', 'revision', 'aprobada', 'programada', 'publicada', 'cambios']);
 const APPROVERS = ['artemio', 'edgar'];
 
+function normalizeVoiceName(value) {
+  const name = String(value || '');
+  return name.includes('Neural2') ? 'es-US-Chirp3-HD-Charon' : (name || 'es-US-Chirp3-HD-Charon');
+}
+
 const DEFAULT_PUBLICATIONS = [
   {
     id: 'pub-signal-voz-a-voz',
@@ -87,7 +92,7 @@ function normalizePublication(input, existing = {}) {
     voiceoverScript: String(input.voiceoverScript ?? existing.voiceoverScript ?? '').trim().slice(0, 5000),
     voiceConfig: {
       languageCode: String(input.voiceConfig?.languageCode ?? existing.voiceConfig?.languageCode ?? 'es-US').slice(0, 20),
-      name: String(input.voiceConfig?.name ?? existing.voiceConfig?.name ?? 'es-US-Neural2-A').slice(0, 100),
+      name: normalizeVoiceName(input.voiceConfig?.name ?? existing.voiceConfig?.name).slice(0, 100),
       speakingRate: Number(input.voiceConfig?.speakingRate ?? existing.voiceConfig?.speakingRate ?? 1.03)
     },
     voiceUsage: Array.isArray(input.voiceUsage)

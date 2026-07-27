@@ -40,7 +40,7 @@ async function synthesizeVoice(text, configuration = {}) {
     input: { text: normalizedText },
     voice: {
       languageCode: configuration.languageCode || 'es-US',
-      name: configuration.name || 'es-US-Neural2-A'
+      name: configuration.name || 'es-US-Chirp3-HD-Charon'
     },
     audioConfig: {
       audioEncoding: 'MP3',

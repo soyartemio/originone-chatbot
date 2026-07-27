@@ -56,7 +56,7 @@ router.post('/api/publicaciones/:id/voice', async (req, res) => {
       voiceUsage: [...(publication.voiceUsage || []), {
         characters: requestedCharacters,
         createdAt: new Date().toISOString(),
-        model: publication.voiceConfig?.name || 'es-US-Neural2-A'
+        model: publication.voiceConfig?.name || 'es-US-Chirp3-HD-Charon'
       }]
     });
     const safeName = publication.title.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '').slice(0, 80) || 'origin-one';
