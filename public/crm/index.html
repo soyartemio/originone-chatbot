@@ -44,6 +44,9 @@
         <button class="nav-item" id="navPublications" data-module="publicaciones" onclick="switchModule('publicaciones')">
           <i class="fa-solid fa-bullhorn"></i><span>Publicaciones</span><span class="nav-count" id="navPublicationCount">0</span>
         </button>
+        <button class="nav-item" id="navGrowth" data-module="crecimiento" onclick="switchModule('crecimiento')">
+          <i class="fa-solid fa-chart-line"></i><span>Crecimiento</span><span class="nav-count" id="navAppointmentReviewCount">0</span>
+        </button>
         <button class="nav-item" id="navCosts" data-module="costos" onclick="switchModule('costos')">
           <i class="fa-solid fa-coins"></i><span>Costos</span><span class="nav-count" id="navCostCount">0</span>
         </button>
@@ -184,9 +187,38 @@
           </div>
         </section>
 
+        <section id="moduleGrowthSection" class="module-section hidden">
+          <div class="growth-hero">
+            <p class="section-kicker">ATRIBUCIÓN · ÚLTIMOS 30 DÍAS</p>
+            <h2>De una visita a una conversación útil.</h2>
+            <p>Las visitas importan cuando sabemos qué contenido las originó y si terminaron en S1GNAL, diagnóstico o cita.</p>
+          </div>
+          <div class="metric-grid">
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-user-group"></i></span><small>VISITANTES</small></div><strong id="growthVisitors">0</strong><p>Sesiones únicas del sitio</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-eye"></i></span><small>VISTAS</small></div><strong id="growthPageViews">0</strong><p>Páginas vistas</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-wave-square"></i></span><small>S1GNAL</small></div><strong id="growthSignalStarts">0</strong><p>Conversaciones iniciadas</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-calendar-check"></i></span><small>INTENCIÓN</small></div><strong id="growthDiagnosticClicks">0</strong><p>Clics para diagnóstico</p></article>
+          </div>
+          <div class="growth-layout">
+            <article class="panel growth-funnel">
+              <div class="panel-header"><div><p class="section-kicker">EMBUDO WEB</p><h3>Conversión observable</h3></div><span id="growthConversationRate">0%</span></div>
+              <div id="growthFunnelBars"></div>
+              <p class="data-note">La medición comienza con este despliegue; no reconstruye visitas históricas.</p>
+            </article>
+            <article class="panel social-connections">
+              <div class="panel-header"><div><p class="section-kicker">REDES</p><h3>Fuentes conectadas</h3></div></div>
+              <div id="growthSocialConnections"></div>
+            </article>
+          </div>
+          <article class="panel appointment-review">
+            <div class="panel-header"><div><p class="section-kicker">S1GNAL · REVISIÓN HUMANA</p><h3>Citas propuestas</h3><p>El asistente aparta una propuesta; el equipo confirma antes de tratarla como cita cerrada.</p></div></div>
+            <div id="appointmentReviewList"></div>
+          </article>
+        </section>
+
         <section id="modulePublicationsSection" class="module-section hidden">
           <div class="section-heading">
-            <div><p class="section-kicker">MOTOR DE CONTENIDO</p><h2>Publicaciones</h2><p>Ideas basadas en problemas reales, listas para revisar entre Artemio y Edgar.</p></div>
+            <div class="publication-page-intro"><p class="section-kicker">MOTOR DE CONTENIDO</p><h2>Una idea. Un visual.<br>Un siguiente paso claro.</h2><p>Propuestas relatable para dueños de empresa, listas para ver como se publicarán.</p></div>
             <button class="button primary" type="button" onclick="openPublicationModal()"><i class="fa-solid fa-plus"></i> Nueva propuesta</button>
           </div>
 
@@ -402,7 +434,21 @@
           <label><span>Estudio de assets</span><select class="custom-select" id="publicationAssetProviderInput"><option value="pomelli">Pomelli · Google Labs</option></select></label>
           <label><span>Estado del asset</span><select class="custom-select" id="publicationAssetStatusInput"><option value="pendiente">Pendiente</option><option value="en_pomelli">En Pomelli</option><option value="listo">Listo para revisión</option><option value="aprobado">Aprobado</option></select></label>
         </div>
-        <label><span>Campaña / assets</span><input class="custom-input" id="publicationAssetUrlInput" type="url" placeholder="URL de Pomelli"></label>
+        <div class="publication-editor-visual">
+          <div class="publication-preview" id="publicationCreativePreview"><span><i class="fa-solid fa-image"></i> El visual aparecerá aquí</span></div>
+          <div>
+            <label><span>Imagen final que se publicará</span><input class="custom-input" id="publicationCreativeUrlInput" type="url" placeholder="URL directa de la imagen"></label>
+            <label><span>Texto alternativo</span><input class="custom-input" id="publicationCreativeAltInput" type="text" placeholder="Describe el visual para accesibilidad"></label>
+            <label><span>Campaña / assets</span><input class="custom-input" id="publicationAssetUrlInput" type="url" placeholder="URL de Pomelli"></label>
+          </div>
+        </div>
+        <div class="publication-schedule-grid">
+          <label><span>Instagram · sugerido jueves 6:30 p.m.</span><input class="custom-input" id="publicationInstagramScheduleInput" type="datetime-local"></label>
+          <label><span>Facebook · sugerido jueves 9:00 a.m.</span><input class="custom-input" id="publicationFacebookScheduleInput" type="datetime-local"></label>
+          <label><span>LinkedIn · sugerido miércoles 4:00 p.m.</span><input class="custom-input" id="publicationLinkedinScheduleInput" type="datetime-local"></label>
+        </div>
+        <p class="schedule-disclaimer"><i class="fa-solid fa-flask"></i> Ventanas iniciales basadas en benchmarks 2026; se sustituirán por el desempeño real de las cuentas.</p>
+        <label><span>Destino del llamado a la acción</span><input class="custom-input" id="publicationCtaUrlInput" type="url" placeholder="https://originone.com.mx/?utm_source=..."></label>
         <label><span>Guion de locución</span><textarea class="custom-textarea" id="publicationVoiceoverInput" rows="4" placeholder="Texto breve para Reel o video. La voz se genera después de guardar."></textarea></label>
         <div class="record-form-grid">
           <label><span>Voz natural de Google</span><select class="custom-select" id="publicationVoiceNameInput"><option value="es-US-Chirp3-HD-Charon">Chirp 3 · Charon · masculina</option><option value="es-US-Chirp3-HD-Achird">Chirp 3 · Achird · masculina</option><option value="es-US-Chirp3-HD-Kore">Chirp 3 · Kore · femenina</option><option value="es-US-Chirp3-HD-Aoede">Chirp 3 · Aoede · femenina</option></select></label>

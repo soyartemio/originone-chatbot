@@ -4,6 +4,7 @@ const encoder = new TextEncoder();
 
 const OBJECTS = Object.freeze({
   '/v1/appointments': { key: 'crm/appointments.json', shape: 'appointments' },
+  '/v1/analytics': { key: 'crm/analytics.json', shape: 'analytics' },
   '/v1/auth': { key: 'crm/auth.json', shape: 'auth' },
   '/v1/costs': { key: 'crm/costs.json', shape: 'costs' },
   '/v1/publications': { key: 'crm/publications.json', shape: 'publications' }
@@ -65,6 +66,14 @@ async function verifyRequest(request, env, pathname) {
 
 function validatePayload(payload, shape) {
   if (shape === 'appointments') return Array.isArray(payload);
+  if (shape === 'analytics') {
+    return Array.isArray(payload) && payload.length <= 20000 && payload.every(event => (
+      event && typeof event === 'object' && !Array.isArray(event) &&
+      typeof event.id === 'string' && event.id.length <= 100 &&
+      typeof event.name === 'string' && event.name.length <= 80 &&
+      typeof event.createdAt === 'string'
+    ));
+  }
   if (shape === 'costs') {
     return Array.isArray(payload) && payload.length <= 2000 && payload.every(cost => (
       cost && typeof cost === 'object' && !Array.isArray(cost) &&

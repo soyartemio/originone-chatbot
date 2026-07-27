@@ -96,6 +96,7 @@ app.use([
   '/api/crm',
   '/api/costos',
   '/api/publicaciones',
+  '/api/analytics/summary',
   '/api/facturacion',
   '/api/contabilidad',
   '/api/bancos',
@@ -108,6 +109,7 @@ const bancosModule = require('./modules/bancos');
 const sociosModule = require('./modules/socios');
 const costRoutes = require('./costRoutes');
 const publicationRoutes = require('./publicationRoutes');
+const analyticsRoutes = require('./analyticsRoutes');
 
 // Ruta principal de salud
 app.get('/', (req, res) => {
@@ -130,6 +132,7 @@ app.get('/', (req, res) => {
 app.use('/', crmRoutes);
 app.use('/', costRoutes);
 app.use('/', publicationRoutes);
+app.use('/', analyticsRoutes);
 app.use('/', facturacionModule);
 app.use('/', contabilidadModule);
 app.use('/', bancosModule);

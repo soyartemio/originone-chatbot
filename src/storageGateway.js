@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const DEFAULT_GATEWAY_URL = 'https://originone-crm-storage.4nwq6cqmyj.workers.dev';
 const ROUTES = {
   appointments: '/v1/appointments',
+  analytics: '/v1/analytics',
   auth: '/v1/auth',
   costs: '/v1/costs',
   publications: '/v1/publications'

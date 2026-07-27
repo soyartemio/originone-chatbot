@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAppointments, updateLead, addLeadNote, deleteLead } = require('./agendaService');
+const { getAppointments, updateLead, addLeadNote, deleteLead, reviewAppointment } = require('./agendaService');
 const { syncInstagramInteractions } = require('./instagramSyncService');
 
 router.post('/api/crm/sync/instagram', async (req, res) => {
@@ -132,6 +132,16 @@ router.patch('/api/crm/leads/:id', async (req, res) => {
   } catch (error) {
     console.error('[CRMRoutes] Error actualizando lead:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/api/crm/leads/:id/appointment-review', async (req, res) => {
+  try {
+    const lead = await reviewAppointment(req.params.id, req.body.decision, req.auth?.displayName);
+    if (!lead) return res.status(404).json({ success: false, error: 'Cita no encontrada' });
+    res.json({ success: true, lead });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
   }
 });
 

@@ -9,6 +9,24 @@ function normalizeVoiceName(value) {
   return name.includes('Neural2') ? 'es-US-Chirp3-HD-Charon' : (name || 'es-US-Chirp3-HD-Charon');
 }
 
+const DEFAULT_SCHEDULE = {
+  instagram: { weekday: 4, hour: 18, minute: 30, label: 'Jueves · 6:30 p.m.' },
+  facebook: { weekday: 4, hour: 9, minute: 0, label: 'Jueves · 9:00 a.m.' },
+  linkedin: { weekday: 3, hour: 16, minute: 0, label: 'Miércoles · 4:00 p.m.' }
+};
+
+function recommendedSchedule(existing = {}) {
+  return Object.fromEntries(Object.entries(DEFAULT_SCHEDULE).map(([platform, window]) => [
+    platform,
+    {
+      localDateTime: String(existing?.[platform]?.localDateTime || ''),
+      timezone: 'America/Monterrey',
+      recommendation: window.label,
+      basis: 'benchmark_2026_hypothesis'
+    }
+  ]));
+}
+
 const DEFAULT_PUBLICATIONS = [
   {
     id: 'pub-signal-voz-a-voz',
@@ -23,6 +41,8 @@ const DEFAULT_PUBLICATIONS = [
     assetProvider: 'pomelli',
     assetStatus: 'listo',
     assetUrl: 'https://labs.google.com/pomelli/campaigns/biYih_QX4BqcCvLQSi_OwI',
+    creativeUrl: 'https://originone.com.mx/assets/campaigns/signal-voice-to-voice.png',
+    creativeAlt: 'Retrato editorial de un empresario con el texto: Tu cliente quiere ser escuchado.',
     voiceoverScript: 'Tu cliente no quiere jugar a presiona uno. Quiere explicar lo que necesita. S1GNAL convierte tu página en una conversación de voz a voz, entiende el contexto y prepara el seguimiento. ¿Hablarías con tu propia página?',
     copies: {
       instagram: 'Tu cliente no quiere llenar otro formulario. Quiere explicar lo que necesita. S1GNAL conversa de voz a voz, entiende el contexto y convierte esa conversación en una oportunidad real. ¿Hablarías con tu propia página?',
@@ -89,6 +109,12 @@ function normalizePublication(input, existing = {}) {
     assetProvider: String(input.assetProvider ?? existing.assetProvider ?? 'pomelli').trim().slice(0, 80),
     assetStatus: String(input.assetStatus ?? existing.assetStatus ?? 'pendiente').trim().slice(0, 80),
     assetUrl: String(input.assetUrl ?? existing.assetUrl ?? '').trim().slice(0, 1000),
+    creativeUrl: String(input.creativeUrl ?? existing.creativeUrl ?? (
+      (existing.id || input.id) === 'pub-signal-voz-a-voz'
+        ? 'https://originone.com.mx/assets/campaigns/signal-voice-to-voice.png'
+        : ''
+    )).trim().slice(0, 1000),
+    creativeAlt: String(input.creativeAlt ?? existing.creativeAlt ?? input.title ?? existing.title ?? 'Visual de la publicación').trim().slice(0, 500),
     voiceoverScript: String(input.voiceoverScript ?? existing.voiceoverScript ?? '').trim().slice(0, 5000),
     voiceConfig: {
       languageCode: String(input.voiceConfig?.languageCode ?? existing.voiceConfig?.languageCode ?? 'es-US').slice(0, 20),
@@ -104,6 +130,11 @@ function normalizePublication(input, existing = {}) {
       linkedin: String(input.copies?.linkedin ?? existing.copies?.linkedin ?? '').trim().slice(0, 5000)
     },
     platforms: Array.from(new Set((input.platforms ?? existing.platforms ?? []).filter(value => ['instagram', 'facebook', 'linkedin'].includes(value)))),
+    schedule: recommendedSchedule(input.schedule ?? existing.schedule),
+    cta: {
+      type: String(input.cta?.type ?? existing.cta?.type ?? 'website').slice(0, 40),
+      url: String(input.cta?.url ?? existing.cta?.url ?? 'https://originone.com.mx/').trim().slice(0, 1000)
+    },
     scheduledFor: input.scheduledFor ?? existing.scheduledFor ?? null,
     publishedUrls: input.publishedUrls ?? existing.publishedUrls ?? {},
     status,
@@ -131,7 +162,9 @@ async function mutate(mutator) {
 
 async function getPublications() {
   const snapshot = await readPublicationsSnapshot();
-  return snapshot.exists ? snapshot.publications : DEFAULT_PUBLICATIONS.map(item => normalizePublication(item));
+  return snapshot.exists
+    ? snapshot.publications.map(item => normalizePublication(item, item))
+    : DEFAULT_PUBLICATIONS.map(item => normalizePublication(item));
 }
 
 async function createPublication(input, username) {

@@ -432,7 +432,7 @@ router.post('/api/signal/chat', async (req, res) => {
  */
 router.post('/api/signal/agendar-cita', async (req, res) => {
   try {
-    const payload = req.body;
+    const payload = { ...req.body, requires_review: true };
     payload.canal_origen = payload.canal_origen || 'S1GNAL Web Chat (originone.com.mx)';
     console.log(`[S1GNAL Web] 🗓️ Petición directa de agendamiento recibida:`, payload);
 

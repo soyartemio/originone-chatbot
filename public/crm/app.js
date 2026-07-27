@@ -1,4 +1,4 @@
-const allowedModules = new Set(['dashboard', 'crm', 'publicaciones', 'costos', 'facturacion', 'contabilidad', 'bancos', 'socios']);
+const allowedModules = new Set(['dashboard', 'crm', 'publicaciones', 'crecimiento', 'costos', 'facturacion', 'contabilidad', 'bancos', 'socios']);
 const initialUrlParams = new URLSearchParams(window.location.search);
 const requestedModule = initialUrlParams.get('module');
 let currentModule = allowedModules.has(requestedModule) ? requestedModule : 'dashboard';
@@ -63,6 +63,7 @@ function initializeShell() {
   document.getElementById('transactionForm').addEventListener('submit', submitTransactionForm);
   document.getElementById('costForm').addEventListener('submit', submitCostForm);
   document.getElementById('publicationForm').addEventListener('submit', submitPublicationForm);
+  document.getElementById('publicationCreativeUrlInput').addEventListener('input', updatePublicationCreativePreview);
 
   window.addEventListener('popstate', restoreNavigationFromUrl);
 }
@@ -139,6 +140,7 @@ function closeInstallModal() {
 
 function closeRecordModal() {
   document.getElementById('recordModal').classList.add('hidden');
+  document.getElementById('recordModal').classList.remove('publication-modal-active');
   document.getElementById('invoiceForm').classList.add('hidden');
   document.getElementById('transactionForm').classList.add('hidden');
   document.getElementById('costForm').classList.add('hidden');
@@ -317,6 +319,7 @@ async function switchModule(moduleName, options = {}) {
     dashboard: document.getElementById('moduleDashboardSection'),
     crm: document.getElementById('moduleCrmSection'),
     publicaciones: document.getElementById('modulePublicationsSection'),
+    crecimiento: document.getElementById('moduleGrowthSection'),
     costos: document.getElementById('moduleCostsSection'),
     facturacion: document.getElementById('moduleFacturacionSection'),
     contabilidad: document.getElementById('moduleContabilidadSection'),
@@ -336,6 +339,7 @@ async function switchModule(moduleName, options = {}) {
     dashboard: { eyebrow: 'CENTRO DE CONTROL', title: 'Resumen operativo', sub: 'Lo importante de Origin One en un solo lugar.' },
     crm: { eyebrow: 'RELACIONES COMERCIALES', title: 'Prospectos y seguimiento', sub: 'Contactos, próximos pasos y citas confirmadas.' },
     publicaciones: { eyebrow: 'MARKETING ASISTIDO POR IA', title: 'Publicaciones y aprobación', sub: 'Contenido relatable para dueños de empresa, con revisión compartida.' },
+    crecimiento: { eyebrow: 'ATRIBUCIÓN Y APRENDIZAJE', title: 'Crecimiento', sub: 'Sitio, redes, conversaciones y citas en un solo embudo.' },
     costos: { eyebrow: 'CONTROL OPERATIVO', title: 'Costos multiproyecto', sub: 'Planes, proveedores y renovaciones con visibilidad compartida.' },
     facturacion: { eyebrow: 'INGRESOS Y COBRANZA', title: 'Facturación y cotizaciones', sub: 'Documentos comerciales emitidos y su estado.' },
     contabilidad: { eyebrow: 'RESULTADOS', title: 'Contabilidad y P&L', sub: 'Ingresos, egresos y utilidad del periodo.' },
@@ -373,6 +377,7 @@ async function loadModuleData() {
       await loadDashboardModule();
     } else if (currentModule === 'crm') await loadCrmModule();
     else if (currentModule === 'publicaciones') await loadPublicationsModule();
+    else if (currentModule === 'crecimiento') await loadGrowthModule();
     else if (currentModule === 'costos') await loadCostsModule();
     else if (currentModule === 'facturacion') await loadFacturacionModule();
     else if (currentModule === 'contabilidad') await loadContabilidadModule();
@@ -402,11 +407,71 @@ async function loadPublicationsModule() {
   renderPublications();
 }
 
+async function loadGrowthModule() {
+  const response = await fetch('/api/analytics/summary?days=30', { credentials: 'same-origin' });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'No fue posible cargar las métricas');
+  setText('growthVisitors', data.web.visitors);
+  setText('growthPageViews', data.web.pageViews);
+  setText('growthSignalStarts', data.web.signalStarts);
+  setText('growthDiagnosticClicks', data.web.diagnosticClicks);
+  setText('growthConversationRate', `${data.web.visitorToConversationRate}% visita → conversación`);
+  setText('navAppointmentReviewCount', data.appointments.length);
+  const steps = [
+    ['Visitas', data.web.pageViews],
+    ['Abren S1GNAL', data.web.signalOpens],
+    ['Inician conversación', data.web.signalStarts],
+    ['Proponen cita', data.web.appointmentProposals]
+  ];
+  const maximum = Math.max(...steps.map(([, value]) => value), 1);
+  document.getElementById('growthFunnelBars').innerHTML = steps.map(([label, value]) => `
+    <div class="growth-step"><div><span>${escapeHtml(label)}</span><strong>${value}</strong></div><i style="width:${Math.max(value / maximum * 100, value ? 5 : 0)}%"></i></div>
+  `).join('');
+  document.getElementById('growthSocialConnections').innerHTML = [
+    ['Meta · Instagram y Facebook', data.social.meta.connected],
+    ['LinkedIn empresa', data.social.linkedin.connected],
+    ['Sitio originone.com.mx', true]
+  ].map(([label, connected]) => `
+    <div class="connection-row"><span><i class="fa-solid ${connected ? 'fa-circle-check' : 'fa-link-slash'}"></i>${escapeHtml(label)}</span><b class="${connected ? 'connected' : ''}">${connected ? 'Midiendo' : 'Falta conectar permisos'}</b></div>
+  `).join('');
+  const list = document.getElementById('appointmentReviewList');
+  list.innerHTML = data.appointments.length ? data.appointments.map(item => `
+    <article class="appointment-review-card">
+      <div><small>${escapeHtml(item.canal_origen)}</small><h4>${escapeHtml(item.nombre_cliente)}</h4><p>${escapeHtml(item.empresa_o_proyecto)} · ${escapeHtml(item.fecha_propuesta)} · ${escapeHtml(item.hora_propuesta)}</p><p>${escapeHtml(item.resumen_necesidad)}</p></div>
+      <div class="appointment-review-actions"><button class="button secondary" type="button" onclick="reviewSignalAppointment('${escapeHtml(item.id)}','request_change')">Pedir otra hora</button><button class="button primary" type="button" onclick="reviewSignalAppointment('${escapeHtml(item.id)}','confirm')">Confirmar cita</button></div>
+    </article>
+  `).join('') : '<div class="growth-empty">No hay citas de S1GNAL pendientes de revisión.</div>';
+}
+
+async function reviewSignalAppointment(id, decision) {
+  const response = await fetch(`/api/crm/leads/${encodeURIComponent(id)}/appointment-review`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ decision })
+  });
+  const data = await response.json();
+  if (!response.ok) return showToast(data.error || 'No fue posible revisar la cita');
+  showToast(decision === 'confirm' ? 'Cita confirmada.' : 'La cita volvió a seguimiento.');
+  await loadGrowthModule();
+}
+
 function publicationStatusLabel(status) {
   return ({
     idea: 'Idea', borrador: 'Borrador', revision: 'En revisión', aprobada: 'Aprobada',
     programada: 'Programada', publicada: 'Publicada', cambios: 'Cambios solicitados'
   })[status] || status;
+}
+
+function nextRecommendedLocalDateTime(weekday, hour, minute = 0) {
+  const candidate = new Date();
+  candidate.setSeconds(0, 0);
+  const daysAhead = (weekday - candidate.getDay() + 7) % 7;
+  candidate.setDate(candidate.getDate() + daysAhead);
+  candidate.setHours(hour, minute, 0, 0);
+  if (candidate <= new Date()) candidate.setDate(candidate.getDate() + 7);
+  const local = new Date(candidate.getTime() - candidate.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
 }
 
 function filterPublications(filter, button) {
@@ -428,13 +493,22 @@ function renderPublications() {
     const artemio = item.approvals?.artemio?.decision === 'approved';
     const edgar = item.approvals?.edgar?.decision === 'approved';
     const platforms = (item.platforms || []).map(platform => `<span>${escapeHtml(platform)}</span>`).join('');
+    const image = item.creativeUrl
+      ? `<img src="${escapeHtml(item.creativeUrl)}" alt="${escapeHtml(item.creativeAlt)}" loading="lazy">`
+      : `<div class="publication-visual-placeholder"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Visual en producción</span><small>${escapeHtml(item.visualBrief)}</small></div>`;
+    const scheduleValue = item.schedule?.linkedin?.localDateTime || nextRecommendedLocalDateTime(3, 16);
+    const schedule = new Date(scheduleValue).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
     return `
       <button class="publication-card panel" type="button" onclick="openPublicationModal('${escapeHtml(item.id)}')">
-        <div class="publication-card-top"><span class="publication-industry">${escapeHtml(item.industry)}</span><span class="publication-status status-${escapeHtml(item.status)}">${escapeHtml(publicationStatusLabel(item.status))}</span></div>
-        <h3>${escapeHtml(item.title)}</h3>
-        <p>${escapeHtml(item.situation)}</p>
-        <div class="publication-platforms">${platforms}</div>
-        <div class="publication-card-footer"><span>${artemio ? '●' : '○'} Artemio</span><span>${edgar ? '●' : '○'} Edgar</span><span>${item.notes?.length || 0} notas</span></div>
+        <div class="publication-card-visual">${image}</div>
+        <div class="publication-card-copy">
+          <div class="publication-card-top"><span class="publication-industry">${escapeHtml(item.industry)}</span><span class="publication-status status-${escapeHtml(item.status)}">${escapeHtml(publicationStatusLabel(item.status))}</span></div>
+          <h3>${escapeHtml(item.title)}</h3>
+          <p>${escapeHtml(item.situation)}</p>
+          <div class="publication-schedule"><i class="fa-regular fa-clock"></i><span>Próxima ventana: ${escapeHtml(schedule)}</span></div>
+          <div class="publication-platforms">${platforms}</div>
+          <div class="publication-card-footer"><span>${artemio ? '●' : '○'} Artemio</span><span>${edgar ? '●' : '○'} Edgar</span><span>${item.notes?.length || 0} notas</span></div>
+        </div>
       </button>`;
   }).join('');
 }
@@ -458,6 +532,13 @@ function openPublicationModal(id = null) {
   document.getElementById('publicationAssetProviderInput').value = publication?.assetProvider || 'pomelli';
   document.getElementById('publicationAssetStatusInput').value = publication?.assetStatus || 'pendiente';
   document.getElementById('publicationAssetUrlInput').value = publication?.assetUrl || '';
+  document.getElementById('publicationCreativeUrlInput').value = publication?.creativeUrl || '';
+  document.getElementById('publicationCreativeAltInput').value = publication?.creativeAlt || '';
+  document.getElementById('publicationInstagramScheduleInput').value = publication?.schedule?.instagram?.localDateTime || nextRecommendedLocalDateTime(4, 18, 30);
+  document.getElementById('publicationFacebookScheduleInput').value = publication?.schedule?.facebook?.localDateTime || nextRecommendedLocalDateTime(4, 9);
+  document.getElementById('publicationLinkedinScheduleInput').value = publication?.schedule?.linkedin?.localDateTime || nextRecommendedLocalDateTime(3, 16);
+  document.getElementById('publicationCtaUrlInput').value = publication?.cta?.url || 'https://originone.com.mx/';
+  updatePublicationCreativePreview();
   document.getElementById('publicationVoiceoverInput').value = publication?.voiceoverScript || '';
   document.getElementById('publicationVoiceNameInput').value = publication?.voiceConfig?.name || 'es-US-Chirp3-HD-Charon';
   document.getElementById('publicationVoiceRateInput').value = String(publication?.voiceConfig?.speakingRate || 1.03);
@@ -484,6 +565,16 @@ function openPublicationModal(id = null) {
     ? 'Generar MP3 con Google Cloud Text-to-Speech'
     : 'Falta conectar Google Cloud Text-to-Speech';
   document.getElementById('recordModal').classList.remove('hidden');
+  document.getElementById('recordModal').classList.add('publication-modal-active');
+}
+
+function updatePublicationCreativePreview() {
+  const preview = document.getElementById('publicationCreativePreview');
+  const url = document.getElementById('publicationCreativeUrlInput').value.trim();
+  const alt = document.getElementById('publicationCreativeAltInput').value.trim() || 'Visual de la publicación';
+  preview.innerHTML = url
+    ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}">`
+    : '<span><i class="fa-solid fa-image"></i> El visual aparecerá aquí</span>';
 }
 
 function publicationPayload() {
@@ -499,6 +590,14 @@ function publicationPayload() {
     assetProvider: document.getElementById('publicationAssetProviderInput').value,
     assetStatus: document.getElementById('publicationAssetStatusInput').value,
     assetUrl: document.getElementById('publicationAssetUrlInput').value.trim(),
+    creativeUrl: document.getElementById('publicationCreativeUrlInput').value.trim(),
+    creativeAlt: document.getElementById('publicationCreativeAltInput').value.trim(),
+    schedule: {
+      instagram: { localDateTime: document.getElementById('publicationInstagramScheduleInput').value },
+      facebook: { localDateTime: document.getElementById('publicationFacebookScheduleInput').value },
+      linkedin: { localDateTime: document.getElementById('publicationLinkedinScheduleInput').value }
+    },
+    cta: { type: 'website', url: document.getElementById('publicationCtaUrlInput').value.trim() },
     voiceoverScript: document.getElementById('publicationVoiceoverInput').value.trim(),
     voiceConfig: {
       languageCode: 'es-US',

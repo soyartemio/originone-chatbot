@@ -64,6 +64,7 @@ async function scheduleAppointment(params) {
     throw new Error('Para confirmar una cita se requieren una fecha y una hora acordadas');
   }
 
+  const requiresReview = Boolean(params.requires_review);
   const newAppointment = {
     id: 'CITA-' + Date.now().toString(36).toUpperCase(),
     nombre_cliente: params.nombre_cliente || 'No especificado',
@@ -74,11 +75,12 @@ async function scheduleAppointment(params) {
     hora_propuesta: confirmedTime,
     resumen_necesidad: params.resumen_necesidad || 'Consulta sobre soluciones de IA / automatización',
     canal_origen: params.canal_origen || 'Chatbot Conversacional',
-    etapa: 'Cita Confirmada',
-    etapa_fuente: 'agenda_confirmada',
+    etapa: requiresReview ? 'Cita por revisar' : 'Cita Confirmada',
+    etapa_fuente: requiresReview ? 'signal_propuesta' : 'agenda_confirmada',
+    appointment_status: requiresReview ? 'proposed' : 'confirmed',
     notas_internas: [],
     creado_el: new Date().toISOString(),
-    estatus: 'Confirmada (Notificada por WhatsApp)'
+    estatus: requiresReview ? 'Propuesta por S1GNAL · requiere confirmación humana' : 'Confirmada (Notificada por WhatsApp)'
   };
 
   await mutateAppointments(appointments => {
@@ -90,7 +92,7 @@ async function scheduleAppointment(params) {
 
   // Formatear mensaje para los números de WhatsApp administradores
   const notificationText = 
-`📌 *NUEVA CITA DE DIAGNÓSTICO AGENDADA — ORIGIN ONE*
+`📌 *${requiresReview ? 'NUEVA PROPUESTA DE CITA POR REVISAR' : 'NUEVA CITA DE DIAGNÓSTICO AGENDADA'} — ORIGIN ONE*
 
 👤 *Cliente:* ${newAppointment.nombre_cliente}
 🏢 *Empresa / Proyecto:* ${newAppointment.empresa_o_proyecto}
@@ -116,10 +118,27 @@ async function scheduleAppointment(params) {
 
   return {
     success: true,
+    requiresReview,
     appointmentId: newAppointment.id,
     appointment: newAppointment,
     notificationStatus: dispatchResults
   };
+}
+
+async function reviewAppointment(id, decision, reviewer) {
+  if (!['confirm', 'request_change'].includes(decision)) throw new Error('Decisión de cita no válida');
+  return mutateAppointments(appointments => {
+    const appointment = appointments.find(item => item.id === id);
+    if (!appointment) return null;
+    appointment.appointment_status = decision === 'confirm' ? 'confirmed' : 'changes_requested';
+    appointment.etapa = decision === 'confirm' ? 'Cita Confirmada' : 'Nuevo contacto';
+    appointment.etapa_fuente = 'revision_humana';
+    appointment.estatus = decision === 'confirm' ? 'Confirmada por el equipo' : 'Solicitar otra fecha';
+    appointment.revisada_por = reviewer || 'Equipo Origin One';
+    appointment.revisada_el = new Date().toISOString();
+    appointment.actualizado_el = appointment.revisada_el;
+    return appointment;
+  });
 }
 
 /**
@@ -329,6 +348,7 @@ async function importChatMessages(interactions) {
 module.exports = {
   getAppointments,
   scheduleAppointment,
+  reviewAppointment,
   saveAppointments,
   updateLead,
   addLeadNote,
