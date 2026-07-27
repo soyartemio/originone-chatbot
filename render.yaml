@@ -18,6 +18,10 @@ services:
         value: originone_secure_token_2026
       - key: META_PAGE_ACCESS_TOKEN
         sync: false
+      # Must match the source secret configured in the Cloudflare CRM gateway.
+      # Keep it separate from Meta/R2 credentials.
+      - key: CRM_GATEWAY_SOURCE_SECRET
+        sync: false
       - key: INSTAGRAM_PAGE_ACCESS_TOKEN
         sync: false
       - key: ADMIN_WHATSAPP_NUMBERS
