@@ -90,6 +90,9 @@ function normalizePublication(input, existing = {}) {
       name: String(input.voiceConfig?.name ?? existing.voiceConfig?.name ?? 'es-US-Neural2-A').slice(0, 100),
       speakingRate: Number(input.voiceConfig?.speakingRate ?? existing.voiceConfig?.speakingRate ?? 1.03)
     },
+    voiceUsage: Array.isArray(input.voiceUsage)
+      ? input.voiceUsage.slice(-500)
+      : (Array.isArray(existing.voiceUsage) ? existing.voiceUsage : []),
     copies: {
       instagram: String(input.copies?.instagram ?? existing.copies?.instagram ?? '').trim().slice(0, 5000),
       facebook: String(input.copies?.facebook ?? existing.copies?.facebook ?? '').trim().slice(0, 5000),
