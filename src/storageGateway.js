@@ -10,7 +10,14 @@ const ROUTES = {
 };
 
 function getSourceSecret() {
-  return process.env.CRM_GATEWAY_SOURCE_SECRET || process.env.META_PAGE_ACCESS_TOKEN || '';
+  // Auth must remain bootable even when Meta is temporarily disconnected.
+  // Prefer the explicit gateway secret, then the Meta token for backwards
+  // compatibility, and finally the private R2 secret already required by
+  // production. Never expose this value to a client.
+  return process.env.CRM_GATEWAY_SOURCE_SECRET
+    || process.env.META_PAGE_ACCESS_TOKEN
+    || process.env.R2_SECRET_ACCESS_KEY
+    || '';
 }
 
 function deriveGatewaySecret(sourceSecret = getSourceSecret()) {
