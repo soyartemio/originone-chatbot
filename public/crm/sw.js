@@ -1,4 +1,4 @@
-const CACHE_NAME = 'origin-one-os-v5';
+const CACHE_NAME = 'origin-one-os-v6';
 const STATIC_ASSETS = [
   '/crm/styles.css',
   '/crm/app.js',

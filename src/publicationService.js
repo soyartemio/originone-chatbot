@@ -15,6 +15,7 @@ const DEFAULT_PUBLICATIONS = [
     solution: 'S1GNAL conversa de voz a voz desde la web, entiende contexto y convierte la conversación en seguimiento comercial.',
     evidence: 'Demo S1GNAL disponible en originone.com.mx.',
     visualBrief: 'Dueño hablando con naturalidad frente a una onda de voz dorada; al lado, un laberinto absurdo de menús “presiona 1”. Estilo editorial premium, fondo oscuro Origin One.',
+    voiceoverScript: 'Tu cliente no quiere jugar a presiona uno. Quiere explicar lo que necesita. S1GNAL convierte tu página en una conversación de voz a voz, entiende el contexto y prepara el seguimiento. ¿Hablarías con tu propia página?',
     copies: {
       instagram: 'Tu cliente no quiere llenar otro formulario. Quiere explicar lo que necesita. S1GNAL conversa de voz a voz, entiende el contexto y convierte esa conversación en una oportunidad real. ¿Hablarías con tu propia página?',
       facebook: 'Hay chatbots que contestan. Y hay experiencias que conversan. S1GNAL permite que un prospecto hable con tu sitio de voz a voz, sin navegar un laberinto de botones. Pruébalo en Origin One.',
@@ -33,6 +34,7 @@ const DEFAULT_PUBLICATIONS = [
     solution: 'Origin One integra fuentes, automatiza reportes y muestra indicadores en un tablero operativo hecho a la medida.',
     evidence: 'Proyecto de dashboard para seguros presentado en originone.com.mx.',
     visualBrief: 'Dueño de aseguradora detective, siguiendo pistas entre archivos Excel y chats; al fondo un dashboard limpio resuelve el caso. Humor elegante, paleta negra y dorada.',
+    voiceoverScript: 'Si tu cierre mensual depende de tres Excels, dos chats y de la persona que sabe dónde quedó el dato, no tienes un reporte: tienes una búsqueda del tesoro. Origin One integra la información y la convierte en un tablero claro y automático.',
     copies: {
       instagram: 'Si tu cierre mensual parece búsqueda del tesoro, el problema no es tu equipo: es la información dispersa. Integramos datos y automatizamos reportes para que el dueño vea el negocio, no veinte archivos.',
       facebook: 'Tres hojas, dos chats y una persona que conoce “el archivo bueno”. Así no debería cerrarse el mes. Origin One convierte información dispersa en un tablero claro y automático.',
@@ -51,6 +53,7 @@ const DEFAULT_PUBLICATIONS = [
     solution: 'Un sistema a la medida conecta operación clínica, administración y seguimiento sin obligar al negocio a adaptarse a software genérico.',
     evidence: 'Proyecto ERP dental mostrado en originone.com.mx.',
     visualBrief: 'Consultorio moderno con tres islas desconectadas: agenda, expediente y pagos; una línea dorada Origin One las integra en una sola interfaz.',
+    voiceoverScript: 'La recepción conoce la agenda, el doctor conoce el tratamiento y una libreta misteriosa conoce los pagos. Cuando tu clínica crece, preguntar a tres personas deja de ser un sistema. Origin One conecta la operación en un ERP hecho a la medida.',
     copies: {
       instagram: 'Si para saber qué pasa en tu clínica necesitas preguntarle a tres personas, tu operación ya superó a tus herramientas. Un ERP a la medida conecta agenda, expedientes, cobros y seguimiento.',
       facebook: 'Tu clínica no debería adaptarse a cinco sistemas distintos. Diseñamos una operación conectada alrededor de la manera real en que trabaja tu equipo.',
@@ -75,6 +78,14 @@ function normalizePublication(input, existing = {}) {
     solution: String(input.solution ?? existing.solution ?? '').trim().slice(0, 2000),
     evidence: String(input.evidence ?? existing.evidence ?? '').trim().slice(0, 1000),
     visualBrief: String(input.visualBrief ?? existing.visualBrief ?? '').trim().slice(0, 3000),
+    assetProvider: String(input.assetProvider ?? existing.assetProvider ?? 'pomelli').trim().slice(0, 80),
+    assetStatus: String(input.assetStatus ?? existing.assetStatus ?? 'pendiente').trim().slice(0, 80),
+    voiceoverScript: String(input.voiceoverScript ?? existing.voiceoverScript ?? '').trim().slice(0, 5000),
+    voiceConfig: {
+      languageCode: String(input.voiceConfig?.languageCode ?? existing.voiceConfig?.languageCode ?? 'es-US').slice(0, 20),
+      name: String(input.voiceConfig?.name ?? existing.voiceConfig?.name ?? 'es-US-Neural2-A').slice(0, 100),
+      speakingRate: Number(input.voiceConfig?.speakingRate ?? existing.voiceConfig?.speakingRate ?? 1.03)
+    },
     copies: {
       instagram: String(input.copies?.instagram ?? existing.copies?.instagram ?? '').trim().slice(0, 5000),
       facebook: String(input.copies?.facebook ?? existing.copies?.facebook ?? '').trim().slice(0, 5000),

@@ -34,6 +34,8 @@ services:
         value: crm/costs.json
       - key: R2_PUBLICATIONS_OBJECT_KEY
         value: crm/publications.json
+      - key: GOOGLE_CLOUD_TTS_CREDENTIALS_JSON
+        sync: false
       - key: AUTH_SESSION_SECRET
         generateValue: true
       - key: AUTH_SETUP_SECRET

@@ -9,6 +9,7 @@ let currentAttentionFilter = initialUrlParams.get('attention');
 let currentCrmView = initialUrlParams.get('view') === 'list' ? 'list' : 'kanban';
 let allCosts = [];
 let allPublications = [];
+let publicationCapabilities = { googleTts: false, assetProvider: 'pomelli' };
 let currentPublicationFilter = 'todas';
 let currentPublicationEditId = null;
 let currentCostFilter = initialUrlParams.get('costFilter') || 'todos';
@@ -392,6 +393,7 @@ async function loadPublicationsModule() {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'No fue posible cargar las publicaciones');
   allPublications = data.publications || [];
+  publicationCapabilities = data.capabilities || publicationCapabilities;
   setText('navPublicationCount', allPublications.filter(item => ['revision', 'cambios'].includes(item.status)).length);
   setText('publicationTotal', allPublications.length);
   setText('publicationReview', allPublications.filter(item => ['revision', 'cambios'].includes(item.status)).length);
@@ -453,6 +455,11 @@ function openPublicationModal(id = null) {
   document.getElementById('publicationSolutionInput').value = publication?.solution || '';
   document.getElementById('publicationEvidenceInput').value = publication?.evidence || '';
   document.getElementById('publicationVisualInput').value = publication?.visualBrief || '';
+  document.getElementById('publicationAssetProviderInput').value = publication?.assetProvider || 'pomelli';
+  document.getElementById('publicationAssetStatusInput').value = publication?.assetStatus || 'pendiente';
+  document.getElementById('publicationVoiceoverInput').value = publication?.voiceoverScript || '';
+  document.getElementById('publicationVoiceNameInput').value = publication?.voiceConfig?.name || 'es-US-Neural2-A';
+  document.getElementById('publicationVoiceRateInput').value = String(publication?.voiceConfig?.speakingRate || 1.03);
   document.getElementById('publicationInstagramInput').value = publication?.copies?.instagram || '';
   document.getElementById('publicationFacebookInput').value = publication?.copies?.facebook || '';
   document.getElementById('publicationLinkedinInput').value = publication?.copies?.linkedin || '';
@@ -471,6 +478,10 @@ function openPublicationModal(id = null) {
   document.querySelectorAll('.publication-actions button:not(#savePublicationButton)').forEach(button => {
     button.disabled = !publication;
   });
+  const voiceButton = document.getElementById('generateVoiceButton');
+  voiceButton.title = publicationCapabilities.googleTts
+    ? 'Generar MP3 con Google Cloud Text-to-Speech'
+    : 'Falta conectar Google Cloud Text-to-Speech';
   document.getElementById('recordModal').classList.remove('hidden');
 }
 
@@ -484,6 +495,14 @@ function publicationPayload() {
     solution: document.getElementById('publicationSolutionInput').value.trim(),
     evidence: document.getElementById('publicationEvidenceInput').value.trim(),
     visualBrief: document.getElementById('publicationVisualInput').value.trim(),
+    assetProvider: document.getElementById('publicationAssetProviderInput').value,
+    assetStatus: document.getElementById('publicationAssetStatusInput').value,
+    voiceoverScript: document.getElementById('publicationVoiceoverInput').value.trim(),
+    voiceConfig: {
+      languageCode: 'es-US',
+      name: document.getElementById('publicationVoiceNameInput').value,
+      speakingRate: Number(document.getElementById('publicationVoiceRateInput').value)
+    },
     copies: {
       instagram: document.getElementById('publicationInstagramInput').value.trim(),
       facebook: document.getElementById('publicationFacebookInput').value.trim(),
@@ -544,6 +563,37 @@ function requestPublicationChanges() {
   const note = document.getElementById('publicationNoteInput').value.trim();
   if (!note) return showToast('Indica qué cambio necesitas.');
   decidePublication('changes_requested');
+}
+
+async function generatePublicationVoice() {
+  if (!currentPublicationEditId) return showToast('Guarda la propuesta antes de generar voz.');
+  if (!publicationCapabilities.googleTts) return showToast('Falta conectar Google Cloud Text-to-Speech.');
+  const button = document.getElementById('generateVoiceButton');
+  button.disabled = true;
+  const originalHtml = button.innerHTML;
+  button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando';
+  try {
+    const response = await fetch(`/api/publicaciones/${encodeURIComponent(currentPublicationEditId)}/voice`, {
+      method: 'POST', credentials: 'same-origin'
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'No fue posible generar la voz');
+    }
+    const blob = await response.blob();
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `${document.getElementById('publicationTitleInput').value || 'origin-one'}.mp3`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    showToast('Voz generada y descargada.');
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = originalHtml;
+  }
 }
 
 async function syncInstagramInBackground(showCompletion = false) {
