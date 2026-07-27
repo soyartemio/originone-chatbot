@@ -123,16 +123,19 @@ function isConflict(error) {
 }
 
 async function readAuthSnapshot() {
+  // The signed gateway is the production source of truth. Prefer it when
+  // available so authentication does not depend on a second set of direct
+  // R2 credentials or bucket permissions.
+  if (shouldUseStorageGateway()) {
+    const response = await readGatewayObject('auth');
+    return {
+      data: response.missing ? emptyAuthData() : normalizeAuthData(response.data),
+      etag: response.etag,
+      backend: 'gateway'
+    };
+  }
   const configuration = getConfiguration();
   if (!configuration) {
-    if (shouldUseStorageGateway()) {
-      const response = await readGatewayObject('auth');
-      return {
-        data: response.missing ? emptyAuthData() : normalizeAuthData(response.data),
-        etag: response.etag,
-        backend: 'gateway'
-      };
-    }
     return { data: readLocal(), etag: null, backend: 'local' };
   }
 
@@ -154,6 +157,10 @@ async function readAuthSnapshot() {
 }
 
 async function writeAuthSnapshot(data, previousEtag, backend) {
+  if (backend === 'gateway' || (backend !== 'local' && shouldUseStorageGateway())) {
+    await writeGatewayObject('auth', data, previousEtag);
+    return;
+  }
   if (backend === 'local') {
     writeLocal(data);
     return;
