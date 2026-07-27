@@ -246,12 +246,18 @@ Genera una respuesta pública profesional, senior y cordial (máximo 2 o 3 frase
       }
     }
 
-    // Confirmar rápido a Meta; las respuestas continúan en este proceso Node.
-    res.status(200).send('EVENT_RECEIVED');
-    const results = await Promise.allSettled(pendingResponses.map(run => run()));
+    // En el servicio persistente la respuesta suele continuar después del ACK,
+    // pero algunos ciclos de suspensión pueden cortar ese trabajo. Esperamos la
+    // contestación con un límite menor al timeout de Meta para garantizar entrega.
+    const responseWork = Promise.allSettled(pendingResponses.map(run => run()));
+    const results = await Promise.race([
+      responseWork,
+      new Promise(resolve => setTimeout(() => resolve([]), 15000))
+    ]);
     results
       .filter(result => result.status === 'rejected')
       .forEach(result => console.error('[MetaWebhook] ❌ Falló una respuesta posterior al registro:', result.reason));
+    res.status(200).send('EVENT_RECEIVED');
   } catch (error) {
     console.error('[MetaWebhook] ❌ Error procesando evento de Webhook:', error);
     if (!res.headersSent) res.status(500).send('CRM_STORAGE_FAILED');
