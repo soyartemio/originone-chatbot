@@ -4,7 +4,8 @@ const DEFAULT_GATEWAY_URL = 'https://originone-crm-storage.4nwq6cqmyj.workers.de
 const ROUTES = {
   appointments: '/v1/appointments',
   auth: '/v1/auth',
-  costs: '/v1/costs'
+  costs: '/v1/costs',
+  publications: '/v1/publications'
 };
 
 function getSourceSecret() {

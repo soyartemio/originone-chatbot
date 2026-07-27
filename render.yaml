@@ -32,6 +32,8 @@ services:
         value: crm/auth.json
       - key: R2_COSTS_OBJECT_KEY
         value: crm/costs.json
+      - key: R2_PUBLICATIONS_OBJECT_KEY
+        value: crm/publications.json
       - key: AUTH_SESSION_SECRET
         generateValue: true
       - key: AUTH_SETUP_SECRET

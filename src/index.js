@@ -95,6 +95,7 @@ app.use('/crm', requirePageAuth, express.static(crmAssetsPath, crmStaticOptions)
 app.use([
   '/api/crm',
   '/api/costos',
+  '/api/publicaciones',
   '/api/facturacion',
   '/api/contabilidad',
   '/api/bancos',
@@ -106,6 +107,7 @@ const contabilidadModule = require('./modules/contabilidad');
 const bancosModule = require('./modules/bancos');
 const sociosModule = require('./modules/socios');
 const costRoutes = require('./costRoutes');
+const publicationRoutes = require('./publicationRoutes');
 
 // Ruta principal de salud
 app.get('/', (req, res) => {
@@ -127,6 +129,7 @@ app.get('/', (req, res) => {
 // Montar endpoints de Módulos ERP y Webhooks
 app.use('/', crmRoutes);
 app.use('/', costRoutes);
+app.use('/', publicationRoutes);
 app.use('/', facturacionModule);
 app.use('/', contabilidadModule);
 app.use('/', bancosModule);

@@ -41,6 +41,9 @@
         <button class="nav-item" id="navCrm" data-module="crm" onclick="switchModule('crm')">
           <i class="fa-solid fa-users"></i><span>Prospectos</span><span class="nav-count" id="navLeadCount">0</span>
         </button>
+        <button class="nav-item" id="navPublications" data-module="publicaciones" onclick="switchModule('publicaciones')">
+          <i class="fa-solid fa-bullhorn"></i><span>Publicaciones</span><span class="nav-count" id="navPublicationCount">0</span>
+        </button>
         <button class="nav-item" id="navCosts" data-module="costos" onclick="switchModule('costos')">
           <i class="fa-solid fa-coins"></i><span>Costos</span><span class="nav-count" id="navCostCount">0</span>
         </button>
@@ -181,6 +184,31 @@
           </div>
         </section>
 
+        <section id="modulePublicationsSection" class="module-section hidden">
+          <div class="section-heading">
+            <div><p class="section-kicker">MOTOR DE CONTENIDO</p><h2>Publicaciones</h2><p>Ideas basadas en problemas reales, listas para revisar entre Artemio y Edgar.</p></div>
+            <button class="button primary" type="button" onclick="openPublicationModal()"><i class="fa-solid fa-plus"></i> Nueva propuesta</button>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-lightbulb"></i></span><small>TOTAL</small></div><strong id="publicationTotal">0</strong><p>Ideas y publicaciones</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-eye"></i></span><small>POR REVISAR</small></div><strong id="publicationReview">0</strong><p>Esperan comentarios</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-check-double"></i></span><small>APROBADAS</small></div><strong id="publicationApproved">0</strong><p>Con doble aprobación</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon"><i class="fa-solid fa-chart-line"></i></span><small>PUBLICADAS</small></div><strong id="publicationPublished">0</strong><p>Con resultados por medir</p></article>
+          </div>
+
+          <div class="publication-toolbar panel">
+            <div><strong>Cola editorial</strong><small> Haz clic en una propuesta para editar, comentar o aprobar.</small></div>
+            <div class="cost-filters">
+              <button class="chip-filter active" data-publication-filter="todas" type="button" onclick="filterPublications('todas', this)">Todas</button>
+              <button class="chip-filter" data-publication-filter="revision" type="button" onclick="filterPublications('revision', this)">Revisión</button>
+              <button class="chip-filter" data-publication-filter="aprobada" type="button" onclick="filterPublications('aprobada', this)">Aprobadas</button>
+              <button class="chip-filter" data-publication-filter="publicada" type="button" onclick="filterPublications('publicada', this)">Publicadas</button>
+            </div>
+          </div>
+          <div class="publication-grid" id="publicationGrid"></div>
+        </section>
+
         <section id="moduleCostsSection" class="module-section hidden">
           <div class="section-heading cost-section-heading">
             <div><p class="section-kicker">VISIBILIDAD OPERATIVA</p><h2>Costos multiproyecto</h2><p>Servicios, planes y renovaciones compartidos entre proyectos.</p></div>
@@ -255,7 +283,7 @@
   <nav class="mobile-nav" aria-label="Navegación móvil">
     <button class="active" data-module="dashboard" onclick="switchModule('dashboard')"><i class="fa-solid fa-table-cells-large"></i><span>Resumen</span></button>
     <button data-module="crm" onclick="switchModule('crm')"><i class="fa-solid fa-users"></i><span>Prospectos</span></button>
-    <button data-module="costos" onclick="switchModule('costos')"><i class="fa-solid fa-coins"></i><span>Costos</span></button>
+    <button data-module="publicaciones" onclick="switchModule('publicaciones')"><i class="fa-solid fa-bullhorn"></i><span>Contenido</span></button>
     <button type="button" onclick="toggleSidebar(true)"><i class="fa-solid fa-bars"></i><span>Más</span></button>
   </nav>
 
@@ -357,6 +385,36 @@
         </div>
         <label><span>Notas</span><textarea class="custom-textarea" id="costNotesInput" rows="3" placeholder="Qué cubre, condiciones o dato pendiente"></textarea></label>
         <div class="record-form-actions"><button type="button" class="button secondary" onclick="closeRecordModal()">Cancelar</button><button id="saveCostButton" type="submit" class="button primary"><i class="fa-solid fa-check"></i> Guardar costo</button></div>
+      </form>
+
+      <form id="publicationForm" class="record-form hidden">
+        <div class="record-form-grid">
+          <label><span>Título</span><input class="custom-input" id="publicationTitleInput" type="text" required placeholder="Idea principal"></label>
+          <label><span>Industria</span><input class="custom-input" id="publicationIndustryInput" type="text" required placeholder="Seguros, dental, manufactura..."></label>
+        </div>
+        <label><span>Problema del dueño</span><textarea class="custom-textarea" id="publicationPainInput" rows="2"></textarea></label>
+        <label><span>Situación relatable</span><textarea class="custom-textarea" id="publicationSituationInput" rows="3"></textarea></label>
+        <label><span>Remate con humor</span><textarea class="custom-textarea" id="publicationHumorInput" rows="2"></textarea></label>
+        <label><span>Cómo ayuda Origin One</span><textarea class="custom-textarea" id="publicationSolutionInput" rows="3"></textarea></label>
+        <label><span>Evidencia / proyecto</span><input class="custom-input" id="publicationEvidenceInput" type="text"></label>
+        <label><span>Brief visual para generar la imagen</span><textarea class="custom-textarea" id="publicationVisualInput" rows="3"></textarea></label>
+        <div class="publication-copy-tabs">
+          <label><span>Instagram</span><textarea class="custom-textarea" id="publicationInstagramInput" rows="4"></textarea></label>
+          <label><span>Facebook</span><textarea class="custom-textarea" id="publicationFacebookInput" rows="4"></textarea></label>
+          <label><span>LinkedIn empresa</span><textarea class="custom-textarea" id="publicationLinkedinInput" rows="4"></textarea></label>
+        </div>
+        <div class="publication-approval-panel" id="publicationApprovalPanel">
+          <div><span id="approvalArtemio">○ Artemio</span><span id="approvalEdgar">○ Edgar</span></div>
+          <p>Se publica únicamente después de las dos aprobaciones.</p>
+        </div>
+        <div id="publicationNotesTimeline" class="notes-timeline"></div>
+        <label><span>Nota para el equipo</span><textarea class="custom-textarea" id="publicationNoteInput" rows="2" placeholder="Cambio, comentario o motivo de aprobación"></textarea></label>
+        <div class="record-form-actions publication-actions">
+          <button type="button" class="button secondary" onclick="requestPublicationChanges()"><i class="fa-solid fa-rotate-left"></i> Pedir cambios</button>
+          <button type="button" class="button secondary" onclick="savePublicationNote()"><i class="fa-solid fa-note-sticky"></i> Guardar nota</button>
+          <button type="button" class="button secondary" onclick="approvePublication()"><i class="fa-solid fa-thumbs-up"></i> Aprobar</button>
+          <button id="savePublicationButton" type="submit" class="button primary"><i class="fa-solid fa-check"></i> Guardar propuesta</button>
+        </div>
       </form>
     </div>
   </div>

@@ -1,4 +1,4 @@
-const allowedModules = new Set(['dashboard', 'crm', 'costos', 'facturacion', 'contabilidad', 'bancos', 'socios']);
+const allowedModules = new Set(['dashboard', 'crm', 'publicaciones', 'costos', 'facturacion', 'contabilidad', 'bancos', 'socios']);
 const initialUrlParams = new URLSearchParams(window.location.search);
 const requestedModule = initialUrlParams.get('module');
 let currentModule = allowedModules.has(requestedModule) ? requestedModule : 'dashboard';
@@ -8,10 +8,14 @@ let currentFilterStage = initialUrlParams.get('stage');
 let currentAttentionFilter = initialUrlParams.get('attention');
 let currentCrmView = initialUrlParams.get('view') === 'list' ? 'list' : 'kanban';
 let allCosts = [];
+let allPublications = [];
+let currentPublicationFilter = 'todas';
+let currentPublicationEditId = null;
 let currentCostFilter = initialUrlParams.get('costFilter') || 'todos';
 let currentCostEditId = null;
 let currentActiveLeadId = null;
 let currentUserDisplayName = 'Usuario';
+let currentUsername = '';
 let deferredInstallPrompt = null;
 let toastTimer = null;
 let instagramSyncPromise = null;
@@ -57,6 +61,7 @@ function initializeShell() {
   document.getElementById('invoiceForm').addEventListener('submit', submitInvoiceForm);
   document.getElementById('transactionForm').addEventListener('submit', submitTransactionForm);
   document.getElementById('costForm').addEventListener('submit', submitCostForm);
+  document.getElementById('publicationForm').addEventListener('submit', submitPublicationForm);
 
   window.addEventListener('popstate', restoreNavigationFromUrl);
 }
@@ -136,7 +141,9 @@ function closeRecordModal() {
   document.getElementById('invoiceForm').classList.add('hidden');
   document.getElementById('transactionForm').classList.add('hidden');
   document.getElementById('costForm').classList.add('hidden');
+  document.getElementById('publicationForm').classList.add('hidden');
   currentCostEditId = null;
+  currentPublicationEditId = null;
 }
 
 function toggleSidebar(open) {
@@ -263,6 +270,7 @@ async function loadCurrentUser() {
   }
   const nameElement = document.getElementById('currentUserName');
   currentUserDisplayName = data.user.displayName;
+  currentUsername = data.user.username;
   if (nameElement) nameElement.innerText = currentUserDisplayName;
   updateDashboardGreeting();
   const noteAuthor = document.getElementById('noteAuthor');
@@ -307,6 +315,7 @@ async function switchModule(moduleName, options = {}) {
   const sections = {
     dashboard: document.getElementById('moduleDashboardSection'),
     crm: document.getElementById('moduleCrmSection'),
+    publicaciones: document.getElementById('modulePublicationsSection'),
     costos: document.getElementById('moduleCostsSection'),
     facturacion: document.getElementById('moduleFacturacionSection'),
     contabilidad: document.getElementById('moduleContabilidadSection'),
@@ -325,6 +334,7 @@ async function switchModule(moduleName, options = {}) {
   const titles = {
     dashboard: { eyebrow: 'CENTRO DE CONTROL', title: 'Resumen operativo', sub: 'Lo importante de Origin One en un solo lugar.' },
     crm: { eyebrow: 'RELACIONES COMERCIALES', title: 'Prospectos y seguimiento', sub: 'Contactos, próximos pasos y citas confirmadas.' },
+    publicaciones: { eyebrow: 'MARKETING ASISTIDO POR IA', title: 'Publicaciones y aprobación', sub: 'Contenido relatable para dueños de empresa, con revisión compartida.' },
     costos: { eyebrow: 'CONTROL OPERATIVO', title: 'Costos multiproyecto', sub: 'Planes, proveedores y renovaciones con visibilidad compartida.' },
     facturacion: { eyebrow: 'INGRESOS Y COBRANZA', title: 'Facturación y cotizaciones', sub: 'Documentos comerciales emitidos y su estado.' },
     contabilidad: { eyebrow: 'RESULTADOS', title: 'Contabilidad y P&L', sub: 'Ingresos, egresos y utilidad del periodo.' },
@@ -361,6 +371,7 @@ async function loadModuleData() {
     if (currentModule === 'dashboard') {
       await loadDashboardModule();
     } else if (currentModule === 'crm') await loadCrmModule();
+    else if (currentModule === 'publicaciones') await loadPublicationsModule();
     else if (currentModule === 'costos') await loadCostsModule();
     else if (currentModule === 'facturacion') await loadFacturacionModule();
     else if (currentModule === 'contabilidad') await loadContabilidadModule();
@@ -374,6 +385,165 @@ async function loadModuleData() {
   if ((currentModule === 'dashboard' || currentModule === 'crm') && Date.now() - lastInstagramSyncAt > 60000) {
     syncInstagramInBackground(false);
   }
+}
+
+async function loadPublicationsModule() {
+  const response = await fetch('/api/publicaciones', { credentials: 'same-origin' });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'No fue posible cargar las publicaciones');
+  allPublications = data.publications || [];
+  setText('navPublicationCount', allPublications.filter(item => ['revision', 'cambios'].includes(item.status)).length);
+  setText('publicationTotal', allPublications.length);
+  setText('publicationReview', allPublications.filter(item => ['revision', 'cambios'].includes(item.status)).length);
+  setText('publicationApproved', allPublications.filter(item => ['aprobada', 'programada'].includes(item.status)).length);
+  setText('publicationPublished', allPublications.filter(item => item.status === 'publicada').length);
+  renderPublications();
+}
+
+function publicationStatusLabel(status) {
+  return ({
+    idea: 'Idea', borrador: 'Borrador', revision: 'En revisión', aprobada: 'Aprobada',
+    programada: 'Programada', publicada: 'Publicada', cambios: 'Cambios solicitados'
+  })[status] || status;
+}
+
+function filterPublications(filter, button) {
+  currentPublicationFilter = filter;
+  document.querySelectorAll('[data-publication-filter]').forEach(item => item.classList.toggle('active', item === button));
+  renderPublications();
+}
+
+function renderPublications() {
+  const grid = document.getElementById('publicationGrid');
+  const filtered = currentPublicationFilter === 'todas'
+    ? allPublications
+    : allPublications.filter(item => item.status === currentPublicationFilter);
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="panel publication-empty"><i class="fa-solid fa-bullhorn"></i><p>No hay propuestas en este estado.</p></div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(item => {
+    const artemio = item.approvals?.artemio?.decision === 'approved';
+    const edgar = item.approvals?.edgar?.decision === 'approved';
+    const platforms = (item.platforms || []).map(platform => `<span>${escapeHtml(platform)}</span>`).join('');
+    return `
+      <button class="publication-card panel" type="button" onclick="openPublicationModal('${escapeHtml(item.id)}')">
+        <div class="publication-card-top"><span class="publication-industry">${escapeHtml(item.industry)}</span><span class="publication-status status-${escapeHtml(item.status)}">${escapeHtml(publicationStatusLabel(item.status))}</span></div>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p>${escapeHtml(item.situation)}</p>
+        <div class="publication-platforms">${platforms}</div>
+        <div class="publication-card-footer"><span>${artemio ? '●' : '○'} Artemio</span><span>${edgar ? '●' : '○'} Edgar</span><span>${item.notes?.length || 0} notas</span></div>
+      </button>`;
+  }).join('');
+}
+
+function openPublicationModal(id = null) {
+  currentPublicationEditId = id;
+  const publication = allPublications.find(item => item.id === id);
+  setText('recordModalKicker', publication ? 'REVISAR PUBLICACIÓN' : 'NUEVA PROPUESTA');
+  setText('recordModalTitle', publication?.title || 'Crear propuesta');
+  setText('recordModalDescription', 'Problema real, situación reconocible y una solución demostrable de Origin One.');
+  document.querySelectorAll('#recordModal form').forEach(form => form.classList.add('hidden'));
+  document.getElementById('publicationForm').classList.remove('hidden');
+  document.getElementById('publicationTitleInput').value = publication?.title || '';
+  document.getElementById('publicationIndustryInput').value = publication?.industry || '';
+  document.getElementById('publicationPainInput').value = publication?.ownerPain || '';
+  document.getElementById('publicationSituationInput').value = publication?.situation || '';
+  document.getElementById('publicationHumorInput').value = publication?.humor || '';
+  document.getElementById('publicationSolutionInput').value = publication?.solution || '';
+  document.getElementById('publicationEvidenceInput').value = publication?.evidence || '';
+  document.getElementById('publicationVisualInput').value = publication?.visualBrief || '';
+  document.getElementById('publicationInstagramInput').value = publication?.copies?.instagram || '';
+  document.getElementById('publicationFacebookInput').value = publication?.copies?.facebook || '';
+  document.getElementById('publicationLinkedinInput').value = publication?.copies?.linkedin || '';
+  document.getElementById('publicationNoteInput').value = '';
+  const setApproval = (idName, username, displayName) => {
+    const element = document.getElementById(idName);
+    const approval = publication?.approvals?.[username];
+    element.innerText = `${approval?.decision === 'approved' ? '●' : approval?.decision === 'changes_requested' ? '!' : '○'} ${displayName}`;
+    element.className = approval?.decision || '';
+  };
+  setApproval('approvalArtemio', 'artemio', 'Artemio');
+  setApproval('approvalEdgar', 'edgar', 'Edgar');
+  document.getElementById('publicationNotesTimeline').innerHTML = (publication?.notes || []).map(note => `
+    <article class="note-item"><div><strong>${escapeHtml(note.author)}</strong><time>${new Date(note.createdAt).toLocaleString('es-MX')}</time></div><p>${escapeHtml(note.text)}</p></article>
+  `).join('');
+  document.querySelectorAll('.publication-actions button:not(#savePublicationButton)').forEach(button => {
+    button.disabled = !publication;
+  });
+  document.getElementById('recordModal').classList.remove('hidden');
+}
+
+function publicationPayload() {
+  return {
+    title: document.getElementById('publicationTitleInput').value.trim(),
+    industry: document.getElementById('publicationIndustryInput').value.trim(),
+    ownerPain: document.getElementById('publicationPainInput').value.trim(),
+    situation: document.getElementById('publicationSituationInput').value.trim(),
+    humor: document.getElementById('publicationHumorInput').value.trim(),
+    solution: document.getElementById('publicationSolutionInput').value.trim(),
+    evidence: document.getElementById('publicationEvidenceInput').value.trim(),
+    visualBrief: document.getElementById('publicationVisualInput').value.trim(),
+    copies: {
+      instagram: document.getElementById('publicationInstagramInput').value.trim(),
+      facebook: document.getElementById('publicationFacebookInput').value.trim(),
+      linkedin: document.getElementById('publicationLinkedinInput').value.trim()
+    },
+    platforms: ['instagram', 'facebook', 'linkedin'],
+    status: currentPublicationEditId ? undefined : 'borrador'
+  };
+}
+
+async function submitPublicationForm(event) {
+  event.preventDefault();
+  const url = currentPublicationEditId ? `/api/publicaciones/${encodeURIComponent(currentPublicationEditId)}` : '/api/publicaciones';
+  const response = await fetch(url, {
+    method: currentPublicationEditId ? 'PATCH' : 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(publicationPayload())
+  });
+  const data = await response.json();
+  if (!response.ok) return showToast(data.error || 'No fue posible guardar');
+  closeRecordModal();
+  await loadPublicationsModule();
+  showToast('Propuesta guardada.');
+}
+
+async function savePublicationNote() {
+  const text = document.getElementById('publicationNoteInput').value.trim();
+  if (!text) return showToast('Escribe una nota primero.');
+  const response = await fetch(`/api/publicaciones/${encodeURIComponent(currentPublicationEditId)}/notes`, {
+    method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text })
+  });
+  const data = await response.json();
+  if (!response.ok) return showToast(data.error || 'No fue posible guardar la nota');
+  await loadPublicationsModule();
+  openPublicationModal(currentPublicationEditId);
+  showToast('Nota guardada.');
+}
+
+async function decidePublication(decision) {
+  const note = document.getElementById('publicationNoteInput').value.trim();
+  const response = await fetch(`/api/publicaciones/${encodeURIComponent(currentPublicationEditId)}/approval`, {
+    method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ decision, note })
+  });
+  const data = await response.json();
+  if (!response.ok) return showToast(data.error || 'No fue posible registrar la decisión');
+  await loadPublicationsModule();
+  openPublicationModal(currentPublicationEditId);
+  showToast(decision === 'approved' ? 'Aprobación registrada.' : 'Cambios solicitados.');
+}
+
+function approvePublication() {
+  decidePublication('approved');
+}
+
+function requestPublicationChanges() {
+  const note = document.getElementById('publicationNoteInput').value.trim();
+  if (!note) return showToast('Indica qué cambio necesitas.');
+  decidePublication('changes_requested');
 }
 
 async function syncInstagramInBackground(showCompletion = false) {

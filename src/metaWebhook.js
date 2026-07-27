@@ -50,9 +50,14 @@ async function registerDirectMessage({ senderId, message, channelName, userName 
 
   const { appendChatMessage } = require('./agendaService');
 
-  // Guardar primero. Ninguna consulta externa ni fallo de IA debe impedir el registro en CRM.
-  await appendChatMessage(senderId, 'user', text, channelName, userName, eventId);
-  console.log(`[MetaWebhook] 💾 Interacción registrada de ${channelName} (ID ${senderId}): "${text}"`);
+  // El CRM y la respuesta son responsabilidades independientes: una caída de
+  // almacenamiento nunca debe dejar al prospecto sin atención.
+  try {
+    await appendChatMessage(senderId, 'user', text, channelName, userName, eventId);
+    console.log(`[MetaWebhook] 💾 Interacción registrada de ${channelName} (ID ${senderId}): "${text}"`);
+  } catch (error) {
+    console.error(`[MetaWebhook] ⚠️ No fue posible guardar el mensaje; se responderá de todos modos: ${error.message}`);
+  }
 
   return { senderId, message, channelName, userName, eventId, text };
 }
@@ -67,7 +72,11 @@ async function respondToDirectMessage(registeredMessage) {
   await sendMetaTypingIndicator(senderId, channelName);
   const resolvedName = userName || await fetchMetaUserProfile(senderId, channelName);
   const botReply = await generateBotResponse(senderId, text, channelName);
-  await appendChatMessage(senderId, 'assistant', botReply, channelName, resolvedName, eventId ? `reply:${eventId}` : null);
+  try {
+    await appendChatMessage(senderId, 'assistant', botReply, channelName, resolvedName, eventId ? `reply:${eventId}` : null);
+  } catch (error) {
+    console.error(`[MetaWebhook] ⚠️ No fue posible guardar la respuesta; se enviará de todos modos: ${error.message}`);
+  }
   await sendMetaMessage(senderId, botReply, channelName);
 }
 
@@ -237,7 +246,7 @@ Genera una respuesta pública profesional, senior y cordial (máximo 2 o 3 frase
       }
     }
 
-    // Confirmar a Meta sólo después de que todas las entradas fueron persistidas en el CRM.
+    // Confirmar rápido a Meta; las respuestas continúan en este proceso Node.
     res.status(200).send('EVENT_RECEIVED');
     const results = await Promise.allSettled(pendingResponses.map(run => run()));
     results

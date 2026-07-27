@@ -5,7 +5,8 @@ const encoder = new TextEncoder();
 const OBJECTS = Object.freeze({
   '/v1/appointments': { key: 'crm/appointments.json', shape: 'appointments' },
   '/v1/auth': { key: 'crm/auth.json', shape: 'auth' },
-  '/v1/costs': { key: 'crm/costs.json', shape: 'costs' }
+  '/v1/costs': { key: 'crm/costs.json', shape: 'costs' },
+  '/v1/publications': { key: 'crm/publications.json', shape: 'publications' }
 });
 
 function bytesToHex(bytes) {
@@ -70,6 +71,15 @@ function validatePayload(payload, shape) {
       typeof cost.id === 'string' && cost.id.length <= 100 &&
       typeof cost.servicio === 'string' && cost.servicio.length <= 200 &&
       Array.isArray(cost.proyectos) && cost.proyectos.length <= 20
+    ));
+  }
+  if (shape === 'publications') {
+    return Array.isArray(payload) && payload.length <= 2000 && payload.every(publication => (
+      publication && typeof publication === 'object' && !Array.isArray(publication) &&
+      typeof publication.id === 'string' && publication.id.length <= 100 &&
+      typeof publication.title === 'string' && publication.title.length <= 300 &&
+      typeof publication.status === 'string' && publication.status.length <= 40 &&
+      Array.isArray(publication.notes) && publication.notes.length <= 500
     ));
   }
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
