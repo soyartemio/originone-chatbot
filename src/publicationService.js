@@ -47,6 +47,7 @@ const DEFAULT_PUBLICATIONS = [
     creativeAlt: 'Dueño de negocio frente a un laberinto de botones, conectado por una onda de voz ámbar a una conversación clara.',
     visualHeadline: 'Tu cliente no quiere “presionar 1”.',
     visualCaption: 'Quiere explicar qué necesita.',
+    story: 'José dirige una empresa de servicios. Cada semana alguien llega a su sitio con un problema concreto, se topa con un formulario y desaparece. Cuando prueban el bot, seis botones hacen el resto. No es falta de interés: es fricción.',
     narrative: {
       fictional: true,
       character: 'José',
@@ -79,6 +80,7 @@ const DEFAULT_PUBLICATIONS = [
     creativeAlt: 'Dueño de aseguradora rodeado de reportes dispersos, conectado a un tablero ámbar.',
     visualHeadline: 'El “archivo bueno” no debería ser un misterio.',
     visualCaption: 'Cerrar el mes no debería ser una búsqueda.',
+    story: 'Luis dirige una agencia de seguros. Al cierre, una persona tiene las pólizas, otra los cobros y alguien guarda “el Excel bueno”. El equipo trabaja; el problema es que la información vive repartida.',
     narrative: {
       fictional: true,
       character: 'Luis',
@@ -111,6 +113,7 @@ const DEFAULT_PUBLICATIONS = [
     creativeAlt: 'Equipo de clínica dental conectado por una línea ámbar en una sola operación.',
     visualHeadline: 'Tu clínica no debería operar a base de favores.',
     visualCaption: 'Agenda, expediente y cobro: una sola operación.',
+    story: 'Mariana dirige una clínica dental en crecimiento. Recepción conoce la agenda, el doctor conoce el tratamiento y una libreta misteriosa conoce los pagos. Para entender un caso, su equipo tiene que preguntarle a tres personas.',
     narrative: {
       fictional: true,
       character: 'Mariana',
@@ -161,6 +164,7 @@ function normalizePublication(input, existing = {}) {
     creativeAlt: String(input.creativeAlt ?? existing.creativeAlt ?? input.title ?? existing.title ?? 'Visual de la publicación').trim().slice(0, 500),
     visualHeadline: String(input.visualHeadline ?? existing.visualHeadline ?? input.title ?? existing.title ?? '').trim().slice(0, 180),
     visualCaption: String(input.visualCaption ?? existing.visualCaption ?? input.situation ?? existing.situation ?? '').trim().slice(0, 180),
+    story: String(input.story ?? existing.story ?? input.situation ?? existing.situation ?? '').trim().slice(0, 900),
     narrative: {
       fictional: input.narrative?.fictional ?? existing.narrative?.fictional ?? false,
       character: String(input.narrative?.character ?? existing.narrative?.character ?? '').trim().slice(0, 100),
