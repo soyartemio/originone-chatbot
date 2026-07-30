@@ -646,3 +646,15 @@ a { color: inherit; }
   .appointment-review-actions { width: 100%; }
   .appointment-review-actions .button { flex: 1; }
 }
+.publication-modal-active label:has(#publicationIndustryInput),
+.publication-modal-active label:has(#publicationPainInput),
+.publication-modal-active label:has(#publicationSituationInput),
+.publication-modal-active label:has(#publicationHumorInput),
+.publication-modal-active label:has(#publicationSolutionInput),
+.publication-modal-active label:has(#publicationEvidenceInput),
+.publication-modal-active label:has(#publicationAssetProviderInput),
+.publication-modal-active label:has(#publicationAssetStatusInput),
+.publication-modal-active label:has(#publicationAssetUrlInput),
+.publication-modal-active .publication-schedule-grid,
+.publication-modal-active .schedule-disclaimer,
+.publication-modal-active label:has(#publicationCtaUrlInput) { display: none; }

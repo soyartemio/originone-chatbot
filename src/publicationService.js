@@ -39,10 +39,10 @@ const DEFAULT_PUBLICATIONS = [
     evidence: 'Demo S1GNAL disponible en originone.com.mx.',
     visualBrief: 'Dueño hablando con naturalidad frente a una onda de voz dorada; al lado, un laberinto absurdo de menús “presiona 1”. Estilo editorial premium, fondo oscuro Origin One.',
     assetProvider: 'pomelli',
-    assetStatus: 'listo',
+    assetStatus: 'pendiente',
     assetUrl: 'https://labs.google.com/pomelli/campaigns/biYih_QX4BqcCvLQSi_OwI',
-    creativeUrl: 'https://originone.com.mx/assets/campaigns/signal-voice-to-voice.png',
-    creativeAlt: 'Retrato editorial de un empresario con el texto: Tu cliente quiere ser escuchado.',
+    creativeUrl: '',
+    creativeAlt: '',
     voiceoverScript: 'Tu cliente no quiere jugar a presiona uno. Quiere explicar lo que necesita. S1GNAL convierte tu página en una conversación de voz a voz, entiende el contexto y prepara el seguimiento. ¿Hablarías con tu propia página?',
     copies: {
       instagram: 'Tu cliente no quiere llenar otro formulario. Quiere explicar lo que necesita. S1GNAL conversa de voz a voz, entiende el contexto y convierte esa conversación en una oportunidad real. ¿Hablarías con tu propia página?',
@@ -120,11 +120,7 @@ function normalizePublication(input, existing = {}) {
     assetProvider: String(input.assetProvider ?? existing.assetProvider ?? 'pomelli').trim().slice(0, 80),
     assetStatus: String(input.assetStatus ?? existing.assetStatus ?? 'pendiente').trim().slice(0, 80),
     assetUrl: String(input.assetUrl ?? existing.assetUrl ?? '').trim().slice(0, 1000),
-    creativeUrl: String(input.creativeUrl ?? existing.creativeUrl ?? (
-      (existing.id || input.id) === 'pub-signal-voz-a-voz'
-        ? 'https://originone.com.mx/assets/campaigns/signal-voice-to-voice.png'
-        : ''
-    )).trim().slice(0, 1000),
+    creativeUrl: String(input.creativeUrl ?? existing.creativeUrl ?? '').trim().slice(0, 1000),
     creativeAlt: String(input.creativeAlt ?? existing.creativeAlt ?? input.title ?? existing.title ?? 'Visual de la publicación').trim().slice(0, 500),
     voiceoverScript: String(input.voiceoverScript ?? existing.voiceoverScript ?? '').trim().slice(0, 5000),
     voiceConfig: {
