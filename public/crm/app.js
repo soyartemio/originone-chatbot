@@ -493,9 +493,10 @@ function renderPublications() {
     const artemio = item.approvals?.artemio?.decision === 'approved';
     const edgar = item.approvals?.edgar?.decision === 'approved';
     const platforms = (item.platforms || []).map(platform => `<span>${escapeHtml(platform)}</span>`).join('');
-    const image = item.creativeUrl
-      ? `<img src="${escapeHtml(item.creativeUrl)}" alt="${escapeHtml(item.creativeAlt)}" loading="lazy">`
-      : `<div class="publication-visual-placeholder"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Visual en producción</span><small>${escapeHtml(item.visualBrief)}</small></div>`;
+    const overlayCopy = String(item.copies?.instagram || item.situation || '').slice(0, 150);
+    const image = item.creativeUrl && item.assetStatus !== 'rechazado'
+      ? `<img src="${escapeHtml(item.creativeUrl)}" alt="${escapeHtml(item.creativeAlt)}" loading="lazy"><div class="publication-visual-overlay"><span>${escapeHtml(item.industry)}</span><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(overlayCopy)}</p></div>`
+      : `<div class="publication-visual-placeholder"><i class="fa-solid fa-image"></i><span>Visual pendiente de aprobación</span><small>La propuesta se mostrará aquí en 9:16 con texto integrado después de aprobar el asset generado.</small></div>`;
     const scheduleValue = item.schedule?.linkedin?.localDateTime || nextRecommendedLocalDateTime(3, 16);
     const schedule = new Date(scheduleValue).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
     return `
