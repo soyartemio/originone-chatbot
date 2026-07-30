@@ -9,11 +9,7 @@ let currentAttentionFilter = initialUrlParams.get('attention');
 let currentCrmView = initialUrlParams.get('view') === 'list' ? 'list' : 'kanban';
 let allCosts = [];
 let allPublications = [];
-let publicationCapabilities = { googleTts: false, assetProvider: 'pomelli' };
-let publicationAudioUrl = null;
-let publicationAudioContext = null;
-let publicationAudioAnalyser = null;
-let publicationAudioAnimation = null;
+let publicationCapabilities = { assetProvider: 'pomelli' };
 let currentPublicationFilter = 'todas';
 let currentPublicationEditId = null;
 let currentCostFilter = initialUrlParams.get('costFilter') || 'todos';
@@ -543,10 +539,6 @@ function openPublicationModal(id = null) {
   document.getElementById('publicationLinkedinScheduleInput').value = publication?.schedule?.linkedin?.localDateTime || nextRecommendedLocalDateTime(3, 16);
   document.getElementById('publicationCtaUrlInput').value = publication?.cta?.url || 'https://originone.com.mx/';
   updatePublicationCreativePreview();
-  document.getElementById('publicationVoiceoverInput').value = publication?.voiceoverScript || '';
-  document.getElementById('publicationVoiceNameInput').value = publication?.voiceConfig?.primaryVoice || publication?.voiceConfig?.name || 'Charon';
-  document.getElementById('publicationSecondaryVoiceInput').value = publication?.voiceConfig?.secondaryVoice || 'Kore';
-  document.getElementById('publicationVoiceStyleInput').value = publication?.voiceConfig?.style || '';
   document.getElementById('publicationInstagramInput').value = publication?.copies?.instagram || '';
   document.getElementById('publicationFacebookInput').value = publication?.copies?.facebook || '';
   document.getElementById('publicationLinkedinInput').value = publication?.copies?.linkedin || '';
@@ -565,14 +557,6 @@ function openPublicationModal(id = null) {
   document.querySelectorAll('.publication-actions button:not(#savePublicationButton)').forEach(button => {
     button.disabled = !publication;
   });
-  const voiceButton = document.getElementById('generateVoiceButton');
-  voiceButton.title = publicationCapabilities.googleTts
-    ? 'Generar audio con Gemini TTS'
-    : 'Falta conectar GEMINI_API_KEY';
-  document.getElementById('generateAudiogramButton').title = publicationCapabilities.audiogram
-    ? 'Generar MP4 vertical con onda reactiva y subtítulos'
-    : 'Falta conectar GEMINI_API_KEY';
-  resetAudiogramPreview();
   document.getElementById('recordModal').classList.remove('hidden');
   document.getElementById('recordModal').classList.add('publication-modal-active');
 }
@@ -607,15 +591,6 @@ function publicationPayload() {
       linkedin: { localDateTime: document.getElementById('publicationLinkedinScheduleInput').value }
     },
     cta: { type: 'website', url: document.getElementById('publicationCtaUrlInput').value.trim() },
-    voiceoverScript: document.getElementById('publicationVoiceoverInput').value.trim(),
-    voiceConfig: {
-      languageCode: 'es',
-      name: document.getElementById('publicationVoiceNameInput').value,
-      primaryVoice: document.getElementById('publicationVoiceNameInput').value,
-      secondaryVoice: document.getElementById('publicationSecondaryVoiceInput').value,
-      style: document.getElementById('publicationVoiceStyleInput').value.trim(),
-      speakingRate: 1
-    },
     copies: {
       instagram: document.getElementById('publicationInstagramInput').value.trim(),
       facebook: document.getElementById('publicationFacebookInput').value.trim(),
@@ -676,148 +651,6 @@ function requestPublicationChanges() {
   const note = document.getElementById('publicationNoteInput').value.trim();
   if (!note) return showToast('Indica qué cambio necesitas.');
   decidePublication('changes_requested');
-}
-
-async function generatePublicationVoice() {
-  if (!currentPublicationEditId) return showToast('Guarda la propuesta antes de generar voz.');
-  if (!publicationCapabilities.googleTts) return showToast('Falta conectar GEMINI_API_KEY.');
-  const button = document.getElementById('generateVoiceButton');
-  button.disabled = true;
-  const originalHtml = button.innerHTML;
-  button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando';
-  try {
-    const response = await fetch(`/api/publicaciones/${encodeURIComponent(currentPublicationEditId)}/voice`, {
-      method: 'POST', credentials: 'same-origin'
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'No fue posible generar la voz');
-    }
-    const blob = await response.blob();
-    if (publicationAudioUrl) URL.revokeObjectURL(publicationAudioUrl);
-    publicationAudioUrl = URL.createObjectURL(blob);
-    const player = document.getElementById('publicationAudioPlayer');
-    player.src = publicationAudioUrl;
-    setupReactiveAudiogram(player);
-    await player.play();
-    showToast('Voz generada. Revisa la onda y los subtítulos.');
-  } catch (error) {
-    showToast(error.message);
-  } finally {
-    button.disabled = false;
-    button.innerHTML = originalHtml;
-  }
-}
-
-function audiobookCaptionChunks() {
-  const text = document.getElementById('publicationVoiceoverInput').value
-    .replace(/^\s*[^:\n]{1,40}:\s*/gm, '')
-    .replace(/\[[^\]]+\]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  const words = text.split(' ').filter(Boolean);
-  const chunks = [];
-  for (let index = 0; index < words.length; index += 8) chunks.push(words.slice(index, index + 8).join(' '));
-  return chunks;
-}
-
-function drawIdleAudiogram() {
-  const canvas = document.getElementById('audiogramWave');
-  const context = canvas.getContext('2d');
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.strokeStyle = '#f5aa00';
-  context.lineWidth = 4;
-  context.beginPath();
-  for (let x = 0; x <= canvas.width; x += 8) {
-    const y = canvas.height / 2 + Math.sin(x / 32) * 8;
-    if (x === 0) context.moveTo(x, y); else context.lineTo(x, y);
-  }
-  context.stroke();
-}
-
-function resetAudiogramPreview() {
-  const player = document.getElementById('publicationAudioPlayer');
-  player.pause();
-  player.removeAttribute('src');
-  player.load();
-  if (publicationAudioAnimation) cancelAnimationFrame(publicationAudioAnimation);
-  document.getElementById('audiogramCaption').innerText = 'Los subtítulos aparecerán aquí mientras se reproduce la voz.';
-  drawIdleAudiogram();
-}
-
-function setupReactiveAudiogram(player) {
-  if (!publicationAudioContext) {
-    publicationAudioContext = new AudioContext();
-    publicationAudioAnalyser = publicationAudioContext.createAnalyser();
-    publicationAudioAnalyser.fftSize = 256;
-    const source = publicationAudioContext.createMediaElementSource(player);
-    source.connect(publicationAudioAnalyser);
-    publicationAudioAnalyser.connect(publicationAudioContext.destination);
-  }
-  publicationAudioContext.resume();
-  const canvas = document.getElementById('audiogramWave');
-  const context = canvas.getContext('2d');
-  const samples = new Uint8Array(publicationAudioAnalyser.frequencyBinCount);
-  const captions = audiobookCaptionChunks();
-  let phase = 0;
-  const animate = () => {
-    publicationAudioAnalyser.getByteTimeDomainData(samples);
-    let peak = 0;
-    samples.forEach(value => { peak = Math.max(peak, Math.abs(value - 128)); });
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.strokeStyle = '#f5aa00';
-    context.lineWidth = 5;
-    context.beginPath();
-    samples.forEach((value, index) => {
-      const x = index / (samples.length - 1) * canvas.width;
-      const fallback = Math.sin(index * 0.35 + phase) * (peak < 2 ? 9 : 0);
-      const y = value / 255 * canvas.height + fallback;
-      if (index === 0) context.moveTo(x, y); else context.lineTo(x, y);
-    });
-    context.stroke();
-    if (player.duration && captions.length) {
-      const captionIndex = Math.min(captions.length - 1, Math.floor(player.currentTime / player.duration * captions.length));
-      document.getElementById('audiogramCaption').innerText = captions[captionIndex];
-    }
-    if (!player.paused && !player.ended) publicationAudioAnimation = requestAnimationFrame(animate);
-    phase += 0.12;
-  };
-  player.onplay = () => {
-    if (publicationAudioAnimation) cancelAnimationFrame(publicationAudioAnimation);
-    animate();
-  };
-  player.onseeked = animate;
-}
-
-async function generatePublicationAudiogram() {
-  if (!currentPublicationEditId) return showToast('Guarda la propuesta antes de generar el MP4.');
-  if (!publicationCapabilities.audiogram) return showToast('Falta conectar GEMINI_API_KEY.');
-  const button = document.getElementById('generateAudiogramButton');
-  const originalHtml = button.innerHTML;
-  button.disabled = true;
-  button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Renderizando MP4';
-  try {
-    const response = await fetch(`/api/publicaciones/${encodeURIComponent(currentPublicationEditId)}/audiogram`, {
-      method: 'POST', credentials: 'same-origin'
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'No fue posible generar el audiograma');
-    }
-    const blob = await response.blob();
-    const downloadUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = `${document.getElementById('publicationTitleInput').value || 'origin-one'}-audiograma.mp4`;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(downloadUrl), 3000);
-    showToast('Audiograma MP4 listo para Instagram, Facebook y LinkedIn.');
-  } catch (error) {
-    showToast(error.message);
-  } finally {
-    button.disabled = false;
-    button.innerHTML = originalHtml;
-  }
 }
 
 async function syncInstagramInBackground(showCompletion = false) {

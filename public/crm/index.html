@@ -449,18 +449,6 @@
         </div>
         <p class="schedule-disclaimer"><i class="fa-solid fa-flask"></i> Ventanas iniciales basadas en benchmarks 2026; se sustituirán por el desempeño real de las cuentas.</p>
         <label><span>Destino del llamado a la acción</span><input class="custom-input" id="publicationCtaUrlInput" type="url" placeholder="https://originone.com.mx/?utm_source=..."></label>
-        <label><span>Guion de locución</span><textarea class="custom-textarea" id="publicationVoiceoverInput" rows="4" placeholder="Texto breve para Reel o video. La voz se genera después de guardar."></textarea></label>
-        <div class="record-form-grid">
-          <label><span>Voz 1 · Gemini TTS gratuito</span><select class="custom-select" id="publicationVoiceNameInput"><option value="Charon">Charon · informativa</option><option value="Achird">Achird · amistosa</option><option value="Kore">Kore · firme</option><option value="Aoede">Aoede · ligera</option></select></label>
-          <label><span>Voz 2 · diálogo</span><select class="custom-select" id="publicationSecondaryVoiceInput"><option value="Kore">Kore · firme</option><option value="Aoede">Aoede · ligera</option><option value="Puck">Puck · animada</option><option value="Achird">Achird · amistosa</option></select></label>
-        </div>
-        <label><span>Dirección del programa</span><textarea class="custom-textarea" id="publicationVoiceStyleInput" rows="2" placeholder="Tono, ritmo y personalidad de las dos voces."></textarea></label>
-        <div class="audiogram-preview" id="audiogramPreview">
-          <div class="audiogram-brand">ORIGIN <span>ONE</span></div>
-          <canvas id="audiogramWave" width="720" height="220" aria-label="Onda de voz reactiva"></canvas>
-          <p id="audiogramCaption">Los subtítulos aparecerán aquí mientras se reproduce la voz.</p>
-          <audio id="publicationAudioPlayer" controls preload="metadata"></audio>
-        </div>
         <div class="publication-copy-tabs">
           <label><span>Instagram</span><textarea class="custom-textarea" id="publicationInstagramInput" rows="4"></textarea></label>
           <label><span>Facebook</span><textarea class="custom-textarea" id="publicationFacebookInput" rows="4"></textarea></label>
@@ -476,8 +464,6 @@
           <button type="button" class="button secondary" onclick="requestPublicationChanges()"><i class="fa-solid fa-rotate-left"></i> Pedir cambios</button>
           <button type="button" class="button secondary" onclick="savePublicationNote()"><i class="fa-solid fa-note-sticky"></i> Guardar nota</button>
           <button type="button" class="button secondary" onclick="approvePublication()"><i class="fa-solid fa-thumbs-up"></i> Aprobar</button>
-          <button type="button" class="button secondary" id="generateVoiceButton" onclick="generatePublicationVoice()"><i class="fa-solid fa-microphone-lines"></i> Generar y escuchar</button>
-          <button type="button" class="button secondary" id="generateAudiogramButton" onclick="generatePublicationAudiogram()"><i class="fa-solid fa-wave-square"></i> Descargar MP4</button>
           <button id="savePublicationButton" type="submit" class="button primary"><i class="fa-solid fa-check"></i> Guardar propuesta</button>
         </div>
       </form>

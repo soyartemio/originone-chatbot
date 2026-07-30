@@ -90,52 +90,6 @@ const DEFAULT_PUBLICATIONS = [
     platforms: ['instagram', 'facebook', 'linkedin'],
     status: 'revision'
   },
-  {
-    id: 'pub-podcast-chatbot-resuelve',
-    contentType: 'podcast',
-    title: 'Tu chatbot contesta, pero ¿realmente resuelve?',
-    industry: 'Empresas con atención digital',
-    ownerPain: 'El chatbot entrega respuestas genéricas, pero no entiende el negocio ni convierte conversaciones en acciones.',
-    situation: 'El prospecto explica su problema. El chatbot responde “¡Excelente pregunta!” y le devuelve el menú principal.',
-    humor: 'Muy amable. Muy disponible. Cero útil.',
-    solution: 'Origin One conecta el asistente con conocimiento autorizado, procesos y seguimiento para que pueda orientar, calificar y preparar una cita.',
-    evidence: 'S1GNAL demuestra conversación de voz a voz desde originone.com.mx; las acciones sensibles conservan aprobación humana.',
-    visualBrief: 'Audiograma vertical premium, fondo negro grafito, onda ámbar que reacciona a cada voz, subtítulos blancos grandes y etiqueta discreta Origin One. Sin personajes ni video grabado.',
-    assetProvider: 'origin-one-audiogram',
-    assetStatus: 'listo',
-    creativeAlt: 'Audiograma Origin One con onda de voz ámbar y subtítulos: Tu chatbot contesta, pero ¿realmente resuelve?',
-    voiceoverScript: `Dueño: Mi chatbot ya contesta preguntas.
-Origin One: Perfecto. ¿También entiende qué necesita el prospecto?
-Dueño: Le manda el menú principal.
-Origin One: Entonces contesta, pero no resuelve.
-Dueño: Es muy amable.
-Origin One: Muy amable. Muy disponible. Cero útil.
-Dueño: El problema es que cada cliente explica su caso de una manera distinta.
-Origin One: Justo. Un asistente empresarial debe entender el contexto, no obligar a todos a escoger el mismo botón.
-Dueño: ¿Y cómo evita inventar respuestas?
-Origin One: Trabaja con conocimiento autorizado, hace preguntas concretas y deja trazabilidad del siguiente paso.
-Dueño: ¿También puede preparar una cita?
-Origin One: Sí, cuando el proceso y los permisos lo permiten. La conversación se convierte en seguimiento, no se pierde en una bandeja de entrada.
-Dueño: Entonces no se trata sólo de responder rápido.
-Origin One: Se trata de ayudar a decidir y actuar mejor. Eso es lo que construimos en Origin One.
-Dueño: ¿Y puedo escucharlo?
-Origin One: Sí. Prueba S1GNAL en originone.com.mx.`,
-    voiceConfig: {
-      languageCode: 'es',
-      name: 'Charon',
-      primaryVoice: 'Charon',
-      secondaryVoice: 'Kore',
-      style: 'Programa de radio empresarial mexicano. El Dueño suena curioso y ligeramente escéptico; Origin One suena claro, cálido y seguro. Humor seco, sin tono de comercial.',
-      speakingRate: 1
-    },
-    copies: {
-      instagram: 'Tu chatbot puede estar disponible 24/7 y aun así no resolver nada. La diferencia está en conectarlo con conocimiento, procesos y seguimiento. Escucha el ejemplo y prueba S1GNAL en Origin One.',
-      facebook: '“¡Excelente pregunta!” no es una solución. Un asistente útil entiende el contexto, consulta información autorizada y prepara el siguiente paso. Escucha cómo debería funcionar.',
-      linkedin: 'Disponibilidad no equivale a utilidad. El valor de un asistente empresarial aparece cuando entiende el contexto, opera sobre conocimiento autorizado y convierte una conversación en una acción verificable.'
-    },
-    platforms: ['instagram', 'facebook', 'linkedin'],
-    status: 'revision'
-  }
 ];
 
 function withMissingDefaults(publications) {

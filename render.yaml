@@ -12,8 +12,6 @@ services:
         value: production
       - key: GEMINI_API_KEY
         sync: false
-      - key: GEMINI_TTS_MODEL
-        value: gemini-2.5-flash-preview-tts
       - key: META_VERIFY_TOKEN
         value: originone_secure_token_2026
       - key: META_PAGE_ACCESS_TOKEN
