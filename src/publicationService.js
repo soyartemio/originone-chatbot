@@ -110,8 +110,14 @@ Dueño: Le manda el menú principal.
 Origin One: Entonces contesta, pero no resuelve.
 Dueño: Es muy amable.
 Origin One: Muy amable. Muy disponible. Cero útil.
-Dueño: ¿Qué debería hacer?
-Origin One: Consultar información autorizada, hacer las preguntas correctas y convertir la conversación en seguimiento. Eso es lo que construimos en Origin One.
+Dueño: El problema es que cada cliente explica su caso de una manera distinta.
+Origin One: Justo. Un asistente empresarial debe entender el contexto, no obligar a todos a escoger el mismo botón.
+Dueño: ¿Y cómo evita inventar respuestas?
+Origin One: Trabaja con conocimiento autorizado, hace preguntas concretas y deja trazabilidad del siguiente paso.
+Dueño: ¿También puede preparar una cita?
+Origin One: Sí, cuando el proceso y los permisos lo permiten. La conversación se convierte en seguimiento, no se pierde en una bandeja de entrada.
+Dueño: Entonces no se trata sólo de responder rápido.
+Origin One: Se trata de ayudar a decidir y actuar mejor. Eso es lo que construimos en Origin One.
 Dueño: ¿Y puedo escucharlo?
 Origin One: Sí. Prueba S1GNAL en originone.com.mx.`,
     voiceConfig: {
