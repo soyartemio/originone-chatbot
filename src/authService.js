@@ -179,6 +179,18 @@ function verifySetupToken(username, suppliedToken) {
   return expected.length === supplied.length && crypto.timingSafeEqual(expected, supplied);
 }
 
+function hashActivationToken(token) {
+  return crypto.createHash('sha256').update(String(token || '')).digest('base64url');
+}
+
+function verifyActivationToken(user, suppliedToken) {
+  const activation = user?.activation;
+  if (!activation?.hash || !activation?.expiresAt || new Date(activation.expiresAt).getTime() <= Date.now()) return false;
+  const supplied = Buffer.from(hashActivationToken(suppliedToken));
+  const expected = Buffer.from(String(activation.hash));
+  return supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+}
+
 function validatePassword(password) {
   const value = String(password || '');
   if (value.length < 12 || value.length > 128) return 'La contraseña debe tener entre 12 y 128 caracteres';
@@ -254,8 +266,9 @@ function safeUser(user) {
   return {
     username: user.username,
     displayName: user.displayName,
-    configured: Boolean(user.password && user.passkeys?.length),
-    passkeyCount: user.passkeys?.length || 0
+    configured: Boolean(user.password && (user.passkeys?.length || user.passwordFallbackEnabled)),
+    passkeyCount: user.passkeys?.length || 0,
+    passwordFallbackEnabled: Boolean(user.passwordFallbackEnabled)
   };
 }
 
@@ -316,9 +329,10 @@ function createAuthRouter() {
       enforceRateLimit(req, username);
       const { data } = await readAuthSnapshot();
       const user = data.users[username];
+      const setupAuthorized = verifySetupToken(username, req.body.setupToken) || verifyActivationToken(user, req.body.setupToken);
 
       if (!user.password) {
-        if (!verifySetupToken(username, req.body.setupToken)) {
+        if (!setupAuthorized) {
           recordFailure(req, username);
           return res.status(403).json({ success: false, error: 'Este usuario requiere su enlace privado de activación' });
         }
@@ -330,6 +344,7 @@ function createAuthRouter() {
           if (current.password) throw Object.assign(new Error('La cuenta ya fue activada'), { status: 409 });
           current.password = password;
           current.createdAt = new Date().toISOString();
+          delete current.activation;
         });
       } else if (!await verifyPassword(String(req.body.password || ''), user.password)) {
         recordFailure(req, username);
@@ -342,8 +357,16 @@ function createAuthRouter() {
       const config = getWebAuthnConfig(req);
       const rpPasskeys = latest.passkeys.filter(passkey => getPasskeyRpID(passkey, config) === config.rpID);
 
+      if (req.body.passwordFallback === true) {
+        if (!latest.passwordFallbackEnabled) {
+          return res.status(403).json({ success: false, error: 'El acceso de respaldo no está habilitado para esta cuenta' });
+        }
+        issueSession(res, latest);
+        return res.json({ success: true, next: 'password_fallback', user: safeUser(latest), redirect: '/admin/' });
+      }
+
       if (!rpPasskeys.length) {
-        if (!latest.passkeys.length && !verifySetupToken(username, req.body.setupToken)) {
+        if (!latest.passkeys.length && !setupAuthorized) {
           return res.status(403).json({ success: false, error: 'Abre el enlace privado para terminar la activación' });
         }
         const options = await webAuthn.generateRegistrationOptions({
@@ -367,7 +390,7 @@ function createAuthRouter() {
           rpID: config.rpID,
           origin: config.origin
         });
-        return res.json({ success: true, next: 'register_passkey', options });
+        return res.json({ success: true, next: 'register_passkey', options, fallbackAvailable: Boolean(latest.passwordFallbackEnabled) });
       }
 
       const options = await webAuthn.generateAuthenticationOptions({
@@ -382,7 +405,7 @@ function createAuthRouter() {
         rpID: config.rpID,
         origin: config.origin
       });
-      res.json({ success: true, next: 'authenticate_passkey', options });
+      res.json({ success: true, next: 'authenticate_passkey', options, fallbackAvailable: Boolean(latest.passwordFallbackEnabled) });
     } catch (error) {
       next(error);
     }
@@ -504,6 +527,7 @@ function createAuthRouter() {
 module.exports = {
   createAuthRouter,
   createSetupToken,
+  hashActivationToken,
   getWebAuthnConfig,
   getPasskeyRpID,
   hashPassword,

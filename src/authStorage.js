@@ -28,6 +28,7 @@ function emptyAuthData() {
         username: 'artemio',
         displayName: 'Artemio',
         password: null,
+        passwordFallbackEnabled: false,
         passkeys: [],
         createdAt: null,
         setupCompletedAt: null
@@ -37,6 +38,7 @@ function emptyAuthData() {
         username: 'edgar',
         displayName: 'Edgar',
         password: null,
+        passwordFallbackEnabled: false,
         passkeys: [],
         createdAt: null,
         setupCompletedAt: null
