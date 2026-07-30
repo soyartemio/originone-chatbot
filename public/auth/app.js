@@ -11,6 +11,9 @@ const passwordVisibleInput = document.getElementById('passwordVisible');
 const passwordLabel = document.getElementById('passwordLabel');
 const passwordHelp = document.getElementById('passwordHelp');
 const submitButton = document.getElementById('submitButton');
+const passwordFields = document.getElementById('passwordFields');
+const passkeyLoginButton = document.getElementById('passkeyLoginButton');
+const showPasswordButton = document.getElementById('showPasswordButton');
 const alertBox = document.getElementById('alert');
 const passkeyStep = document.getElementById('passkeyStep');
 const passkeyButton = document.getElementById('passkeyButton');
@@ -19,6 +22,17 @@ const passkeyCopy = document.getElementById('passkeyCopy');
 const passwordFallbackButton = document.getElementById('passwordFallbackButton');
 let pendingCeremony = null;
 let passkeySupported = true;
+let passwordFallbackRequested = false;
+
+function showPasswordEntry({ fallback = false, activation = false } = {}) {
+  passwordFallbackRequested = fallback || !passkeySupported;
+  passwordFields.hidden = false;
+  passkeyLoginButton.hidden = activation || !passkeySupported;
+  showPasswordButton.hidden = true;
+  submitButton.textContent = activation ? 'Crear contraseña y continuar' : 'Continuar con contraseña';
+  submitButton.dataset.label = submitButton.textContent;
+  passwordInput.focus();
+}
 
 function showAlert(message, success = false) {
   alertBox.textContent = message;
@@ -48,8 +62,7 @@ async function loadInitialState() {
   if (!window.PublicKeyCredential || !window.SimpleWebAuthnBrowser) {
     passkeySupported = false;
     showAlert('Este navegador no admite passkeys. Si tu cuenta tiene respaldo autorizado, podrás entrar con contraseña.');
-    submitButton.textContent = 'Continuar con contraseña';
-    submitButton.dataset.label = submitButton.textContent;
+    showPasswordEntry({ fallback: true });
   }
 
   const session = await fetch('/api/auth/session', { credentials: 'same-origin' }).then(response => response.json());
@@ -75,11 +88,35 @@ async function loadInitialState() {
       passwordLabel.textContent = 'Crea una contraseña';
       passwordInput.autocomplete = 'new-password';
       passwordHelp.hidden = false;
-      submitButton.textContent = 'Crear contraseña y continuar';
-      submitButton.dataset.label = submitButton.textContent;
+      showPasswordEntry({ fallback: !passkeySupported, activation: true });
     }
   }
 }
+
+passkeyLoginButton.addEventListener('click', async () => {
+  showAlert('');
+  setBusy(passkeyLoginButton, true, 'Abriendo seguridad…');
+  try {
+    const data = await postJson('/api/auth/passkey/authenticate/options', { username: usernameInput.value });
+    pendingCeremony = data;
+    form.hidden = true;
+    passkeyStep.hidden = false;
+    document.getElementById('stepLabel').textContent = 'ACCESO CON PASSKEY';
+    document.getElementById('formTitle').textContent = 'Confirma que eres tú';
+    document.getElementById('formSubtitle').textContent = 'Usa la huella, rostro o PIN protegido por tu dispositivo.';
+    passkeyTitle.textContent = 'Usar passkey';
+    passkeyCopy.textContent = 'La passkey es el acceso principal: rápido, seguro y sin escribir contraseña.';
+    passkeyButton.textContent = 'Verificar passkey';
+    passkeyButton.dataset.label = passkeyButton.textContent;
+    passwordFallbackButton.hidden = !data.fallbackAvailable;
+  } catch (error) {
+    showAlert(error.message);
+  } finally {
+    setBusy(passkeyLoginButton, false, '');
+  }
+});
+
+showPasswordButton.addEventListener('click', () => showPasswordEntry({ fallback: true }));
 
 form.addEventListener('submit', async event => {
   event.preventDefault();
@@ -90,7 +127,7 @@ form.addEventListener('submit', async event => {
       username: usernameInput.value,
       password: passwordInput.value,
       setupToken,
-      passwordFallback: !passkeySupported
+      passwordFallback: passwordFallbackRequested
     });
     if (data.next === 'password_fallback') {
       showAlert('Acceso verificado. Abriendo el CRM…', true);
@@ -143,24 +180,10 @@ passkeyButton.addEventListener('click', async () => {
   }
 });
 
-passwordFallbackButton.addEventListener('click', async () => {
-  showAlert('');
-  setBusy(passwordFallbackButton, true, 'Verificando…');
-  try {
-    const data = await postJson('/api/auth/password', {
-      username: usernameInput.value,
-      password: passwordInput.value,
-      setupToken,
-      passwordFallback: true
-    });
-    if (data.next !== 'password_fallback') throw new Error('No fue posible usar el acceso de respaldo');
-    showAlert('Acceso verificado. Abriendo el CRM…', true);
-    window.location.replace(safeNext);
-  } catch (error) {
-    showAlert(error.message);
-  } finally {
-    setBusy(passwordFallbackButton, false, '');
-  }
+passwordFallbackButton.addEventListener('click', () => {
+  passkeyStep.hidden = true;
+  form.hidden = false;
+  showPasswordEntry({ fallback: true });
 });
 
 document.getElementById('backButton').addEventListener('click', () => window.location.reload());
