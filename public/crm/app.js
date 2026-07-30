@@ -509,7 +509,7 @@ function renderPublications() {
     const visualHeadline = item.visualHeadline || item.title;
     const visualCaption = item.visualCaption || item.situation;
     const story = item.story || item.narrative?.premise || item.situation;
-    const character = item.narrative?.character ? `${item.narrative.character}${item.narrative?.role ? ` · ${item.narrative.role}` : ''}` : 'Caso ficticio';
+    const character = item.narrative?.character ? `${item.narrative.character}${item.narrative?.role ? ` · ${item.narrative.role}` : ''}` : 'Contexto operativo';
     const image = item.creativeUrl && item.assetStatus !== 'rechazado'
       ? `<img src="${escapeHtml(item.creativeUrl)}" alt="${escapeHtml(item.creativeAlt)}" loading="lazy"><div class="publication-visual-overlay"><span>${escapeHtml(item.industry)}</span><h3>${escapeHtml(visualHeadline)}</h3><p>${escapeHtml(visualCaption)}</p></div>`
       : `<div class="publication-visual-placeholder"><i class="fa-solid fa-image"></i><span>Visual pendiente de aprobación</span><small>La propuesta se mostrará aquí en 9:16 con texto integrado después de aprobar el asset generado.</small></div>`;
@@ -522,7 +522,7 @@ function renderPublications() {
           <div class="publication-card-top"><span class="publication-industry">${escapeHtml(item.industry)}</span><span class="publication-status status-${escapeHtml(item.status)}">${escapeHtml(publicationStatusLabel(item.status))}</span></div>
           <h3>${escapeHtml(item.title)}</h3>
           <section class="publication-story">
-            <span>CASO FICTICIO · ${escapeHtml(character)}</span>
+            <span>HISTORIA PROPUESTA · ${escapeHtml(character)}</span>
             <p>${escapeHtml(story)}</p>
           </section>
           <section class="publication-solution">
