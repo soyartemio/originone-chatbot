@@ -3,7 +3,19 @@ const { readAnalyticsSnapshot, writeAnalyticsSnapshot } = require('./analyticsSt
 const { getAppointments } = require('./agendaService');
 const { getPublications } = require('./publicationService');
 
-const ALLOWED_EVENTS = new Set(['page_view', 'cta_diagnostic', 'project_view', 'signal_open', 'signal_start', 'signal_appointment_proposed']);
+const ALLOWED_EVENTS = new Set([
+  'page_view',
+  'project_view',
+  'signal_open',
+  'signal_start',
+  'signal_appointment_proposed',
+  'cta_diagnostic',
+  'cta_signal_demo',
+  'cta_closure_diagnostic',
+  'cta_clinic_mapping',
+  'lead_qualified',
+  'appointment_confirmed'
+]);
 let queue = Promise.resolve();
 
 function clean(value, limit = 300) {
@@ -18,7 +30,10 @@ async function recordEvent(input) {
     sessionId: clean(input.sessionId, 100),
     path: clean(input.path || '/', 300),
     source: clean(input.source || 'direct', 80),
+    medium: clean(input.medium || 'none', 80),
     campaign: clean(input.campaign, 120),
+    content: clean(input.content, 160),
+    publicationId: clean(input.publicationId, 120),
     referrer: clean(input.referrer, 500),
     createdAt: new Date().toISOString()
   };
@@ -55,15 +70,27 @@ async function getGrowthSummary(days = 30) {
   events.filter(event => event.name === 'page_view').forEach(event => {
     sources[event.source || 'direct'] = (sources[event.source || 'direct'] || 0) + 1;
   });
+  const campaigns = {};
+  events.forEach(event => {
+    const key = [event.campaign, event.content || event.publicationId].filter(Boolean).join(' · ') || 'sin_campaña';
+    if (!campaigns[key]) campaigns[key] = { pageViews: 0, ctaClicks: 0, signalStarts: 0, appointmentProposals: 0, qualifiedLeads: 0 };
+    if (event.name === 'page_view') campaigns[key].pageViews += 1;
+    if (event.name.startsWith('cta_')) campaigns[key].ctaClicks += 1;
+    if (event.name === 'signal_start') campaigns[key].signalStarts += 1;
+    if (event.name === 'signal_appointment_proposed') campaigns[key].appointmentProposals += 1;
+    if (event.name === 'lead_qualified') campaigns[key].qualifiedLeads += 1;
+  });
+  const diagnosticClicks = count('cta_diagnostic') + count('cta_closure_diagnostic') + count('cta_clinic_mapping');
   return {
     periodDays,
     web: {
       visitors: sessions,
       pageViews: count('page_view'),
-      diagnosticClicks: count('cta_diagnostic'),
+      diagnosticClicks,
       signalOpens: count('signal_open'),
       signalStarts: count('signal_start'),
       appointmentProposals: count('signal_appointment_proposed'),
+      qualifiedLeads: count('lead_qualified'),
       visitorToConversationRate: sessions ? Number((count('signal_start') / sessions * 100).toFixed(1)) : 0,
       sources
     },
@@ -71,6 +98,7 @@ async function getGrowthSummary(days = 30) {
       meta: { connected: Boolean(process.env.META_PAGE_ACCESS_TOKEN && process.env.INSTAGRAM_ACCOUNT_ID) },
       linkedin: { connected: Boolean(process.env.LINKEDIN_ACCESS_TOKEN && process.env.LINKEDIN_ORGANIZATION_ID) }
     },
+    attribution: { campaigns },
     content: {
       total: publications.length,
       approved: publications.filter(item => ['aprobada', 'programada'].includes(item.status)).length,
