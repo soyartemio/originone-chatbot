@@ -14,6 +14,7 @@ const ALLOWED_EVENTS = new Set([
   'cta_closure_diagnostic',
   'cta_clinic_mapping',
   'lead_qualified',
+  'proposal_created',
   'appointment_confirmed'
 ]);
 let queue = Promise.resolve();
@@ -73,12 +74,13 @@ async function getGrowthSummary(days = 30) {
   const campaigns = {};
   events.forEach(event => {
     const key = [event.campaign, event.content || event.publicationId].filter(Boolean).join(' · ') || 'sin_campaña';
-    if (!campaigns[key]) campaigns[key] = { pageViews: 0, ctaClicks: 0, signalStarts: 0, appointmentProposals: 0, qualifiedLeads: 0 };
+    if (!campaigns[key]) campaigns[key] = { pageViews: 0, ctaClicks: 0, signalStarts: 0, appointmentProposals: 0, qualifiedLeads: 0, proposals: 0 };
     if (event.name === 'page_view') campaigns[key].pageViews += 1;
     if (event.name.startsWith('cta_')) campaigns[key].ctaClicks += 1;
     if (event.name === 'signal_start') campaigns[key].signalStarts += 1;
     if (event.name === 'signal_appointment_proposed') campaigns[key].appointmentProposals += 1;
     if (event.name === 'lead_qualified') campaigns[key].qualifiedLeads += 1;
+    if (event.name === 'proposal_created') campaigns[key].proposals += 1;
   });
   const diagnosticClicks = count('cta_diagnostic') + count('cta_closure_diagnostic') + count('cta_clinic_mapping');
   return {
@@ -91,6 +93,7 @@ async function getGrowthSummary(days = 30) {
       signalStarts: count('signal_start'),
       appointmentProposals: count('signal_appointment_proposed'),
       qualifiedLeads: count('lead_qualified'),
+      proposals: count('proposal_created'),
       visitorToConversationRate: sessions ? Number((count('signal_start') / sessions * 100).toFixed(1)) : 0,
       sources
     },

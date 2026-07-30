@@ -65,6 +65,15 @@ async function scheduleAppointment(params) {
   }
 
   const requiresReview = Boolean(params.requires_review);
+  const attribution = params.attribution && typeof params.attribution === 'object'
+    ? {
+        source: String(params.attribution.source || 'direct').trim().slice(0, 80),
+        medium: String(params.attribution.medium || 'organic').trim().slice(0, 80),
+        campaign: String(params.attribution.campaign || '').trim().slice(0, 120),
+        content: String(params.attribution.content || '').trim().slice(0, 160),
+        publicationId: String(params.attribution.publicationId || '').trim().slice(0, 120)
+      }
+    : null;
   const newAppointment = {
     id: 'CITA-' + Date.now().toString(36).toUpperCase(),
     nombre_cliente: params.nombre_cliente || 'No especificado',
@@ -78,6 +87,7 @@ async function scheduleAppointment(params) {
     etapa: requiresReview ? 'Cita por revisar' : 'Cita Confirmada',
     etapa_fuente: requiresReview ? 'signal_propuesta' : 'agenda_confirmada',
     appointment_status: requiresReview ? 'proposed' : 'confirmed',
+    ...(attribution ? { attribution } : {}),
     notas_internas: [],
     creado_el: new Date().toISOString(),
     estatus: requiresReview ? 'Propuesta por S1GNAL · requiere confirmación humana' : 'Confirmada (Notificada por WhatsApp)'

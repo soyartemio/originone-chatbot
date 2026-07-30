@@ -37,11 +37,14 @@ test('agrupa llamados de diagnóstico por campaña y conserva su variante', asyn
   await recordEvent({ name: 'page_view', sessionId: 'session-b', source: 'instagram', medium: 'organic_social', campaign: 'cierre_mensual', content: 'pub-seguros-reporte', path: '/diagnostico-cierre.html' });
   await recordEvent({ name: 'cta_closure_diagnostic', sessionId: 'session-b', source: 'instagram', medium: 'organic_social', campaign: 'cierre_mensual', content: 'pub-seguros-reporte', path: '/diagnostico-cierre.html' });
   await recordEvent({ name: 'lead_qualified', sessionId: 'session-b', source: 'instagram', medium: 'organic_social', campaign: 'cierre_mensual', content: 'pub-seguros-reporte', path: '/diagnostico-cierre.html' });
+  await recordEvent({ name: 'proposal_created', sessionId: 'session-b', source: 'instagram', medium: 'organic_social', campaign: 'cierre_mensual', content: 'pub-seguros-reporte', path: '/crm' });
   const summary = await getGrowthSummary(30);
   assert.equal(summary.web.diagnosticClicks, 1);
   assert.equal(summary.attribution.campaigns['cierre_mensual · pub-seguros-reporte'].pageViews, 1);
   assert.equal(summary.attribution.campaigns['cierre_mensual · pub-seguros-reporte'].ctaClicks, 1);
   assert.equal(summary.attribution.campaigns['cierre_mensual · pub-seguros-reporte'].qualifiedLeads, 1);
+  assert.equal(summary.web.proposals, 1);
+  assert.equal(summary.attribution.campaigns['cierre_mensual · pub-seguros-reporte'].proposals, 1);
 });
 
 test('S1GNAL propone una cita y una persona la confirma', async () => {

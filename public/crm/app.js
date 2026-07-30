@@ -421,7 +421,9 @@ async function loadGrowthModule() {
     ['Visitas', data.web.pageViews],
     ['Abren S1GNAL', data.web.signalOpens],
     ['Inician conversación', data.web.signalStarts],
-    ['Proponen cita', data.web.appointmentProposals]
+    ['Proponen cita', data.web.appointmentProposals],
+    ['Leads calificados', data.web.qualifiedLeads],
+    ['Propuestas', data.web.proposals]
   ];
   const maximum = Math.max(...steps.map(([, value]) => value), 1);
   document.getElementById('growthFunnelBars').innerHTML = steps.map(([label, value]) => `
@@ -438,8 +440,8 @@ async function loadGrowthModule() {
     .filter(([name]) => name !== 'sin_campaña')
     .sort(([, a], [, b]) => (b.qualifiedLeads - a.qualifiedLeads) || (b.appointmentProposals - a.appointmentProposals) || (b.signalStarts - a.signalStarts) || (b.ctaClicks - a.ctaClicks) || (b.pageViews - a.pageViews));
   document.getElementById('growthCampaignAttribution').innerHTML = campaigns.length ? `
-    <div class="growth-campaign-head"><span>Campaña</span><span>Visitas</span><span>CTA</span><span>S1GNAL</span><span>Citas</span><span>Calificados</span></div>
-    ${campaigns.slice(0, 8).map(([name, metrics]) => `<div class="growth-campaign-row"><strong>${escapeHtml(name)}</strong><span>${metrics.pageViews}</span><span>${metrics.ctaClicks}</span><span>${metrics.signalStarts}</span><span>${metrics.appointmentProposals}</span><span>${metrics.qualifiedLeads}</span></div>`).join('')}
+    <div class="growth-campaign-head"><span>Campaña</span><span>Visitas</span><span>CTA</span><span>S1GNAL</span><span>Citas</span><span>Calificados</span><span>Propuestas</span></div>
+    ${campaigns.slice(0, 8).map(([name, metrics]) => `<div class="growth-campaign-row"><strong>${escapeHtml(name)}</strong><span>${metrics.pageViews}</span><span>${metrics.ctaClicks}</span><span>${metrics.signalStarts}</span><span>${metrics.appointmentProposals}</span><span>${metrics.qualifiedLeads}</span><span>${metrics.proposals}</span></div>`).join('')}
   ` : '<div class="growth-empty">Aún no hay campañas con UTM. Las primeras visitas aparecerán aquí al abrir las nuevas landings.</div>';
   const list = document.getElementById('appointmentReviewList');
   list.innerHTML = data.appointments.length ? data.appointments.map(item => `

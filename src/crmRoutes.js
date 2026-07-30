@@ -2,6 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { getAppointments, updateLead, addLeadNote, deleteLead, reviewAppointment } = require('./agendaService');
 const { syncInstagramInteractions } = require('./instagramSyncService');
+const { recordEvent } = require('./growthAnalyticsService');
+
+function attributionEventForStage(previous, updated) {
+  if ((previous?.etapa || '').toLowerCase() === (updated?.etapa || '').toLowerCase()) return null;
+  const stage = String(updated?.etapa || '').toLowerCase();
+  if (stage.includes('propuesta')) return 'proposal_created';
+  if (stage.includes('diag')) return 'lead_qualified';
+  return null;
+}
 
 router.post('/api/crm/sync/instagram', async (req, res) => {
   try {
@@ -124,9 +133,23 @@ router.get('/api/crm/kpis', async (req, res) => {
 router.patch('/api/crm/leads/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const previous = (await getAppointments()).find(lead => lead.id === id);
     const updated = await updateLead(id, req.body);
     if (!updated) {
       return res.status(404).json({ success: false, error: 'Lead no encontrado' });
+    }
+    const eventName = attributionEventForStage(previous, updated);
+    if (eventName && updated.attribution) {
+      try {
+        await recordEvent({
+          name: eventName,
+          sessionId: `lead:${updated.id}`,
+          path: '/crm',
+          ...updated.attribution
+        });
+      } catch (error) {
+        console.error('[CRMRoutes] No fue posible registrar atribución del lead:', error.message);
+      }
     }
     res.json({ success: true, lead: updated });
   } catch (error) {
