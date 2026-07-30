@@ -181,6 +181,7 @@ async function getPublications() {
 
 async function createPublication(input, username) {
   if (!String(input.title || '').trim()) throw new Error('El título es obligatorio');
+  if (!String(input.creativeUrl || '').trim()) throw new Error('La propuesta requiere una imagen generada antes de guardarse');
   return mutate(items => {
     const publication = normalizePublication({ ...input, createdBy: username });
     items.unshift(publication);
@@ -192,6 +193,9 @@ async function updatePublication(id, changes) {
   return mutate(items => {
     const index = items.findIndex(item => item.id === id);
     if (index < 0) return null;
+    if (!String(changes.creativeUrl ?? items[index].creativeUrl ?? '').trim()) {
+      throw new Error('La propuesta requiere una imagen generada antes de guardarse');
+    }
     items[index] = normalizePublication(changes, items[index]);
     return items[index];
   });
@@ -220,6 +224,9 @@ async function setPublicationApproval(id, decision, username, displayName, note)
   return mutate(items => {
     const publication = items.find(item => item.id === id);
     if (!publication) return null;
+    if (decision === 'approved' && !String(publication.creativeUrl || '').trim()) {
+      throw new Error('No se puede aprobar sin una imagen generada');
+    }
     publication.approvals[username] = { decision, displayName, decidedAt: new Date().toISOString() };
     if (note) publication.notes.unshift({
       id: crypto.randomUUID(), text: String(note).trim().slice(0, 3000), username,
