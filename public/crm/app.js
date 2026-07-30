@@ -508,23 +508,32 @@ function renderPublications() {
     const platforms = (item.platforms || []).map(platform => `<span>${escapeHtml(platform)}</span>`).join('');
     const visualHeadline = item.visualHeadline || item.title;
     const visualCaption = item.visualCaption || item.situation;
+    const story = item.story || item.narrative?.premise || item.situation;
+    const character = item.narrative?.character ? `${item.narrative.character}${item.narrative?.role ? ` · ${item.narrative.role}` : ''}` : 'Caso ficticio';
     const image = item.creativeUrl && item.assetStatus !== 'rechazado'
       ? `<img src="${escapeHtml(item.creativeUrl)}" alt="${escapeHtml(item.creativeAlt)}" loading="lazy"><div class="publication-visual-overlay"><span>${escapeHtml(item.industry)}</span><h3>${escapeHtml(visualHeadline)}</h3><p>${escapeHtml(visualCaption)}</p></div>`
       : `<div class="publication-visual-placeholder"><i class="fa-solid fa-image"></i><span>Visual pendiente de aprobación</span><small>La propuesta se mostrará aquí en 9:16 con texto integrado después de aprobar el asset generado.</small></div>`;
     const nextWindow = publicationNextSuggestedWindow(item);
     const schedule = new Date(nextWindow.localDateTime).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
     return `
-      <button class="publication-card panel" type="button" onclick="openPublicationModal('${escapeHtml(item.id)}')">
+      <article class="publication-card panel">
         <div class="publication-card-visual">${image}</div>
         <div class="publication-card-copy">
           <div class="publication-card-top"><span class="publication-industry">${escapeHtml(item.industry)}</span><span class="publication-status status-${escapeHtml(item.status)}">${escapeHtml(publicationStatusLabel(item.status))}</span></div>
           <h3>${escapeHtml(item.title)}</h3>
-          <p>${escapeHtml(item.situation)}</p>
+          <section class="publication-story">
+            <span>CASO FICTICIO · ${escapeHtml(character)}</span>
+            <p>${escapeHtml(story)}</p>
+          </section>
+          <section class="publication-solution">
+            <span>CÓMO PUEDE AYUDAR ORIGIN ONE</span>
+            <p>${escapeHtml(item.solution)}</p>
+          </section>
           <div class="publication-schedule"><i class="fa-regular fa-clock"></i><span>Ventana sugerida · no programada: ${escapeHtml(nextWindow.platform)} · ${escapeHtml(schedule)}</span></div>
           <div class="publication-platforms">${platforms}</div>
-          <div class="publication-card-footer"><span>${artemio ? '●' : '○'} Artemio</span><span>${edgar ? '●' : '○'} Edgar</span><span>${item.notes?.length || 0} notas</span></div>
+          <div class="publication-card-footer"><span>${artemio ? '●' : '○'} Artemio</span><span>${edgar ? '●' : '○'} Edgar</span><span>${item.notes?.length || 0} notas</span><button type="button" class="button secondary publication-review-button" onclick="openPublicationModal('${escapeHtml(item.id)}')">Revisar propuesta <i class="fa-solid fa-arrow-right"></i></button></div>
         </div>
-      </button>`;
+      </article>`;
   }).join('');
 }
 
