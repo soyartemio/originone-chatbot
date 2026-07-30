@@ -15,14 +15,15 @@ const DEFAULT_SCHEDULE = {
   linkedin: { weekday: 3, hour: 16, minute: 0, label: 'Miércoles · 4:00 p.m.' }
 };
 
-function recommendedSchedule(existing = {}) {
+function recommendedSchedule(existing = {}, campaignOrder = 0) {
   return Object.fromEntries(Object.entries(DEFAULT_SCHEDULE).map(([platform, window]) => [
     platform,
     {
       localDateTime: String(existing?.[platform]?.localDateTime || ''),
       timezone: 'America/Monterrey',
       recommendation: window.label,
-      basis: 'benchmark_2026_hypothesis'
+      basis: 'benchmark_2026_hypothesis',
+      campaignOrder: Number.isInteger(campaignOrder) ? campaignOrder : 0
     }
   ]));
 }
@@ -30,6 +31,7 @@ function recommendedSchedule(existing = {}) {
 const DEFAULT_PUBLICATIONS = [
   {
     id: 'pub-signal-voz-a-voz',
+    campaignOrder: 0,
     title: 'El chatbot que no te obliga a jugar “presiona 1”',
     industry: 'Servicios y ventas B2B',
     ownerPain: 'El dueño pierde prospectos porque los formularios y menús se sienten impersonales.',
@@ -43,6 +45,8 @@ const DEFAULT_PUBLICATIONS = [
     assetUrl: 'https://labs.google.com/pomelli/campaigns/biYih_QX4BqcCvLQSi_OwI',
     creativeUrl: '/crm/assets/pub-signal-voz-a-voz-candidate-vertical.png',
     creativeAlt: 'Dueño de negocio frente a un laberinto de botones, conectado por una onda de voz ámbar a una conversación clara.',
+    visualHeadline: 'Tu cliente no quiere “presionar 1”.',
+    visualCaption: 'Quiere explicar qué necesita.',
     narrative: {
       fictional: true,
       character: 'José',
@@ -60,6 +64,7 @@ const DEFAULT_PUBLICATIONS = [
   },
   {
     id: 'pub-seguros-reporte',
+    campaignOrder: 1,
     title: 'El cierre mensual no debería ser una búsqueda del tesoro',
     industry: 'Seguros',
     ownerPain: 'Información dispersa entre hojas, correos y mensajes retrasa decisiones y reportes.',
@@ -72,23 +77,26 @@ const DEFAULT_PUBLICATIONS = [
     assetStatus: 'en_revision_visual',
     creativeUrl: '/crm/assets/pub-seguros-reporte-candidate-vertical.png',
     creativeAlt: 'Dueño de aseguradora rodeado de reportes dispersos, conectado a un tablero ámbar.',
+    visualHeadline: 'El “archivo bueno” no debería ser un misterio.',
+    visualCaption: 'Cerrar el mes no debería ser una búsqueda.',
     narrative: {
       fictional: true,
-      character: 'Lucía',
-      role: 'directora de una agencia de seguros',
+      character: 'Luis',
+      role: 'director de una agencia de seguros',
       premise: 'Cada cierre mensual depende de reunir versiones de hojas, mensajes y reportes que viven en lugares distintos.'
     },
     voiceoverScript: 'Si tu cierre mensual depende de tres Excels, dos chats y de la persona que sabe dónde quedó el dato, no tienes un reporte: tienes una búsqueda del tesoro. Origin One integra la información y la convierte en un tablero claro y automático.',
     copies: {
-      instagram: 'Lucía llega al cierre mensual con tres Excels, dos grupos de WhatsApp y la pregunta que nadie quiere escuchar: “¿cuál es la versión buena?”. Su equipo trabaja; el problema es que la información vive separada. Origin One puede integrar fuentes y diseñar un tablero operativo para que el cierre deje de ser una búsqueda del tesoro.\n\nCaso ficticio basado en una situación común.',
-      facebook: 'Lucía dirige una agencia de seguros. Al cierre, una persona tiene las pólizas, otra los cobros y alguien guarda “el Excel bueno”. El KPI termina siendo encontrar la versión final_final_ahora_sí.xlsx. Origin One puede conectar esas fuentes y convertirlas en una lectura operativa clara para dirección.\n\nCaso ficticio basado en una situación común.',
-      linkedin: 'Lucía dirige una agencia de seguros y cada cierre depende de consolidar hojas, chats y reportes manualmente. El costo no es sólo tiempo: la dirección recibe una lectura tardía del negocio. Origin One puede integrar fuentes y construir un tablero hecho alrededor de los indicadores que sí usa el equipo. Menos cacería de archivos; más capacidad para decidir.\n\nCaso ficticio basado en una situación común.'
+      instagram: 'Luis llega al cierre mensual con tres Excels, dos grupos de WhatsApp y la pregunta que nadie quiere escuchar: “¿cuál es la versión buena?”. Su equipo trabaja; el problema es que la información vive separada. Origin One puede integrar fuentes y diseñar un tablero operativo para que el cierre deje de ser una búsqueda del tesoro.\n\nCaso ficticio basado en una situación común.',
+      facebook: 'Luis dirige una agencia de seguros. Al cierre, una persona tiene las pólizas, otra los cobros y alguien guarda “el Excel bueno”. El KPI termina siendo encontrar la versión final_final_ahora_sí.xlsx. Origin One puede conectar esas fuentes y convertirlas en una lectura operativa clara para dirección.\n\nCaso ficticio basado en una situación común.',
+      linkedin: 'Luis dirige una agencia de seguros y cada cierre depende de consolidar hojas, chats y reportes manualmente. El costo no es sólo tiempo: la dirección recibe una lectura tardía del negocio. Origin One puede integrar fuentes y construir un tablero hecho alrededor de los indicadores que sí usa el equipo. Menos cacería de archivos; más capacidad para decidir.\n\nCaso ficticio basado en una situación común.'
     },
     platforms: ['instagram', 'facebook', 'linkedin'],
     status: 'revision'
   },
   {
     id: 'pub-dental-sistema',
+    campaignOrder: 2,
     title: 'Tu clínica creció; tu sistema sigue pidiendo favores',
     industry: 'Clínicas dentales',
     ownerPain: 'Agenda, expedientes, cobros e inventario viven en herramientas separadas.',
@@ -101,6 +109,8 @@ const DEFAULT_PUBLICATIONS = [
     assetStatus: 'en_revision_visual',
     creativeUrl: '/crm/assets/pub-dental-sistema-candidate-vertical.png',
     creativeAlt: 'Equipo de clínica dental conectado por una línea ámbar en una sola operación.',
+    visualHeadline: 'Tu clínica no debería operar a base de favores.',
+    visualCaption: 'Agenda, expediente y cobro: una sola operación.',
     narrative: {
       fictional: true,
       character: 'Mariana',
@@ -135,6 +145,7 @@ function normalizePublication(input, existing = {}) {
     ...existing,
     id: existing.id || input.id || `pub-${crypto.randomUUID()}`,
     contentType: String(input.contentType ?? existing.contentType ?? 'social').slice(0, 40),
+    campaignOrder: Math.max(0, Math.floor(Number(input.campaignOrder ?? existing.campaignOrder ?? 0) || 0)),
     title: String(input.title ?? existing.title ?? '').trim().slice(0, 300),
     industry: String(input.industry ?? existing.industry ?? 'Negocios').trim().slice(0, 120),
     ownerPain: String(input.ownerPain ?? existing.ownerPain ?? '').trim().slice(0, 1200),
@@ -148,6 +159,8 @@ function normalizePublication(input, existing = {}) {
     assetUrl: String(input.assetUrl ?? existing.assetUrl ?? '').trim().slice(0, 1000),
     creativeUrl: String(input.creativeUrl ?? existing.creativeUrl ?? '').trim().slice(0, 1000),
     creativeAlt: String(input.creativeAlt ?? existing.creativeAlt ?? input.title ?? existing.title ?? 'Visual de la publicación').trim().slice(0, 500),
+    visualHeadline: String(input.visualHeadline ?? existing.visualHeadline ?? input.title ?? existing.title ?? '').trim().slice(0, 180),
+    visualCaption: String(input.visualCaption ?? existing.visualCaption ?? input.situation ?? existing.situation ?? '').trim().slice(0, 180),
     narrative: {
       fictional: input.narrative?.fictional ?? existing.narrative?.fictional ?? false,
       character: String(input.narrative?.character ?? existing.narrative?.character ?? '').trim().slice(0, 100),
@@ -172,7 +185,7 @@ function normalizePublication(input, existing = {}) {
       linkedin: String(input.copies?.linkedin ?? existing.copies?.linkedin ?? '').trim().slice(0, 5000)
     },
     platforms: Array.from(new Set((input.platforms ?? existing.platforms ?? []).filter(value => ['instagram', 'facebook', 'linkedin'].includes(value)))),
-    schedule: recommendedSchedule(input.schedule ?? existing.schedule),
+    schedule: recommendedSchedule(input.schedule ?? existing.schedule, input.campaignOrder ?? existing.campaignOrder ?? 0),
     cta: {
       type: String(input.cta?.type ?? existing.cta?.type ?? 'website').slice(0, 40),
       url: String(input.cta?.url ?? existing.cta?.url ?? 'https://originone.com.mx/').trim().slice(0, 1000)

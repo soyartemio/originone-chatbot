@@ -463,15 +463,28 @@ function publicationStatusLabel(status) {
   })[status] || status;
 }
 
-function nextRecommendedLocalDateTime(weekday, hour, minute = 0) {
+function nextRecommendedLocalDateTime(weekday, hour, minute = 0, campaignOrder = 0) {
   const candidate = new Date();
   candidate.setSeconds(0, 0);
   const daysAhead = (weekday - candidate.getDay() + 7) % 7;
   candidate.setDate(candidate.getDate() + daysAhead);
   candidate.setHours(hour, minute, 0, 0);
   if (candidate <= new Date()) candidate.setDate(candidate.getDate() + 7);
+  candidate.setDate(candidate.getDate() + Math.max(0, Number(campaignOrder) || 0) * 7);
   const local = new Date(candidate.getTime() - candidate.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 16);
+}
+
+function publicationNextSuggestedWindow(item) {
+  const order = Math.max(0, Number(item.campaignOrder) || 0);
+  const fallbacks = {
+    linkedin: nextRecommendedLocalDateTime(3, 16, 0, order),
+    facebook: nextRecommendedLocalDateTime(4, 9, 0, order),
+    instagram: nextRecommendedLocalDateTime(4, 18, 30, order)
+  };
+  return Object.entries(fallbacks)
+    .map(([platform, fallback]) => ({ platform, localDateTime: item.schedule?.[platform]?.localDateTime || fallback }))
+    .sort((a, b) => new Date(a.localDateTime) - new Date(b.localDateTime))[0];
 }
 
 function filterPublications(filter, button) {
@@ -493,12 +506,13 @@ function renderPublications() {
     const artemio = item.approvals?.artemio?.decision === 'approved';
     const edgar = item.approvals?.edgar?.decision === 'approved';
     const platforms = (item.platforms || []).map(platform => `<span>${escapeHtml(platform)}</span>`).join('');
-    const overlayCopy = String(item.copies?.instagram || item.situation || '').slice(0, 150);
+    const visualHeadline = item.visualHeadline || item.title;
+    const visualCaption = item.visualCaption || item.situation;
     const image = item.creativeUrl && item.assetStatus !== 'rechazado'
-      ? `<img src="${escapeHtml(item.creativeUrl)}" alt="${escapeHtml(item.creativeAlt)}" loading="lazy"><div class="publication-visual-overlay"><span>${escapeHtml(item.industry)}</span><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(overlayCopy)}</p></div>`
+      ? `<img src="${escapeHtml(item.creativeUrl)}" alt="${escapeHtml(item.creativeAlt)}" loading="lazy"><div class="publication-visual-overlay"><span>${escapeHtml(item.industry)}</span><h3>${escapeHtml(visualHeadline)}</h3><p>${escapeHtml(visualCaption)}</p></div>`
       : `<div class="publication-visual-placeholder"><i class="fa-solid fa-image"></i><span>Visual pendiente de aprobación</span><small>La propuesta se mostrará aquí en 9:16 con texto integrado después de aprobar el asset generado.</small></div>`;
-    const scheduleValue = item.schedule?.linkedin?.localDateTime || nextRecommendedLocalDateTime(3, 16);
-    const schedule = new Date(scheduleValue).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
+    const nextWindow = publicationNextSuggestedWindow(item);
+    const schedule = new Date(nextWindow.localDateTime).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
     return `
       <button class="publication-card panel" type="button" onclick="openPublicationModal('${escapeHtml(item.id)}')">
         <div class="publication-card-visual">${image}</div>
@@ -506,7 +520,7 @@ function renderPublications() {
           <div class="publication-card-top"><span class="publication-industry">${escapeHtml(item.industry)}</span><span class="publication-status status-${escapeHtml(item.status)}">${escapeHtml(publicationStatusLabel(item.status))}</span></div>
           <h3>${escapeHtml(item.title)}</h3>
           <p>${escapeHtml(item.situation)}</p>
-          <div class="publication-schedule"><i class="fa-regular fa-clock"></i><span>Próxima ventana: ${escapeHtml(schedule)}</span></div>
+          <div class="publication-schedule"><i class="fa-regular fa-clock"></i><span>Ventana sugerida · no programada: ${escapeHtml(nextWindow.platform)} · ${escapeHtml(schedule)}</span></div>
           <div class="publication-platforms">${platforms}</div>
           <div class="publication-card-footer"><span>${artemio ? '●' : '○'} Artemio</span><span>${edgar ? '●' : '○'} Edgar</span><span>${item.notes?.length || 0} notas</span></div>
         </div>
@@ -535,9 +549,10 @@ function openPublicationModal(id = null) {
   document.getElementById('publicationAssetUrlInput').value = publication?.assetUrl || '';
   document.getElementById('publicationCreativeUrlInput').value = publication?.creativeUrl || '';
   document.getElementById('publicationCreativeAltInput').value = publication?.creativeAlt || '';
-  document.getElementById('publicationInstagramScheduleInput').value = publication?.schedule?.instagram?.localDateTime || nextRecommendedLocalDateTime(4, 18, 30);
-  document.getElementById('publicationFacebookScheduleInput').value = publication?.schedule?.facebook?.localDateTime || nextRecommendedLocalDateTime(4, 9);
-  document.getElementById('publicationLinkedinScheduleInput').value = publication?.schedule?.linkedin?.localDateTime || nextRecommendedLocalDateTime(3, 16);
+  const campaignOrder = publication?.campaignOrder || 0;
+  document.getElementById('publicationInstagramScheduleInput').value = publication?.schedule?.instagram?.localDateTime || nextRecommendedLocalDateTime(4, 18, 30, campaignOrder);
+  document.getElementById('publicationFacebookScheduleInput').value = publication?.schedule?.facebook?.localDateTime || nextRecommendedLocalDateTime(4, 9, campaignOrder);
+  document.getElementById('publicationLinkedinScheduleInput').value = publication?.schedule?.linkedin?.localDateTime || nextRecommendedLocalDateTime(3, 16, 0, campaignOrder);
   document.getElementById('publicationCtaUrlInput').value = publication?.cta?.url || 'https://originone.com.mx/';
   updatePublicationCreativePreview();
   document.getElementById('publicationInstagramInput').value = publication?.copies?.instagram || '';
