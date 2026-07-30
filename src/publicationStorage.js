@@ -66,6 +66,15 @@ function writeLocal(data) {
 }
 
 async function readPublicationsSnapshot() {
+  // Production uses the signed gateway as the source of truth. Direct R2
+  // credentials may also be present for legacy storage, but must not shadow
+  // the gateway (a missing object there is a normal first-run state).
+  if (shouldUseGateway()) {
+    const response = await readGatewayObject('publications');
+    if (response.missing) return { publications: [], etag: null, backend: 'gateway', exists: false };
+    if (!Array.isArray(response.data)) throw new Error('El gateway no contiene una lista de publicaciones válida');
+    return { publications: response.data, etag: response.etag, backend: 'gateway', exists: true };
+  }
   const configuration = getR2Configuration();
   if (configuration) {
     try {
@@ -81,18 +90,17 @@ async function readPublicationsSnapshot() {
       throw new Error(`No fue posible leer las publicaciones desde R2: ${error.message}`, { cause: error });
     }
   }
-  if (shouldUseGateway()) {
-    const response = await readGatewayObject('publications');
-    if (response.missing) return { publications: [], etag: null, backend: 'gateway', exists: false };
-    if (!Array.isArray(response.data)) throw new Error('El gateway no contiene una lista de publicaciones válida');
-    return { publications: response.data, etag: response.etag, backend: 'gateway', exists: true };
-  }
   const exists = fs.existsSync(LOCAL_DB_PATH);
   return { publications: exists ? readLocal() : [], etag: null, backend: 'local', exists };
 }
 
 async function writePublicationsSnapshot(publications, previousEtag = null, backend = null) {
   if (!Array.isArray(publications)) throw new Error('publications debe ser una lista');
+  if (backend === 'gateway' || shouldUseGateway()) {
+    await writeGatewayObject('publications', publications, previousEtag);
+    try { writeLocal(publications); } catch (error) { console.warn(`[PublicationStorage] Copia local pendiente: ${error.message}`); }
+    return { backend: 'gateway' };
+  }
   const configuration = getR2Configuration();
   if (configuration) {
     const response = await getR2Client(configuration).send(new PutObjectCommand({
@@ -104,11 +112,6 @@ async function writePublicationsSnapshot(publications, previousEtag = null, back
     }));
     try { writeLocal(publications); } catch (error) { console.warn(`[PublicationStorage] Copia local pendiente: ${error.message}`); }
     return { backend: 'r2', etag: response.ETag || null };
-  }
-  if (backend === 'gateway' || shouldUseGateway()) {
-    await writeGatewayObject('publications', publications, previousEtag);
-    try { writeLocal(publications); } catch (error) { console.warn(`[PublicationStorage] Copia local pendiente: ${error.message}`); }
-    return { backend: 'gateway' };
   }
   writeLocal(publications);
   return { backend: 'local' };
