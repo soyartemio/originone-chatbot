@@ -26,6 +26,8 @@ test('inicia con propuestas reales y copy multicanal', async () => {
   assert.ok(publications.length >= 3);
   assert.ok(publications.some(item => item.title.includes('chatbot')));
   assert.ok(publications.every(item => item.copies.instagram && item.copies.facebook && item.copies.linkedin));
+  assert.ok(publications.every(item => item.narrative?.fictional));
+  assert.ok(publications.every(item => item.copies.instagram.includes('Caso ficticio basado en una situación común.')));
 });
 
 test('requiere doble aprobación y conserva notas del equipo', async () => {

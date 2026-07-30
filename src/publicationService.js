@@ -43,11 +43,17 @@ const DEFAULT_PUBLICATIONS = [
     assetUrl: 'https://labs.google.com/pomelli/campaigns/biYih_QX4BqcCvLQSi_OwI',
     creativeUrl: '/crm/assets/pub-signal-voz-a-voz-candidate-vertical.png',
     creativeAlt: 'Dueño de negocio frente a un laberinto de botones, conectado por una onda de voz ámbar a una conversación clara.',
+    narrative: {
+      fictional: true,
+      character: 'José',
+      role: 'dueño de una empresa de servicios',
+      premise: 'Los prospectos llegan con una duda concreta, ven un formulario o un menú y abandonan antes de hablar con alguien.'
+    },
     voiceoverScript: 'Tu cliente no quiere jugar a presiona uno. Quiere explicar lo que necesita. S1GNAL convierte tu página en una conversación de voz a voz, entiende el contexto y prepara el seguimiento. ¿Hablarías con tu propia página?',
     copies: {
-      instagram: 'Tu cliente no quiere llenar otro formulario. Quiere explicar lo que necesita. S1GNAL conversa de voz a voz, entiende el contexto y convierte esa conversación en una oportunidad real. ¿Hablarías con tu propia página?',
-      facebook: 'Hay chatbots que contestan. Y hay experiencias que conversan. S1GNAL permite que un prospecto hable con tu sitio de voz a voz, sin navegar un laberinto de botones. Pruébalo en Origin One.',
-      linkedin: 'La fricción comercial comienza antes de la primera llamada. S1GNAL convierte la página web en una conversación de voz a voz, captura contexto y prepara el seguimiento. Menos formularios; más conversaciones útiles.'
+      instagram: 'José dirige una empresa de servicios. Sus prospectos llegan con una duda concreta, ven un formulario y desaparecen. Cuando intentan usar el bot, reciben seis botones y otra cosa que resolver. No es falta de interés; es fricción. Con S1GNAL, Origin One puede convertir tu web en una conversación de voz a voz que entiende el contexto y prepara el seguimiento. ¿Tu página escucha o sólo pregunta?\n\nCaso ficticio basado en una situación común.',
+      facebook: 'José, dueño de una empresa de servicios, veía el mismo patrón: alguien quería explicar su problema, encontraba un formulario y se iba. El bot tampoco ayudaba: “presiona 1”, “presiona 2”… y adiós. S1GNAL permite que la persona hable con tu sitio de voz a voz; Origin One puede diseñar ese seguimiento con contexto.\n\nCaso ficticio basado en una situación común.',
+      linkedin: 'José dirige una empresa de servicios B2B. Sus prospectos no llegan con una respuesta de opción múltiple: llegan con un problema. Sin embargo, su página les pedía un formulario y el bot les ofrecía seis botones. La fricción ocurre antes de la primera llamada. S1GNAL permite una conversación de voz a voz desde la web, captura contexto y prepara el seguimiento comercial. Origin One puede implementarlo alrededor de la operación real del negocio.\n\nCaso ficticio basado en una situación común.'
     },
     platforms: ['instagram', 'facebook', 'linkedin'],
     status: 'revision'
@@ -66,11 +72,17 @@ const DEFAULT_PUBLICATIONS = [
     assetStatus: 'en_revision_visual',
     creativeUrl: '/crm/assets/pub-seguros-reporte-candidate-vertical.png',
     creativeAlt: 'Dueño de aseguradora rodeado de reportes dispersos, conectado a un tablero ámbar.',
+    narrative: {
+      fictional: true,
+      character: 'Lucía',
+      role: 'directora de una agencia de seguros',
+      premise: 'Cada cierre mensual depende de reunir versiones de hojas, mensajes y reportes que viven en lugares distintos.'
+    },
     voiceoverScript: 'Si tu cierre mensual depende de tres Excels, dos chats y de la persona que sabe dónde quedó el dato, no tienes un reporte: tienes una búsqueda del tesoro. Origin One integra la información y la convierte en un tablero claro y automático.',
     copies: {
-      instagram: 'Si tu cierre mensual parece búsqueda del tesoro, el problema no es tu equipo: es la información dispersa. Integramos datos y automatizamos reportes para que el dueño vea el negocio, no veinte archivos.',
-      facebook: 'Tres hojas, dos chats y una persona que conoce “el archivo bueno”. Así no debería cerrarse el mes. Origin One convierte información dispersa en un tablero claro y automático.',
-      linkedin: 'Cuando el reporte depende de consolidación manual, la dirección decide tarde. Integramos fuentes y automatizamos indicadores para crear una sola lectura operativa del negocio.'
+      instagram: 'Lucía llega al cierre mensual con tres Excels, dos grupos de WhatsApp y la pregunta que nadie quiere escuchar: “¿cuál es la versión buena?”. Su equipo trabaja; el problema es que la información vive separada. Origin One puede integrar fuentes y diseñar un tablero operativo para que el cierre deje de ser una búsqueda del tesoro.\n\nCaso ficticio basado en una situación común.',
+      facebook: 'Lucía dirige una agencia de seguros. Al cierre, una persona tiene las pólizas, otra los cobros y alguien guarda “el Excel bueno”. El KPI termina siendo encontrar la versión final_final_ahora_sí.xlsx. Origin One puede conectar esas fuentes y convertirlas en una lectura operativa clara para dirección.\n\nCaso ficticio basado en una situación común.',
+      linkedin: 'Lucía dirige una agencia de seguros y cada cierre depende de consolidar hojas, chats y reportes manualmente. El costo no es sólo tiempo: la dirección recibe una lectura tardía del negocio. Origin One puede integrar fuentes y construir un tablero hecho alrededor de los indicadores que sí usa el equipo. Menos cacería de archivos; más capacidad para decidir.\n\nCaso ficticio basado en una situación común.'
     },
     platforms: ['instagram', 'facebook', 'linkedin'],
     status: 'revision'
@@ -89,11 +101,17 @@ const DEFAULT_PUBLICATIONS = [
     assetStatus: 'en_revision_visual',
     creativeUrl: '/crm/assets/pub-dental-sistema-candidate-vertical.png',
     creativeAlt: 'Equipo de clínica dental conectado por una línea ámbar en una sola operación.',
+    narrative: {
+      fictional: true,
+      character: 'Mariana',
+      role: 'directora de una clínica dental en crecimiento',
+      premise: 'La agenda, los tratamientos y los cobros están en manos y herramientas distintas, por lo que el equipo necesita preguntar para reconstruir la operación.'
+    },
     voiceoverScript: 'La recepción conoce la agenda, el doctor conoce el tratamiento y una libreta misteriosa conoce los pagos. Cuando tu clínica crece, preguntar a tres personas deja de ser un sistema. Origin One conecta la operación en un ERP hecho a la medida.',
     copies: {
-      instagram: 'Si para saber qué pasa en tu clínica necesitas preguntarle a tres personas, tu operación ya superó a tus herramientas. Un ERP a la medida conecta agenda, expedientes, cobros y seguimiento.',
-      facebook: 'Tu clínica no debería adaptarse a cinco sistemas distintos. Diseñamos una operación conectada alrededor de la manera real en que trabaja tu equipo.',
-      linkedin: 'El crecimiento vuelve visibles las costuras entre agenda, expediente y administración. Un sistema a la medida elimina dobles capturas y crea trazabilidad para la dirección.'
+      instagram: 'La clínica de Mariana creció. También crecieron los favores: recepción sabe la agenda, el doctor el tratamiento y una libreta misteriosa los pagos. Para entender un caso hay que preguntarle a tres personas. Origin One puede diseñar un sistema a la medida que conecte operación clínica, administración y seguimiento sin obligar al equipo a trabajar como software genérico.\n\nCaso ficticio basado en una situación común.',
+      facebook: 'Mariana dirige una clínica dental en crecimiento. Para saber qué pasó con un paciente, recepción revisa la agenda, el doctor busca el tratamiento y administración persigue un pago. El verdadero ERP es esperar que las tres versiones coincidan. Origin One puede conectar la operación en una solución hecha para la forma real de trabajar de la clínica.\n\nCaso ficticio basado en una situación común.',
+      linkedin: 'Mariana dirige una clínica dental que ya superó sus herramientas aisladas. La agenda está en un lugar, el expediente en otro y los cobros dependen de una libreta o conversación. El crecimiento vuelve visibles esas costuras operativas. Origin One puede construir un sistema a la medida que conecte la información y dé trazabilidad a dirección, sin forzar a la clínica a adoptar procesos ajenos.\n\nCaso ficticio basado en una situación común.'
     },
     platforms: ['instagram', 'facebook', 'linkedin'],
     status: 'revision'
@@ -130,6 +148,12 @@ function normalizePublication(input, existing = {}) {
     assetUrl: String(input.assetUrl ?? existing.assetUrl ?? '').trim().slice(0, 1000),
     creativeUrl: String(input.creativeUrl ?? existing.creativeUrl ?? '').trim().slice(0, 1000),
     creativeAlt: String(input.creativeAlt ?? existing.creativeAlt ?? input.title ?? existing.title ?? 'Visual de la publicación').trim().slice(0, 500),
+    narrative: {
+      fictional: input.narrative?.fictional ?? existing.narrative?.fictional ?? false,
+      character: String(input.narrative?.character ?? existing.narrative?.character ?? '').trim().slice(0, 100),
+      role: String(input.narrative?.role ?? existing.narrative?.role ?? '').trim().slice(0, 180),
+      premise: String(input.narrative?.premise ?? existing.narrative?.premise ?? '').trim().slice(0, 800)
+    },
     voiceoverScript: String(input.voiceoverScript ?? existing.voiceoverScript ?? '').trim().slice(0, 5000),
     voiceConfig: {
       languageCode: String(input.voiceConfig?.languageCode ?? existing.voiceConfig?.languageCode ?? 'es').slice(0, 20),
