@@ -411,6 +411,30 @@ function createAuthRouter() {
     }
   });
 
+  router.post('/passkey/authenticate/options', requireTrustedOrigin, async (req, res, next) => {
+    try {
+      const username = normalizeUsername(req.body.username);
+      if (!username) return res.status(400).json({ success: false, error: 'Selecciona un usuario válido' });
+      const { data } = await readAuthSnapshot();
+      const user = data.users[username];
+      const config = getWebAuthnConfig(req);
+      const passkeys = user.passkeys.filter(passkey => getPasskeyRpID(passkey, config) === config.rpID);
+      if (!passkeys.length) {
+        return res.status(409).json({ success: false, error: 'Esta cuenta aún no tiene una passkey en este dominio. Usa su enlace de activación o el acceso de respaldo autorizado.' });
+      }
+      const webAuthn = await getWebAuthn();
+      const options = await webAuthn.generateAuthenticationOptions({
+        rpID: config.rpID,
+        allowCredentials: passkeys.map(passkey => ({ id: passkey.id, transports: passkey.transports })),
+        userVerification: 'required'
+      });
+      issueChallenge(res, { ceremony: 'authentication', username, challenge: options.challenge, rpID: config.rpID, origin: config.origin });
+      res.json({ success: true, next: 'authenticate_passkey', options, fallbackAvailable: Boolean(user.passwordFallbackEnabled) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post('/passkey/register/verify', requireTrustedOrigin, async (req, res, next) => {
     try {
       const challenge = challengeForRequest(req, 'registration');

@@ -118,6 +118,35 @@ test('el respaldo por contraseña requiere habilitación explícita de la cuenta
   }
 });
 
+test('ofrece opciones de autenticación por passkey sin pedir contraseña', async () => {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/auth', createAuthRouter());
+  const server = http.createServer(app);
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+  const origin = `http://127.0.0.1:${port}`;
+  process.env.AUTH_ORIGIN = origin;
+  process.env.AUTH_RP_ID = '127.0.0.1';
+  const { mutateAuthData } = require('../src/authStorage');
+  await mutateAuthData(data => {
+    data.users.artemio.passkeys = [{ id: 'passkey-demo', publicKey: 'AA', counter: 0, transports: ['internal'], rpID: '127.0.0.1' }];
+  });
+  try {
+    const response = await fetch(`${origin}/api/auth/passkey/authenticate/options`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: origin },
+      body: JSON.stringify({ username: 'artemio' })
+    });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.next, 'authenticate_passkey');
+    assert.ok(body.options.challenge);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
 test('elige un RP ID por dominio y conserva las passkeys heredadas de Render', () => {
   process.env.NODE_ENV = 'production';
   process.env.AUTH_ORIGIN = 'https://crm.originone.com.mx,https://originone-chatbot.onrender.com';
