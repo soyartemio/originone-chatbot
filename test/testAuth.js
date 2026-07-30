@@ -16,6 +16,7 @@ for (const key of ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 
 const {
   createAuthRouter,
   createSetupToken,
+  hashActivationToken,
   getPasskeyRpID,
   getWebAuthnConfig,
   hashPassword,
@@ -82,6 +83,39 @@ test('solo el enlace privado puede iniciar el alta y después exige passkey', as
 
 test('los enlaces de activación son distintos por usuario', () => {
   assert.notEqual(createSetupToken('artemio'), createSetupToken('edgar'));
+});
+
+test('el respaldo por contraseña requiere habilitación explícita de la cuenta', async () => {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/auth', createAuthRouter());
+  app.get('/private', requireApiAuth, (req, res) => res.json({ ok: true }));
+  const server = http.createServer(app);
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+  const origin = `http://127.0.0.1:${port}`;
+  process.env.AUTH_ORIGIN = origin;
+  process.env.AUTH_RP_ID = '127.0.0.1';
+  const { mutateAuthData } = require('../src/authStorage');
+  const password = await hashPassword('Respaldo-Seguro-2026!');
+  await mutateAuthData(data => {
+    data.users.edgar.password = password;
+    data.users.edgar.passwordFallbackEnabled = true;
+  });
+  try {
+    const response = await fetch(`${origin}/api/auth/password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: origin },
+      body: JSON.stringify({ username: 'edgar', password: 'Respaldo-Seguro-2026!', passwordFallback: true })
+    });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.next, 'password_fallback');
+    assert.match(response.headers.get('set-cookie'), /o1_session=/);
+    assert.equal(typeof hashActivationToken('token-de-prueba'), 'string');
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
 });
 
 test('elige un RP ID por dominio y conserva las passkeys heredadas de Render', () => {
