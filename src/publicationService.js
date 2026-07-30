@@ -41,7 +41,7 @@ const DEFAULT_PUBLICATIONS = [
     assetProvider: 'pomelli',
     assetStatus: 'listo',
     assetUrl: 'https://labs.google.com/pomelli/campaigns/biYih_QX4BqcCvLQSi_OwI',
-    creativeUrl: '/crm/assets/pub-signal-voz-a-voz-origin-one-v2.png',
+    creativeUrl: '/crm/assets/pub-signal-voz-a-voz-origin-one-vertical.png',
     creativeAlt: 'Dueño de negocio frente a un laberinto de botones, conectado por una onda de voz ámbar a una conversación clara.',
     voiceoverScript: 'Tu cliente no quiere jugar a presiona uno. Quiere explicar lo que necesita. S1GNAL convierte tu página en una conversación de voz a voz, entiende el contexto y prepara el seguimiento. ¿Hablarías con tu propia página?',
     copies: {
