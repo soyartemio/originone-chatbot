@@ -47,7 +47,7 @@ const DEFAULT_PUBLICATIONS = [
     creativeAlt: 'Dueño de negocio frente a un laberinto de botones, conectado por una onda de voz ámbar a una conversación clara.',
     visualHeadline: 'Tu cliente no quiere “presionar 1”.',
     visualCaption: 'Quiere explicar qué necesita.',
-    story: 'José dirige una empresa de servicios. Cada semana alguien llega a su sitio con un problema concreto, se topa con un formulario y desaparece. Cuando prueban el bot, seis botones hacen el resto. No es falta de interés: es fricción.',
+    story: 'José dirige una empresa de servicios. Cada semana alguien llega a su sitio con un problema concreto, se topa con un formulario y desaparece. Su página todavía no le da una forma natural de explicarlo. No es falta de interés: es fricción.',
     narrative: {
       fictional: true,
       character: 'José',
@@ -56,9 +56,9 @@ const DEFAULT_PUBLICATIONS = [
     },
     voiceoverScript: 'Tu cliente no quiere jugar a presiona uno. Quiere explicar lo que necesita. S1GNAL convierte tu página en una conversación de voz a voz, entiende el contexto y prepara el seguimiento. ¿Hablarías con tu propia página?',
     copies: {
-      instagram: 'José dirige una empresa de servicios. Sus prospectos llegan con una duda concreta, ven un formulario y desaparecen. Cuando intentan usar el bot, reciben seis botones y otra cosa que resolver. No es falta de interés; es fricción. Con S1GNAL, Origin One puede convertir tu web en una conversación de voz a voz que entiende el contexto y prepara el seguimiento. ¿Tu página escucha o sólo pregunta?\n\nSituación hipotética basada en patrones operativos comunes.\n\n#VentasB2B #ExperienciaDelCliente #IAParaNegocios #S1GNAL',
-      facebook: 'José, dueño de una empresa de servicios, veía el mismo patrón: alguien quería explicar su problema, encontraba un formulario y se iba. El bot tampoco ayudaba: “presiona 1”, “presiona 2”… y adiós. S1GNAL permite que la persona hable con tu sitio de voz a voz; Origin One puede diseñar ese seguimiento con contexto.\n\nSituación hipotética basada en patrones operativos comunes.\n\n#VentasB2B #ExperienciaDelCliente',
-      linkedin: 'José dirige una empresa de servicios B2B. Sus prospectos no llegan con una respuesta de opción múltiple: llegan con un problema. Sin embargo, su página les pedía un formulario y el bot les ofrecía seis botones. La fricción ocurre antes de la primera llamada. S1GNAL permite una conversación de voz a voz desde la web, captura contexto y prepara el seguimiento comercial. Origin One puede implementarlo alrededor de la operación real del negocio.\n\nSituación hipotética basada en patrones operativos comunes.\n\n#VentasB2B #ExperienciaDelCliente #IAAplicada'
+      instagram: 'José dirige una empresa de servicios. Sus prospectos llegan con una duda concreta, ven un formulario y desaparecen. Su página todavía no les da una forma natural de explicar lo que necesitan. No es falta de interés; es fricción. Con S1GNAL, Origin One puede convertir tu web en una conversación de voz a voz que entiende el contexto y prepara el seguimiento. ¿Tu página escucha o sólo pregunta?\n\nSituación hipotética basada en patrones operativos comunes.\n\n#VentasB2B #ExperienciaDelCliente #IAParaNegocios #S1GNAL',
+      facebook: 'José, dueño de una empresa de servicios, veía el mismo patrón: alguien quería explicar su problema, encontraba un formulario y se iba. No era desinterés: su página todavía no tenía una forma natural de escuchar. S1GNAL permite que la persona hable con tu sitio de voz a voz; Origin One puede diseñar ese seguimiento con contexto.\n\nSituación hipotética basada en patrones operativos comunes.\n\n#VentasB2B #ExperienciaDelCliente',
+      linkedin: 'José dirige una empresa de servicios B2B. Sus prospectos no llegan con una respuesta de opción múltiple: llegan con un problema. Sin embargo, su página sólo les pedía un formulario. La fricción ocurre antes de la primera llamada. S1GNAL permite una conversación de voz a voz desde la web, captura contexto y prepara el seguimiento comercial. Origin One puede implementarlo alrededor de la operación real del negocio.\n\nSituación hipotética basada en patrones operativos comunes.\n\n#VentasB2B #ExperienciaDelCliente #IAAplicada'
     },
     platforms: ['instagram', 'facebook', 'linkedin'],
     status: 'revision'
