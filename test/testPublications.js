@@ -34,6 +34,7 @@ test('requiere doble aprobación y conserva notas del equipo', async () => {
     industry: 'Manufactura',
     situation: 'Una escena reconocible',
     platforms: ['instagram', 'facebook', 'linkedin'],
+    creativeUrl: 'https://example.com/generated-test.png',
     copies: { instagram: 'IG', facebook: 'FB', linkedin: 'LI' },
     status: 'revision'
   }, 'origin-one-marketing');
