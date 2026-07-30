@@ -39,9 +39,9 @@ const DEFAULT_PUBLICATIONS = [
     evidence: 'Demo S1GNAL disponible en originone.com.mx.',
     visualBrief: 'Dueño hablando con naturalidad frente a una onda de voz dorada; al lado, un laberinto absurdo de menús “presiona 1”. Estilo editorial premium, fondo oscuro Origin One.',
     assetProvider: 'pomelli',
-    assetStatus: 'listo',
+    assetStatus: 'en_revision_visual',
     assetUrl: 'https://labs.google.com/pomelli/campaigns/biYih_QX4BqcCvLQSi_OwI',
-    creativeUrl: '/crm/assets/pub-signal-voz-a-voz-origin-one-vertical.png',
+    creativeUrl: '/crm/assets/pub-signal-voz-a-voz-candidate-vertical.png',
     creativeAlt: 'Dueño de negocio frente a un laberinto de botones, conectado por una onda de voz ámbar a una conversación clara.',
     voiceoverScript: 'Tu cliente no quiere jugar a presiona uno. Quiere explicar lo que necesita. S1GNAL convierte tu página en una conversación de voz a voz, entiende el contexto y prepara el seguimiento. ¿Hablarías con tu propia página?',
     copies: {
@@ -63,8 +63,8 @@ const DEFAULT_PUBLICATIONS = [
     evidence: 'Proyecto de dashboard para seguros presentado en originone.com.mx.',
     visualBrief: 'Dueño de aseguradora detective, siguiendo pistas entre archivos Excel y chats; al fondo un dashboard limpio resuelve el caso. Humor elegante, paleta negra y dorada.',
     assetProvider: 'origin-one-imagegen',
-    assetStatus: 'listo',
-    creativeUrl: '/crm/assets/pub-seguros-reporte-origin-one.png',
+    assetStatus: 'en_revision_visual',
+    creativeUrl: '/crm/assets/pub-seguros-reporte-candidate-vertical.png',
     creativeAlt: 'Dueño de aseguradora rodeado de reportes dispersos, conectado a un tablero ámbar.',
     voiceoverScript: 'Si tu cierre mensual depende de tres Excels, dos chats y de la persona que sabe dónde quedó el dato, no tienes un reporte: tienes una búsqueda del tesoro. Origin One integra la información y la convierte en un tablero claro y automático.',
     copies: {
@@ -86,8 +86,8 @@ const DEFAULT_PUBLICATIONS = [
     evidence: 'Proyecto ERP dental mostrado en originone.com.mx.',
     visualBrief: 'Consultorio moderno con tres islas desconectadas: agenda, expediente y pagos; una línea dorada Origin One las integra en una sola interfaz.',
     assetProvider: 'origin-one-imagegen',
-    assetStatus: 'listo',
-    creativeUrl: '/crm/assets/pub-dental-sistema-origin-one.png',
+    assetStatus: 'en_revision_visual',
+    creativeUrl: '/crm/assets/pub-dental-sistema-candidate-vertical.png',
     creativeAlt: 'Equipo de clínica dental conectado por una línea ámbar en una sola operación.',
     voiceoverScript: 'La recepción conoce la agenda, el doctor conoce el tratamiento y una libreta misteriosa conoce los pagos. Cuando tu clínica crece, preguntar a tres personas deja de ser un sistema. Origin One conecta la operación en un ERP hecho a la medida.',
     copies: {
