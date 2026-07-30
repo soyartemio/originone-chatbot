@@ -192,7 +192,16 @@ function normalizePublication(input, existing = {}) {
     schedule: recommendedSchedule(input.schedule ?? existing.schedule, input.campaignOrder ?? existing.campaignOrder ?? 0),
     cta: {
       type: String(input.cta?.type ?? existing.cta?.type ?? 'website').slice(0, 40),
-      url: String(input.cta?.url ?? existing.cta?.url ?? 'https://originone.com.mx/').trim().slice(0, 1000)
+      url: String(input.cta?.url ?? existing.cta?.url ?? 'https://originone.com.mx/').trim().slice(0, 1000),
+      label: String(input.cta?.label ?? existing.cta?.label ?? '').trim().slice(0, 160),
+      urls: Object.fromEntries(['instagram', 'facebook', 'linkedin'].map(platform => [
+        platform,
+        String(input.cta?.urls?.[platform] ?? existing.cta?.urls?.[platform] ?? '').trim().slice(0, 1000)
+      ]).filter(([, url]) => url))
+    },
+    experiment: {
+      id: String(input.experiment?.id ?? existing.experiment?.id ?? '').trim().slice(0, 120),
+      variant: String(input.experiment?.variant ?? existing.experiment?.variant ?? '').trim().slice(0, 80)
     },
     scheduledFor: input.scheduledFor ?? existing.scheduledFor ?? null,
     publishedUrls: input.publishedUrls ?? existing.publishedUrls ?? {},
