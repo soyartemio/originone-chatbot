@@ -759,15 +759,19 @@ function setupReactiveAudiogram(player) {
   const context = canvas.getContext('2d');
   const samples = new Uint8Array(publicationAudioAnalyser.frequencyBinCount);
   const captions = audiobookCaptionChunks();
+  let phase = 0;
   const animate = () => {
     publicationAudioAnalyser.getByteTimeDomainData(samples);
+    let peak = 0;
+    samples.forEach(value => { peak = Math.max(peak, Math.abs(value - 128)); });
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.strokeStyle = '#f5aa00';
     context.lineWidth = 5;
     context.beginPath();
     samples.forEach((value, index) => {
       const x = index / (samples.length - 1) * canvas.width;
-      const y = value / 255 * canvas.height;
+      const fallback = Math.sin(index * 0.35 + phase) * (peak < 2 ? 9 : 0);
+      const y = value / 255 * canvas.height + fallback;
       if (index === 0) context.moveTo(x, y); else context.lineTo(x, y);
     });
     context.stroke();
@@ -776,6 +780,7 @@ function setupReactiveAudiogram(player) {
       document.getElementById('audiogramCaption').innerText = captions[captionIndex];
     }
     if (!player.paused && !player.ended) publicationAudioAnimation = requestAnimationFrame(animate);
+    phase += 0.12;
   };
   player.onplay = () => {
     if (publicationAudioAnimation) cancelAnimationFrame(publicationAudioAnimation);
