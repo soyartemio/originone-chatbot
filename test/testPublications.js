@@ -28,6 +28,8 @@ test('inicia con propuestas reales y copy multicanal', async () => {
   assert.ok(publications.every(item => item.copies.instagram && item.copies.facebook && item.copies.linkedin));
   assert.ok(publications.every(item => item.narrative?.fictional));
   assert.ok(publications.every(item => item.copies.instagram.includes('Caso ficticio basado en una situación común.')));
+  assert.ok(publications.every(item => item.visualHeadline && item.visualCaption));
+  assert.deepEqual(publications.slice(0, 3).map(item => item.campaignOrder), [0, 1, 2]);
 });
 
 test('requiere doble aprobación y conserva notas del equipo', async () => {
