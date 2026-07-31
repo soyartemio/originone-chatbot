@@ -1,8 +1,45 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
-const { getAppointments, updateLead, addLeadNote, deleteLead, reviewAppointment } = require('./agendaService');
+const { getAppointments, updateLead, addLeadNote, deleteLead, reviewAppointment, importExternalLead } = require('./agendaService');
 const { syncInstagramInteractions } = require('./instagramSyncService');
 const { recordEvent } = require('./growthAnalyticsService');
+
+function molarIntegrationKey() {
+  const sourceSecret = process.env.MOLAR_LEADS_WEBHOOK_SECRET
+    || process.env.CRM_GATEWAY_SOURCE_SECRET
+    || process.env.META_PAGE_ACCESS_TOKEN
+    || process.env.R2_SECRET_ACCESS_KEY
+    || '';
+  return sourceSecret
+    ? crypto.createHmac('sha256', sourceSecret).update('originone-molar-leads-v1').digest('hex')
+    : null;
+}
+
+function hasMolarIntegrationAccess(req) {
+  const expected = molarIntegrationKey();
+  const supplied = String(req.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  if (!expected || !supplied) return false;
+  const expectedBuffer = Buffer.from(expected);
+  const suppliedBuffer = Buffer.from(supplied);
+  return expectedBuffer.length === suppliedBuffer.length && crypto.timingSafeEqual(expectedBuffer, suppliedBuffer);
+}
+
+/**
+ * POST /api/integrations/molar/leads
+ * Entrada servidor-a-servidor para que MOLAR alimente el CRM de Origin One.
+ */
+router.post('/api/integrations/molar/leads', async (req, res) => {
+  if (!hasMolarIntegrationAccess(req)) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+  try {
+    const lead = await importExternalLead(req.body?.lead || {});
+    res.status(lead.created ? 201 : 200).json({ success: true, ...lead });
+  } catch (error) {
+    console.error('[CRMRoutes] Error importando lead desde MOLAR:', error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
 
 function attributionEventForStage(previous, updated) {
   if ((previous?.etapa || '').toLowerCase() === (updated?.etapa || '').toLowerCase()) return null;

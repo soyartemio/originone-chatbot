@@ -228,6 +228,66 @@ async function deleteLead(id) {
 }
 
 /**
+ * Importar un prospecto desde un producto Origin One, como MOLAR.
+ * Se conserva en el mismo embudo que los contactos de los canales sociales.
+ */
+async function importExternalLead(params) {
+  const externalId = String(params.externalId || '').trim().slice(0, 120);
+  const fullName = String(params.fullName || '').trim().slice(0, 120);
+  const email = String(params.email || '').trim().toLowerCase().slice(0, 180);
+  const phone = String(params.phone || '').trim().slice(0, 40);
+  const clinicName = String(params.clinicName || '').trim().slice(0, 160);
+  const planInterest = String(params.planInterest || 'No estoy seguro').trim().slice(0, 40);
+  const notes = String(params.notes || '').trim().slice(0, 1000);
+
+  if (!externalId || !fullName || !email || !phone || !clinicName) {
+    throw new Error('externalId, fullName, email, phone y clinicName son requeridos');
+  }
+
+  return mutateAppointments(appointments => {
+    const now = new Date().toISOString();
+    const existing = appointments.find(lead => lead.external_id === externalId || lead.email?.toLowerCase() === email);
+
+    if (existing) {
+      existing.nombre_cliente = fullName;
+      existing.email = email;
+      existing.telefono_whatsapp = phone;
+      existing.empresa_o_proyecto = clinicName;
+      existing.plan_interes = planInterest;
+      existing.resumen_necesidad = notes || existing.resumen_necesidad || 'Solicitud de información sobre MOLAR';
+      existing.actualizado_el = now;
+      existing.ultima_fuente = 'MOLAR Landing';
+      return { lead: existing, created: false };
+    }
+
+    const lead = {
+      id: `MOLAR-${Date.now().toString(36).toUpperCase()}`,
+      external_id: externalId,
+      nombre_cliente: fullName,
+      email,
+      telefono_whatsapp: phone,
+      empresa_o_proyecto: clinicName,
+      plan_interes: planInterest,
+      fecha_primer_contacto: now.split('T')[0],
+      hora_primer_contacto: new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+      fecha_propuesta: 'Por confirmar',
+      hora_propuesta: 'Por confirmar',
+      resumen_necesidad: notes || 'Solicitud de información sobre MOLAR',
+      canal_origen: 'MOLAR Landing',
+      etapa: 'Nuevo contacto',
+      etapa_fuente: 'molar_landing',
+      es_prueba: false,
+      notas_internas: [],
+      historial_mensajes: [],
+      creado_el: now,
+      estatus: 'Pendiente de contacto'
+    };
+    appointments.unshift(lead);
+    return { lead, created: true };
+  });
+}
+
+/**
  * Guardar un mensaje en el historial de conversaciones del Lead / Cita
  */
 function appendChatMessageToAppointments(appointments, {
@@ -363,6 +423,7 @@ module.exports = {
   updateLead,
   addLeadNote,
   deleteLead,
+  importExternalLead,
   appendChatMessage,
   importChatMessages
 };
