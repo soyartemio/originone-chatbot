@@ -1,5 +1,8 @@
 const crypto = require('crypto');
 const { readPublicationsSnapshot, writePublicationsSnapshot } = require('./publicationStorage');
+const { listFormats } = require('./creativeFormats');
+
+const FORMAT_IDS = new Set(listFormats().map(format => format.id));
 
 const VALID_STATUSES = new Set(['idea', 'borrador', 'revision', 'aprobada', 'programada', 'publicada', 'cambios']);
 const APPROVERS = ['artemio', 'edgar'];
@@ -34,11 +37,11 @@ const DEFAULT_PUBLICATIONS = [
     campaignOrder: 0,
     title: 'El chatbot que no te obliga a jugar “presiona 1”',
     industry: 'Servicios y ventas B2B',
-    ownerPain: 'El dueño pierde prospectos porque los formularios y menús se sienten impersonales.',
+    ownerPain: 'Cada semana pierdes prospectos que sí querían hablar contigo.',
     situation: 'Un prospecto quiere explicar su problema en 30 segundos. El bot tradicional le contesta con seis botones y una crisis existencial.',
     humor: '“Para hablar como humano, presiona 9… y espera sentado.”',
-    solution: 'S1GNAL conversa de voz a voz desde la web, entiende contexto y convierte la conversación en seguimiento comercial.',
-    evidence: 'Demo S1GNAL disponible en originone.com.mx.',
+    solution: 'S1GNAL contesta con voz desde tu página. Entiende el contexto y deja el seguimiento listo para tu equipo.',
+    evidence: 'Prueba la demo de S1GNAL con tu caso más difícil.',
     visualBrief: 'Dueño hablando con naturalidad frente a una onda de voz dorada; al lado, un laberinto absurdo de menús “presiona 1”. Estilo editorial premium, fondo oscuro Origin One.',
     assetProvider: 'pomelli',
     assetStatus: 'en_revision_visual',
@@ -46,7 +49,7 @@ const DEFAULT_PUBLICATIONS = [
     creativeUrl: '/crm/assets/pub-signal-voz-a-voz-candidate-vertical.png',
     creativeAlt: 'Dueño de negocio frente a un laberinto de botones, conectado por una onda de voz ámbar a una conversación clara.',
     visualHeadline: 'Tu cliente no quiere “presionar 1”.',
-    visualCaption: 'Quiere explicar qué necesita.',
+    visualCaption: 'Quiere explicar su problema y colgar resuelto.',
     story: 'José dirige una empresa de servicios. Cada semana alguien llega a su sitio con un problema concreto, se topa con un formulario y desaparece. Su página todavía no le da una forma natural de explicarlo. No es falta de interés: es fricción.',
     narrative: {
       fictional: true,
@@ -54,7 +57,8 @@ const DEFAULT_PUBLICATIONS = [
       role: 'dueño de una empresa de servicios',
       premise: 'Los prospectos llegan con una duda concreta, ven un formulario o un menú y abandonan antes de hablar con alguien.'
     },
-    voiceoverScript: 'Tu cliente no quiere jugar a presiona uno. Quiere explicar lo que necesita. S1GNAL convierte tu página en una conversación de voz a voz, entiende el contexto y prepara el seguimiento. ¿Hablarías con tu propia página?',
+    voiceoverScript: 'A tu página llegan con un problema, no con un formulario. Lo escriben a medias, se cansan y se van. No es falta de interés: es fricción. S1GNAL contesta con voz desde tu sitio, entiende el contexto y deja listo el seguimiento. Prueba la demo con tu caso más difícil.',
+    voiceoverCta: 'Prueba la demo con tu caso más difícil.',
     copies: {
       instagram: 'José dirige una empresa de servicios. Sus prospectos llegan con una duda concreta, ven un formulario y desaparecen. Su página todavía no les da una forma natural de explicar lo que necesitan. No es falta de interés; es fricción. Con S1GNAL, Origin One puede convertir tu web en una conversación de voz a voz que entiende el contexto y prepara el seguimiento. ¿Tu página escucha o sólo pregunta?\n\nSituación hipotética basada en patrones operativos comunes.\n\n#VentasB2B #ExperienciaDelCliente #IAParaNegocios #S1GNAL',
       facebook: 'José, dueño de una empresa de servicios, veía el mismo patrón: alguien quería explicar su problema, encontraba un formulario y se iba. No era desinterés: su página todavía no tenía una forma natural de escuchar. S1GNAL permite que la persona hable con tu sitio de voz a voz; Origin One puede diseñar ese seguimiento con contexto.\n\nSituación hipotética basada en patrones operativos comunes.\n\n#VentasB2B #ExperienciaDelCliente',
@@ -68,18 +72,18 @@ const DEFAULT_PUBLICATIONS = [
     campaignOrder: 1,
     title: 'El cierre mensual no debería ser una búsqueda del tesoro',
     industry: 'Seguros',
-    ownerPain: 'Información dispersa entre hojas, correos y mensajes retrasa decisiones y reportes.',
+    ownerPain: 'Dirección lee el mes cuando el mes ya pasó.',
     situation: 'Es fin de mes. El reporte depende de tres Excels, dos WhatsApps y de la persona que “sí sabe dónde quedó el dato”.',
     humor: 'El KPI más importante termina siendo: “¿quién tiene la versión final_final_ahora_sí.xlsx?”',
-    solution: 'Origin One integra fuentes, automatiza reportes y muestra indicadores en un tablero operativo hecho a la medida.',
-    evidence: 'Proyecto de dashboard para seguros presentado en originone.com.mx.',
+    solution: 'Origin One integra tus fuentes y arma el reporte solo. El tablero muestra los indicadores que tu equipo sí usa.',
+    evidence: 'Mándanos tu cierre de este mes y te decimos qué se automatiza.',
     visualBrief: 'Dueño de aseguradora detective, siguiendo pistas entre archivos Excel y chats; al fondo un dashboard limpio resuelve el caso. Humor elegante, paleta negra y dorada.',
     assetProvider: 'origin-one-imagegen',
     assetStatus: 'en_revision_visual',
     creativeUrl: '/crm/assets/pub-seguros-reporte-candidate-vertical.png',
     creativeAlt: 'Dueño de aseguradora rodeado de reportes dispersos, conectado a un tablero ámbar.',
     visualHeadline: 'El “archivo bueno” no debería ser un misterio.',
-    visualCaption: 'Cerrar el mes no debería ser una búsqueda.',
+    visualCaption: 'Cerrar el mes no es un trabajo de detective.',
     story: 'Luis dirige una agencia de seguros. Al cierre, una persona tiene las pólizas, otra los cobros y alguien guarda “el Excel bueno”. El equipo trabaja; el problema es que la información vive repartida.',
     narrative: {
       fictional: true,
@@ -87,7 +91,8 @@ const DEFAULT_PUBLICATIONS = [
       role: 'director de una agencia de seguros',
       premise: 'Cada cierre mensual depende de reunir versiones de hojas, mensajes y reportes que viven en lugares distintos.'
     },
-    voiceoverScript: 'Si tu cierre mensual depende de tres Excels, dos chats y de la persona que sabe dónde quedó el dato, no tienes un reporte: tienes una búsqueda del tesoro. Origin One integra la información y la convierte en un tablero claro y automático.',
+    voiceoverScript: 'Tu mes cierra tarde por buscar un archivo. Tres Excels, dos chats y la persona que sí sabe dónde quedó. Dirección lee el mes cuando el mes ya pasó. Origin One integra las fuentes y arma el reporte solo. Mándanos tu cierre de este mes y te decimos qué se automatiza.',
+    voiceoverCta: 'Mándanos tu cierre de este mes y te decimos qué se automatiza.',
     copies: {
       instagram: 'Luis llega al cierre mensual con tres Excels, dos grupos de WhatsApp y la pregunta que nadie quiere escuchar: “¿cuál es la versión buena?”. Su equipo trabaja; el problema es que la información vive separada. Origin One puede integrar fuentes y diseñar un tablero operativo para que el cierre deje de ser una búsqueda del tesoro.\n\nSituación hipotética basada en patrones operativos comunes.\n\n#Seguros #CierreMensual #Automatización #DatosParaDecidir',
       facebook: 'Luis dirige una agencia de seguros. Al cierre, una persona tiene las pólizas, otra los cobros y alguien guarda “el Excel bueno”. El KPI termina siendo encontrar la versión final_final_ahora_sí.xlsx. Origin One puede conectar esas fuentes y convertirlas en una lectura operativa clara para dirección.\n\nSituación hipotética basada en patrones operativos comunes.\n\n#Seguros #CierreMensual',
@@ -101,11 +106,11 @@ const DEFAULT_PUBLICATIONS = [
     campaignOrder: 2,
     title: 'Tu clínica creció; tu sistema sigue pidiendo favores',
     industry: 'Clínicas dentales',
-    ownerPain: 'Agenda, expedientes, cobros e inventario viven en herramientas separadas.',
+    ownerPain: 'Para saber qué pasó con un paciente, preguntas a tres personas.',
     situation: 'La recepción conoce la agenda, el doctor conoce el tratamiento y una libreta misteriosa conoce los pagos.',
     humor: 'El verdadero ERP es preguntarle a tres personas y esperar que coincidan.',
-    solution: 'Un sistema a la medida conecta operación clínica, administración y seguimiento sin obligar al negocio a adaptarse a software genérico.',
-    evidence: 'Proyecto ERP dental mostrado en originone.com.mx.',
+    solution: 'Un sistema a la medida conecta agenda, expediente y cobro. Tu clínica no se adapta al software; el software se adapta a ella.',
+    evidence: 'Cuéntanos cómo opera tu clínica hoy y te lo dibujamos.',
     visualBrief: 'Consultorio moderno con tres islas desconectadas: agenda, expediente y pagos; una línea dorada Origin One las integra en una sola interfaz.',
     assetProvider: 'origin-one-imagegen',
     assetStatus: 'en_revision_visual',
@@ -113,14 +118,15 @@ const DEFAULT_PUBLICATIONS = [
     creativeAlt: 'Equipo de clínica dental conectado por una línea ámbar en una sola operación.',
     visualHeadline: 'Tu clínica no debería operar a base de favores.',
     visualCaption: 'Agenda, expediente y cobro: una sola operación.',
-    story: 'Mariana dirige una clínica dental en crecimiento. Recepción conoce la agenda, el doctor conoce el tratamiento y una libreta misteriosa conoce los pagos. Para entender un caso, su equipo tiene que preguntarle a tres personas.',
+    story: 'Mariana dirige una clínica dental en crecimiento. Recepción conoce la agenda, el doctor el tratamiento y una libreta misteriosa los pagos. Para entender un caso, hay que preguntarle a tres personas.',
     narrative: {
       fictional: true,
       character: 'Mariana',
       role: 'directora de una clínica dental en crecimiento',
       premise: 'La agenda, los tratamientos y los cobros están en manos y herramientas distintas, por lo que el equipo necesita preguntar para reconstruir la operación.'
     },
-    voiceoverScript: 'La recepción conoce la agenda, el doctor conoce el tratamiento y una libreta misteriosa conoce los pagos. Cuando tu clínica crece, preguntar a tres personas deja de ser un sistema. Origin One conecta la operación en un ERP hecho a la medida.',
+    voiceoverScript: 'Preguntarle a tres personas no es un sistema. Recepción tiene la agenda, el doctor el tratamiento y una libreta los pagos. Origin One conecta agenda, expediente y cobro en un sistema hecho a la medida de tu clínica. Cuéntanos cómo opera hoy y te lo dibujamos.',
+    voiceoverCta: 'Cuéntanos cómo opera hoy y te lo dibujamos.',
     copies: {
       instagram: 'La clínica de Mariana creció. También crecieron los favores: recepción sabe la agenda, el doctor el tratamiento y una libreta misteriosa los pagos. Para entender un caso hay que preguntarle a tres personas. Origin One puede diseñar un sistema a la medida que conecte operación clínica, administración y seguimiento sin obligar al equipo a trabajar como software genérico.\n\nSituación hipotética basada en patrones operativos comunes.\n\n#ClínicasDentales #GestiónClínica #Automatización #ERP',
       facebook: 'Mariana dirige una clínica dental en crecimiento. Para saber qué pasó con un paciente, recepción revisa la agenda, el doctor busca el tratamiento y administración persigue un pago. El verdadero ERP es esperar que las tres versiones coincidan. Origin One puede conectar la operación en una solución hecha para la forma real de trabajar de la clínica.\n\nSituación hipotética basada en patrones operativos comunes.\n\n#ClínicasDentales #GestiónClínica',
@@ -130,6 +136,41 @@ const DEFAULT_PUBLICATIONS = [
     status: 'revision'
   },
 ];
+
+// La locución pertenece al par (publicación, formato): el guion de 8 s y el de
+// 20 s son distintos, así que cada formato guarda su propio WAV.
+function normalizeVoices(input) {
+  const source = input && typeof input === 'object' ? input : {};
+  return Object.fromEntries(Object.entries(source)
+    .filter(([formatId]) => FORMAT_IDS.has(formatId))
+    .map(([formatId, value]) => [formatId, {
+      url: String(value?.url || '').trim().slice(0, 1000),
+      durationSeconds: Math.max(0, Number(value?.durationSeconds) || 0),
+      characters: Math.max(0, Number(value?.characters) || 0),
+      provider: String(value?.provider || '').slice(0, 60),
+      renderedAt: String(value?.renderedAt || '').slice(0, 40)
+    }])
+    .filter(([, value]) => value.url));
+}
+
+// Cada publicación puede tener un asset por formato creativo (video 8 s, video
+// 20 s, imagen, carrusel). El visual base de la propuesta sigue en creativeUrl.
+function normalizeCreatives(input) {
+  const source = input && typeof input === 'object' ? input : {};
+  return Object.fromEntries(Object.entries(source)
+    .filter(([formatId]) => FORMAT_IDS.has(formatId))
+    .map(([formatId, value]) => [formatId, {
+      urls: (Array.isArray(value?.urls) ? value.urls : [])
+        .map(url => String(url || '').trim().slice(0, 1000))
+        .filter(Boolean)
+        .slice(0, 12),
+      durationSeconds: Math.max(0, Number(value?.durationSeconds) || 0),
+      contentType: String(value?.contentType || '').slice(0, 80),
+      style: String(value?.style || '').slice(0, 20),
+      renderedAt: String(value?.renderedAt || '').slice(0, 40)
+    }])
+    .filter(([, value]) => value.urls.length));
+}
 
 function withMissingDefaults(publications) {
   const knownIds = new Set(publications.map(item => item.id));
@@ -162,6 +203,7 @@ function normalizePublication(input, existing = {}) {
     assetUrl: String(input.assetUrl ?? existing.assetUrl ?? '').trim().slice(0, 1000),
     creativeUrl: String(input.creativeUrl ?? existing.creativeUrl ?? '').trim().slice(0, 1000),
     creativeAlt: String(input.creativeAlt ?? existing.creativeAlt ?? input.title ?? existing.title ?? 'Visual de la publicación').trim().slice(0, 500),
+    creativeTextIntegrated: Boolean(input.creativeTextIntegrated ?? existing.creativeTextIntegrated ?? false),
     visualHeadline: String(input.visualHeadline ?? existing.visualHeadline ?? input.title ?? existing.title ?? '').trim().slice(0, 180),
     visualCaption: String(input.visualCaption ?? existing.visualCaption ?? input.situation ?? existing.situation ?? '').trim().slice(0, 180),
     story: String(input.story ?? existing.story ?? input.situation ?? existing.situation ?? '').trim().slice(0, 900),
@@ -172,6 +214,9 @@ function normalizePublication(input, existing = {}) {
       premise: String(input.narrative?.premise ?? existing.narrative?.premise ?? '').trim().slice(0, 800)
     },
     voiceoverScript: String(input.voiceoverScript ?? existing.voiceoverScript ?? '').trim().slice(0, 5000),
+    // Cola protegida del guion: el recorte por formato reduce el cuerpo, nunca el
+    // CTA. Si viene vacía, `splitVoiceover` toma la última frase del guion.
+    voiceoverCta: String(input.voiceoverCta ?? existing.voiceoverCta ?? '').trim().slice(0, 300),
     voiceConfig: {
       languageCode: String(input.voiceConfig?.languageCode ?? existing.voiceConfig?.languageCode ?? 'es').slice(0, 20),
       name: normalizeVoiceName(input.voiceConfig?.name ?? existing.voiceConfig?.name).slice(0, 100),
@@ -183,6 +228,8 @@ function normalizePublication(input, existing = {}) {
     voiceUsage: Array.isArray(input.voiceUsage)
       ? input.voiceUsage.slice(-500)
       : (Array.isArray(existing.voiceUsage) ? existing.voiceUsage : []),
+    voices: normalizeVoices(input.voices ?? existing.voices),
+    creatives: normalizeCreatives(input.creatives ?? existing.creatives),
     copies: {
       instagram: String(input.copies?.instagram ?? existing.copies?.instagram ?? '').trim().slice(0, 5000),
       facebook: String(input.copies?.facebook ?? existing.copies?.facebook ?? '').trim().slice(0, 5000),
@@ -299,10 +346,50 @@ async function setPublicationApproval(id, decision, username, displayName, note)
   });
 }
 
+async function setPublicationCreative(id, formatId, { urls, durationSeconds = 0, contentType = '', style = '' }) {
+  if (!FORMAT_IDS.has(formatId)) throw new Error(`Formato creativo no válido: ${formatId}`);
+  if (!Array.isArray(urls) || !urls.length) throw new Error('El render no produjo ningún asset');
+  return mutate(items => {
+    const publication = items.find(item => item.id === id);
+    if (!publication) return null;
+    publication.creatives = {
+      ...normalizeCreatives(publication.creatives),
+      [formatId]: normalizeCreatives({ [formatId]: { urls, durationSeconds, contentType, style, renderedAt: new Date().toISOString() } })[formatId]
+    };
+    publication.updatedAt = new Date().toISOString();
+    return publication;
+  });
+}
+
+async function recordVoiceRender(id, formatId, { url, characters, provider, durationSeconds }) {
+  if (!FORMAT_IDS.has(formatId)) throw new Error(`Formato creativo no válido: ${formatId}`);
+  return mutate(items => {
+    const publication = items.find(item => item.id === id);
+    if (!publication) return null;
+    publication.voices = {
+      ...normalizeVoices(publication.voices),
+      ...normalizeVoices({ [formatId]: { url, durationSeconds, characters, provider, renderedAt: new Date().toISOString() } })
+    };
+    publication.voiceUsage = [
+      ...(Array.isArray(publication.voiceUsage) ? publication.voiceUsage : []),
+      {
+        characters: Math.max(0, Number(characters) || 0),
+        durationSeconds: Number((Number(durationSeconds) || 0).toFixed(3)),
+        provider: String(provider || 'gemini-free').slice(0, 60),
+        createdAt: new Date().toISOString()
+      }
+    ].slice(-500);
+    publication.updatedAt = new Date().toISOString();
+    return publication;
+  });
+}
+
 module.exports = {
   addPublicationNote,
   createPublication,
   getPublications,
+  recordVoiceRender,
   setPublicationApproval,
+  setPublicationCreative,
   updatePublication
 };
