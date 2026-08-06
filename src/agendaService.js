@@ -228,6 +228,66 @@ async function deleteLead(id) {
 }
 
 /**
+ * Importar un prospecto desde un producto Origin One, como MOLAR.
+ * Se conserva en el mismo embudo que los contactos de los canales sociales.
+ */
+async function importExternalLead(params) {
+  const externalId = String(params.externalId || '').trim().slice(0, 120);
+  const fullName = String(params.fullName || '').trim().slice(0, 120);
+  const email = String(params.email || '').trim().toLowerCase().slice(0, 180);
+  const phone = String(params.phone || '').trim().slice(0, 40);
+  const clinicName = String(params.clinicName || '').trim().slice(0, 160);
+  const planInterest = String(params.planInterest || 'No estoy seguro').trim().slice(0, 40);
+  const notes = String(params.notes || '').trim().slice(0, 1000);
+
+  if (!externalId || !fullName || !email || !phone || !clinicName) {
+    throw new Error('externalId, fullName, email, phone y clinicName son requeridos');
+  }
+
+  return mutateAppointments(appointments => {
+    const now = new Date().toISOString();
+    const existing = appointments.find(lead => lead.external_id === externalId || lead.email?.toLowerCase() === email);
+
+    if (existing) {
+      existing.nombre_cliente = fullName;
+      existing.email = email;
+      existing.telefono_whatsapp = phone;
+      existing.empresa_o_proyecto = clinicName;
+      existing.plan_interes = planInterest;
+      existing.resumen_necesidad = notes || existing.resumen_necesidad || 'Solicitud de información sobre MOLAR';
+      existing.actualizado_el = now;
+      existing.ultima_fuente = 'MOLAR Landing';
+      return { lead: existing, created: false };
+    }
+
+    const lead = {
+      id: `MOLAR-${Date.now().toString(36).toUpperCase()}`,
+      external_id: externalId,
+      nombre_cliente: fullName,
+      email,
+      telefono_whatsapp: phone,
+      empresa_o_proyecto: clinicName,
+      plan_interes: planInterest,
+      fecha_primer_contacto: now.split('T')[0],
+      hora_primer_contacto: new Date(now).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+      fecha_propuesta: 'Por confirmar',
+      hora_propuesta: 'Por confirmar',
+      resumen_necesidad: notes || 'Solicitud de información sobre MOLAR',
+      canal_origen: 'MOLAR Landing',
+      etapa: 'Nuevo contacto',
+      etapa_fuente: 'molar_landing',
+      es_prueba: false,
+      notas_internas: [],
+      historial_mensajes: [],
+      creado_el: now,
+      estatus: 'Pendiente de contacto'
+    };
+    appointments.unshift(lead);
+    return { lead, created: true };
+  });
+}
+
+/**
  * Guardar un mensaje en el historial de conversaciones del Lead / Cita
  */
 function appendChatMessageToAppointments(appointments, {
@@ -320,6 +380,67 @@ function appendChatMessageToAppointments(appointments, {
   return { lead, added: true };
 }
 
+
+/**
+ * Captura de contacto sin fricción desde S1GNAL.
+ *
+ * A diferencia de scheduleAppointment, NO exige fecha ni hora: el objetivo es
+ * quedarse con el prospecto en cuanto suelta un nombre y una forma de
+ * contacto, aunque todavía no quiera comprometerse a un horario. Pedirle
+ * todos los datos de golpe es justo lo que hace que cuelgue.
+ *
+ * Si el mismo contacto vuelve más tarde y sí agenda, scheduleAppointment
+ * actualiza el registro existente en vez de duplicarlo.
+ */
+async function captureContact(params) {
+  const fullName = String(params.nombre || '').trim().slice(0, 120);
+  const email = String(params.email || '').trim().toLowerCase().slice(0, 180);
+  const phone = String(params.telefono || '').trim().slice(0, 40);
+  const interes = String(params.interes || '').trim().slice(0, 600);
+  const canal = String(params.canal_origen || 'S1GNAL Web').trim().slice(0, 120);
+
+  if (!fullName) throw new Error('Se requiere al menos un nombre');
+  if (!email && !phone) throw new Error('Se requiere un correo o un teléfono');
+
+  return mutateAppointments(appointments => {
+    const now = new Date().toISOString();
+    const existing = appointments.find(lead =>
+      (email && lead.email?.toLowerCase() === email) ||
+      (phone && String(lead.telefono_whatsapp || '').replace(/\D/g, '') === phone.replace(/\D/g, ''))
+    );
+
+    if (existing) {
+      // Solo se rellenan huecos: nunca pisar un dato ya confirmado.
+      // Ojo: los campos vacíos se guardan como "No especificado", que es un
+      // string truthy — comprobar la ausencia con !valor dejaría el hueco.
+      const vacio = valor => !valor || String(valor).toLowerCase().startsWith('no especificado');
+      if (email && vacio(existing.email)) existing.email = email;
+      if (phone && vacio(existing.telefono_whatsapp)) existing.telefono_whatsapp = phone;
+      if (interes) existing.resumen_necesidad = interes;
+      existing.actualizado_el = now;
+      return { lead: existing, created: false };
+    }
+
+    const lead = {
+      id: 'LEAD-' + Date.now().toString(36).toUpperCase(),
+      nombre_cliente: fullName,
+      email: email || 'No especificado',
+      telefono_whatsapp: phone || 'No especificado',
+      empresa_o_proyecto: 'No especificado',
+      fecha_propuesta: 'Por definir',
+      hora_propuesta: 'Por definir',
+      resumen_necesidad: interes || 'Conversación con S1GNAL',
+      etapa: 'Nuevo',
+      canal_origen: canal,
+      requiere_revision: true,
+      creado_el: now,
+      actualizado_el: now
+    };
+    appointments.push(lead);
+    return { lead, created: true };
+  });
+}
+
 async function appendChatMessage(userId, role, messageText, channelName = 'Omnicanal', userName = null, eventId = null, createdAt = null) {
   return mutateAppointments(appointments => appendChatMessageToAppointments(appointments, {
     userId,
@@ -363,6 +484,8 @@ module.exports = {
   updateLead,
   addLeadNote,
   deleteLead,
+  importExternalLead,
+  captureContact,
   appendChatMessage,
   importChatMessages
 };

@@ -520,7 +520,9 @@ function renderPublications() {
     const story = item.story || item.narrative?.premise || item.situation;
     const character = item.narrative?.character ? `${item.narrative.character}${item.narrative?.role ? ` · ${item.narrative.role}` : ''}` : 'Contexto operativo';
     const image = item.creativeUrl && item.assetStatus !== 'rechazado'
-      ? `<img src="${escapeHtml(item.creativeUrl)}" alt="${escapeHtml(item.creativeAlt)}" loading="lazy"><div class="publication-visual-overlay"><span>${escapeHtml(item.industry)}</span><h3>${escapeHtml(visualHeadline)}</h3><p>${escapeHtml(visualCaption)}</p></div>`
+      ? item.creativeTextIntegrated
+        ? `<img src="${escapeHtml(item.creativeUrl)}" alt="${escapeHtml(item.creativeAlt)}" loading="lazy">`
+        : `<img src="${escapeHtml(item.creativeUrl)}" alt="${escapeHtml(item.creativeAlt)}" loading="lazy"><div class="publication-visual-overlay"><span>${escapeHtml(item.industry)}</span><h3>${escapeHtml(visualHeadline)}</h3><p>${escapeHtml(visualCaption)}</p></div>`
       : `<div class="publication-visual-placeholder"><i class="fa-solid fa-image"></i><span>Visual pendiente de aprobación</span><small>La propuesta se mostrará aquí en 9:16 con texto integrado después de aprobar el asset generado.</small></div>`;
     const nextWindow = publicationNextSuggestedWindow(item);
     const schedule = new Date(nextWindow.localDateTime).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
@@ -538,12 +540,95 @@ function renderPublications() {
             <span>CÓMO PUEDE AYUDAR ORIGIN ONE</span>
             <p>${escapeHtml(item.solution)}</p>
           </section>
+          ${publicationFormatsMarkup(item)}
           <div class="publication-schedule"><i class="fa-regular fa-clock"></i><span>Ventana sugerida · no programada: ${escapeHtml(nextWindow.platform)} · ${escapeHtml(schedule)}</span></div>
           <div class="publication-platforms">${platforms}</div>
           <div class="publication-card-footer"><span>${artemio ? '●' : '○'} Artemio</span><span>${edgar ? '●' : '○'} Edgar</span><span>${item.notes?.length || 0} notas</span><button type="button" class="button secondary publication-review-button" onclick="openPublicationModal('${escapeHtml(item.id)}')">Revisar propuesta <i class="fa-solid fa-arrow-right"></i></button></div>
         </div>
       </article>`;
   }).join('');
+}
+
+// Video 9:16, imagen y carrusel salen del mismo sistema de diseño, así que la
+// tarjeta los muestra juntos: un formato por chip, con su render si ya existe.
+function publicationFormatsMarkup(item) {
+  const formats = publicationCapabilities.formats || [];
+  if (!formats.length) return '';
+  // Un clic por formato: los de video generan su locución si aún no existe.
+  const chips = formats.map(format => {
+    const creative = item.creatives?.[format.id];
+    const done = Boolean(creative?.urls?.length);
+    const hint = format.renderable ? format.purpose : 'Render no disponible en este servidor';
+    return `<button type="button" class="publication-format-chip${done ? ' done' : ''}" ${format.renderable ? '' : 'disabled'}
+      title="${escapeHtml(hint)}" onclick="generatePublicationCreative('${escapeHtml(item.id)}','${escapeHtml(format.id)}')">
+      <i class="fa-solid ${format.kind === 'video' ? 'fa-film' : format.kind === 'carousel' ? 'fa-layer-group' : 'fa-image'}"></i>
+      <span>${escapeHtml(format.label)}</span>
+      <b>${done ? 'Regenerar' : 'Generar'}</b>
+    </button>`;
+  }).join('');
+
+  const previews = formats.flatMap(format => {
+    const creative = item.creatives?.[format.id];
+    if (!creative?.urls?.length) return [];
+    return creative.urls.slice(0, 5).map(url => url.endsWith('.mp4')
+      ? `<video src="${escapeHtml(url)}" controls playsinline preload="metadata"></video>`
+      : `<img src="${escapeHtml(url)}" alt="${escapeHtml(format.label)}" loading="lazy">`);
+  }).join('');
+
+  const styles = publicationCapabilities.styles || [];
+  const styleRow = styles.length > 1 ? `
+      <div class="publication-style-row">
+        ${styles.map(style => `<label class="publication-style-option">
+          <input type="radio" name="estilo-${escapeHtml(item.id)}" value="${escapeHtml(style)}"
+            ${style === (publicationCapabilities.defaultStyle || styles[0]) ? 'checked' : ''}>
+          <span>${style === 'grafico' ? 'Gráfico generado' : 'Sobre la foto'}</span>
+        </label>`).join('')}
+      </div>` : '';
+
+  const voiceState = publicationCapabilities.voice
+    ? (item.voiceoverScript ? 'locución automática con Gemini' : 'sin guion de locución')
+    : 'locución no configurada';
+  return `
+    <section class="publication-formats">
+      <span>FORMATOS 9:16 · ${escapeHtml(voiceState)}</span>
+      ${styleRow}
+      <div class="publication-format-row">${chips}</div>
+      ${previews ? `<div class="publication-format-previews">${previews}</div>` : ''}
+    </section>`;
+}
+
+async function generatePublicationCreative(id, formatId) {
+  const format = (publicationCapabilities.formats || []).find(item => item.id === formatId);
+  const selected = document.querySelector(`input[name="estilo-${id}"]:checked`);
+  await runPublicationJob(
+    `/api/publicaciones/${encodeURIComponent(id)}/creativos/${encodeURIComponent(formatId)}`,
+    format?.kind === 'video' ? 'Generando locución y video… puede tardar un minuto' : 'Renderizando formato…',
+    { estilo: selected?.value || publicationCapabilities.defaultStyle || 'grafico' }
+  );
+}
+
+// El render tarda segundos, así que la tarjeta se bloquea mientras corre para
+// evitar dos renders simultáneos de la misma publicación.
+async function runPublicationJob(url, message, body) {
+  const grid = document.getElementById('publicationGrid');
+  grid.classList.add('busy');
+  showToast(message);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {})
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'No fue posible completar el render');
+    await loadPublicationsModule();
+    showToast('Listo');
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    grid.classList.remove('busy');
+  }
 }
 
 function openPublicationModal(id = null) {

@@ -20,6 +20,10 @@ services:
       # Keep it separate from Meta/R2 credentials.
       - key: CRM_GATEWAY_SOURCE_SECRET
         sync: false
+      # Se usa para autenticar la entrada servidor-a-servidor de MOLAR.
+      # Si no se define, se deriva del secreto de Meta existente.
+      - key: MOLAR_LEADS_WEBHOOK_SECRET
+        sync: false
       - key: INSTAGRAM_PAGE_ACCESS_TOKEN
         sync: false
       - key: ADMIN_WHATSAPP_NUMBERS

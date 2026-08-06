@@ -444,6 +444,26 @@ router.post('/api/signal/agendar-cita', async (req, res) => {
   }
 });
 
+
+/**
+ * POST /api/signal/contacto
+ * Captura de contacto sin fricción: S1GNAL la invoca en cuanto tiene un
+ * nombre y un correo o teléfono, sin exigir que el prospecto agende.
+ */
+router.post('/api/signal/contacto', async (req, res) => {
+  try {
+    const { captureContact } = require('./agendaService');
+    const payload = { ...req.body };
+    payload.canal_origen = payload.canal_origen || 'S1GNAL Web (originone.com.mx)';
+    const result = await captureContact(payload);
+    console.log(`[S1GNAL Web] 👤 Contacto ${result.created ? 'nuevo' : 'actualizado'}:`, result.lead.id);
+    res.json({ success: true, id: result.lead.id, created: result.created });
+  } catch (error) {
+    console.error('[S1GNAL Web] ❌ Error capturando contacto:', error.message);
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
 /**
  * Obtener nombre real del usuario de Meta Graph API
  */
