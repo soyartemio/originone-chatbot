@@ -380,6 +380,67 @@ function appendChatMessageToAppointments(appointments, {
   return { lead, added: true };
 }
 
+
+/**
+ * Captura de contacto sin fricción desde S1GNAL.
+ *
+ * A diferencia de scheduleAppointment, NO exige fecha ni hora: el objetivo es
+ * quedarse con el prospecto en cuanto suelta un nombre y una forma de
+ * contacto, aunque todavía no quiera comprometerse a un horario. Pedirle
+ * todos los datos de golpe es justo lo que hace que cuelgue.
+ *
+ * Si el mismo contacto vuelve más tarde y sí agenda, scheduleAppointment
+ * actualiza el registro existente en vez de duplicarlo.
+ */
+async function captureContact(params) {
+  const fullName = String(params.nombre || '').trim().slice(0, 120);
+  const email = String(params.email || '').trim().toLowerCase().slice(0, 180);
+  const phone = String(params.telefono || '').trim().slice(0, 40);
+  const interes = String(params.interes || '').trim().slice(0, 600);
+  const canal = String(params.canal_origen || 'S1GNAL Web').trim().slice(0, 120);
+
+  if (!fullName) throw new Error('Se requiere al menos un nombre');
+  if (!email && !phone) throw new Error('Se requiere un correo o un teléfono');
+
+  return mutateAppointments(appointments => {
+    const now = new Date().toISOString();
+    const existing = appointments.find(lead =>
+      (email && lead.email?.toLowerCase() === email) ||
+      (phone && String(lead.telefono_whatsapp || '').replace(/\D/g, '') === phone.replace(/\D/g, ''))
+    );
+
+    if (existing) {
+      // Solo se rellenan huecos: nunca pisar un dato ya confirmado.
+      // Ojo: los campos vacíos se guardan como "No especificado", que es un
+      // string truthy — comprobar la ausencia con !valor dejaría el hueco.
+      const vacio = valor => !valor || String(valor).toLowerCase().startsWith('no especificado');
+      if (email && vacio(existing.email)) existing.email = email;
+      if (phone && vacio(existing.telefono_whatsapp)) existing.telefono_whatsapp = phone;
+      if (interes) existing.resumen_necesidad = interes;
+      existing.actualizado_el = now;
+      return { lead: existing, created: false };
+    }
+
+    const lead = {
+      id: 'LEAD-' + Date.now().toString(36).toUpperCase(),
+      nombre_cliente: fullName,
+      email: email || 'No especificado',
+      telefono_whatsapp: phone || 'No especificado',
+      empresa_o_proyecto: 'No especificado',
+      fecha_propuesta: 'Por definir',
+      hora_propuesta: 'Por definir',
+      resumen_necesidad: interes || 'Conversación con S1GNAL',
+      etapa: 'Nuevo',
+      canal_origen: canal,
+      requiere_revision: true,
+      creado_el: now,
+      actualizado_el: now
+    };
+    appointments.push(lead);
+    return { lead, created: true };
+  });
+}
+
 async function appendChatMessage(userId, role, messageText, channelName = 'Omnicanal', userName = null, eventId = null, createdAt = null) {
   return mutateAppointments(appointments => appendChatMessageToAppointments(appointments, {
     userId,
@@ -424,6 +485,7 @@ module.exports = {
   addLeadNote,
   deleteLead,
   importExternalLead,
+  captureContact,
   appendChatMessage,
   importChatMessages
 };
