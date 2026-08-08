@@ -162,3 +162,85 @@ test('elige un RP ID por dominio y conserva las passkeys heredadas de Render', (
 
   process.env.NODE_ENV = 'test';
 });
+
+test('un usuario autenticado puede emitir el enlace de activación de otra cuenta', async () => {
+  process.env.NODE_ENV = 'test';
+  const app = express();
+  app.use(express.json());
+  app.use('/api/auth', createAuthRouter());
+  const server = http.createServer(app);
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+  const origin = `http://127.0.0.1:${port}`;
+  process.env.AUTH_ORIGIN = origin;
+  process.env.AUTH_RP_ID = '127.0.0.1';
+
+  const { mutateAuthData } = require('../src/authStorage');
+  const password = await hashPassword('Emisor-Seguro-2026!');
+  await mutateAuthData(data => {
+    data.users.artemio.password = password;
+    data.users.artemio.passwordFallbackEnabled = true;
+    data.users.edgar.password = null;
+    data.users.edgar.passkeys = [];
+    delete data.users.edgar.activation;
+  });
+
+  try {
+    const anonymous = await fetch(`${origin}/api/auth/activation-link`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: origin },
+      body: JSON.stringify({ username: 'edgar' })
+    });
+    assert.equal(anonymous.status, 401);
+
+    const login = await fetch(`${origin}/api/auth/password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: origin },
+      body: JSON.stringify({ username: 'artemio', password: 'Emisor-Seguro-2026!', passwordFallback: true })
+    });
+    assert.equal(login.status, 200);
+    const cookie = login.headers.getSetCookie().map(value => value.split(';')[0]).join('; ');
+
+    const issued = await fetch(`${origin}/api/auth/activation-link`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: origin, Cookie: cookie },
+      body: JSON.stringify({ username: 'edgar' })
+    });
+    const body = await issued.json();
+    assert.equal(issued.status, 200);
+    assert.equal(body.reset, false);
+    const token = new URL(body.url).searchParams.get('setup');
+    assert.ok(token);
+
+    const stored = (await readAuthSnapshot()).data.users.edgar;
+    assert.equal(stored.activation.hash, hashActivationToken(token));
+    assert.equal(stored.activation.issuedBy, 'artemio');
+    assert.equal(JSON.stringify(stored).includes(token), false);
+
+    const activated = await fetch(`${origin}/api/auth/password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: origin },
+      body: JSON.stringify({ username: 'edgar', password: 'Clave-Nueva-Edgar-2026!', setupToken: token })
+    });
+    assert.equal(activated.status, 200);
+    assert.equal((await activated.json()).next, 'register_passkey');
+
+    const conflict = await fetch(`${origin}/api/auth/activation-link`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: origin, Cookie: cookie },
+      body: JSON.stringify({ username: 'edgar' })
+    });
+    assert.equal(conflict.status, 409);
+
+    const reset = await fetch(`${origin}/api/auth/activation-link`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: origin, Cookie: cookie },
+      body: JSON.stringify({ username: 'edgar', reset: true })
+    });
+    assert.equal(reset.status, 200);
+    assert.equal((await reset.json()).reset, true);
+    assert.equal((await readAuthSnapshot()).data.users.edgar.password, null);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});

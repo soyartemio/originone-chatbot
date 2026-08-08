@@ -283,6 +283,40 @@ async function loadCurrentUser() {
   }
 }
 
+async function requestActivationLink(username, reset) {
+  const response = await fetch('/api/auth/activation-link', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, reset })
+  });
+  return { status: response.status, payload: await response.json().catch(() => ({})) };
+}
+
+async function issueAccessLink() {
+  const username = String(prompt('¿Para quién es el enlace de acceso? Escribe artemio o edgar.') || '').trim().toLowerCase();
+  if (!username) return;
+
+  let result = await requestActivationLink(username, false);
+  if (result.status === 409) {
+    if (!confirm(`${result.payload.error}\n\nEsto borra su contraseña y sus passkeys actuales. ¿Continuar?`)) return;
+    result = await requestActivationLink(username, true);
+  }
+  if (!result.payload.success) {
+    showToast(result.payload.error || 'No fue posible emitir el enlace');
+    return;
+  }
+
+  const vence = new Date(result.payload.expiresAt).toLocaleString('es-MX');
+  try {
+    await navigator.clipboard.writeText(result.payload.url);
+    showToast(`Enlace copiado. Vence el ${vence}.`);
+  } catch {
+    showToast(`Enlace listo. Vence el ${vence}.`);
+  }
+  window.prompt(`Enlace de activación para ${result.payload.displayName}. Vence el ${vence}.`, result.payload.url);
+}
+
 async function logout() {
   await fetch('/api/auth/logout', {
     method: 'POST',
