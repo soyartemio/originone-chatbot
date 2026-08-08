@@ -7,6 +7,7 @@ const { deriveApplicationSecret } = require('./storageGateway');
 const scrypt = promisify(crypto.scrypt);
 const SESSION_TTL_SECONDS = Number(process.env.AUTH_SESSION_TTL_SECONDS || 8 * 60 * 60);
 const CHALLENGE_TTL_SECONDS = 5 * 60;
+const ACTIVATION_TTL_MS = 24 * 60 * 60 * 1000;
 const attempts = new Map();
 let webAuthnModule = null;
 
@@ -526,6 +527,48 @@ function createAuthRouter() {
 
       issueSession(res, user);
       res.json({ success: true, user: safeUser(user), redirect: '/admin/' });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post('/activation-link', requireTrustedOrigin, requireApiAuth, async (req, res, next) => {
+    try {
+      const username = normalizeUsername(req.body.username);
+      if (!username) return res.status(400).json({ success: false, error: 'Selecciona un usuario válido' });
+      const { data } = await readAuthSnapshot();
+      const target = data.users[username];
+      if (!target) return res.status(404).json({ success: false, error: 'Usuario desconocido' });
+
+      const wasActive = Boolean(target.password || target.passkeys?.length);
+      if (wasActive && req.body.reset !== true) {
+        return res.status(409).json({
+          success: false,
+          error: 'La cuenta ya está activa. Confirma el reinicio para revocar su acceso y emitir un enlace nuevo.'
+        });
+      }
+
+      const activationToken = crypto.randomBytes(32).toString('base64url');
+      const expiresAt = new Date(Date.now() + ACTIVATION_TTL_MS).toISOString();
+      await mutateAuthData(authData => {
+        const current = authData.users[username];
+        current.password = null;
+        current.passkeys = [];
+        current.createdAt = null;
+        current.setupCompletedAt = null;
+        current.accessResetAt = new Date().toISOString();
+        current.activation = {
+          hash: hashActivationToken(activationToken),
+          expiresAt,
+          createdAt: new Date().toISOString(),
+          issuedBy: req.auth.username
+        };
+      });
+
+      const { origin } = getWebAuthnConfig(req);
+      const url = `${origin}/auth?user=${encodeURIComponent(username)}&setup=${encodeURIComponent(activationToken)}`;
+      console.log(`[Auth] ${req.auth.username} emitió un enlace de activación para ${username} (vence ${expiresAt})`);
+      res.json({ success: true, username, displayName: target.displayName, expiresAt, url, reset: wasActive });
     } catch (error) {
       next(error);
     }
